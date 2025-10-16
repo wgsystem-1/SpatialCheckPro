@@ -1,0 +1,398 @@
+<Window x:Class="SpatialCheckPro.GUI.Views.UserSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="사용자 설정" Height="700" Width="600"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize">
+    
+    <Window.Resources>
+        <!-- 슬라이더 스타일 -->
+        <Style x:Key="SettingSliderStyle" TargetType="Slider">
+            <Setter Property="Margin" Value="10,5"/>
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="TickPlacement" Value="BottomRight"/>
+            <Setter Property="TickFrequency" Value="10"/>
+            <Setter Property="IsSnapToTickEnabled" Value="False"/>
+        </Style>
+        
+        <!-- 색상 버튼 스타일 -->
+        <Style x:Key="ColorButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="40"/>
+            <Setter Property="Height" Value="25"/>
+            <Setter Property="Margin" Value="5,2"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="BorderBrush" Value="#333"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        
+        <!-- 그룹박스 스타일 -->
+        <Style x:Key="SettingGroupBoxStyle" TargetType="GroupBox">
+            <Setter Property="Margin" Value="0,0,0,15"/>
+            <Setter Property="Padding" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 제목 -->
+        <TextBlock Grid.Row="0" Text="사용자 설정 및 커스터마이징" 
+                   FontSize="16" FontWeight="Bold" 
+                   Margin="0,0,0,20" HorizontalAlignment="Center"/>
+
+        <!-- 설정 탭 -->
+        <TabControl Grid.Row="1" x:Name="SettingsTabControl">
+            
+            <!-- 지도 상호작용 탭 -->
+            <TabItem Header="🗺️ 지도 상호작용">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10">
+                    <StackPanel>
+                        
+                        <!-- 클릭 허용 거리 -->
+                        <GroupBox Header="클릭 허용 거리" Style="{StaticResource SettingGroupBoxStyle}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                
+                                <TextBlock Grid.Row="0" 
+                                          Text="오류 피처를 클릭할 때 감지되는 허용 거리를 설정합니다." 
+                                          FontSize="12" Foreground="#666" Margin="0,0,0,10"/>
+                                
+                                <Slider Grid.Row="1" x:Name="ClickToleranceSlider" 
+                                       Style="{StaticResource SettingSliderStyle}"
+                                       Minimum="1" Maximum="500" 
+                                       Value="50" ValueChanged="ClickToleranceSlider_ValueChanged"/>
+                                
+                                <TextBlock Grid.Row="2" x:Name="ClickToleranceText" 
+                                          Text="50 미터" FontWeight="Bold" 
+                                          HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                            </Grid>
+                        </GroupBox>
+
+                        <!-- 하이라이트 지속 시간 -->
+                        <GroupBox Header="하이라이트 지속 시간" Style="{StaticResource SettingGroupBoxStyle}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                
+                                <TextBlock Grid.Row="0" 
+                                          Text="오류 피처가 하이라이트되는 지속 시간을 설정합니다." 
+                                          FontSize="12" Foreground="#666" Margin="0,0,0,10"/>
+                                
+                                <Slider Grid.Row="1" x:Name="HighlightDurationSlider" 
+                                       Style="{StaticResource SettingSliderStyle}"
+                                       Minimum="0.5" Maximum="10" 
+                                       Value="3" ValueChanged="HighlightDurationSlider_ValueChanged"/>
+                                
+                                <TextBlock Grid.Row="2" x:Name="HighlightDurationText" 
+                                          Text="3.0 초" FontWeight="Bold" 
+                                          HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                            </Grid>
+                        </GroupBox>
+
+                        <!-- 애니메이션 지속 시간 -->
+                        <GroupBox Header="애니메이션 지속 시간" Style="{StaticResource SettingGroupBoxStyle}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                
+                                <TextBlock Grid.Row="0" 
+                                          Text="지도 이동 애니메이션의 지속 시간을 설정합니다." 
+                                          FontSize="12" Foreground="#666" Margin="0,0,0,10"/>
+                                
+                                <Slider Grid.Row="1" x:Name="AnimationDurationSlider" 
+                                       Style="{StaticResource SettingSliderStyle}"
+                                       Minimum="0.1" Maximum="3" 
+                                       Value="0.8" ValueChanged="AnimationDurationSlider_ValueChanged"/>
+                                
+                                <TextBlock Grid.Row="2" x:Name="AnimationDurationText" 
+                                          Text="0.8 초" FontWeight="Bold" 
+                                          HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                            </Grid>
+                        </GroupBox>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- 심볼 및 색상 탭 -->
+            <TabItem Header="🎨 심볼 및 색상">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10">
+                    <StackPanel>
+                        
+                        <!-- 심볼 크기 -->
+                        <GroupBox Header="심볼 크기" Style="{StaticResource SettingGroupBoxStyle}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                
+                                <TextBlock Grid.Row="0" Text="기본 심볼 크기:" FontWeight="Bold" Margin="0,0,0,5"/>
+                                <Slider Grid.Row="1" x:Name="SymbolSizeSlider" 
+                                       Style="{StaticResource SettingSliderStyle}"
+                                       Minimum="4" Maximum="50" 
+                                       Value="12" ValueChanged="SymbolSizeSlider_ValueChanged"/>
+                                <TextBlock Grid.Row="2" x:Name="SymbolSizeText" 
+                                          Text="12 픽셀" FontWeight="Bold" 
+                                          HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                
+                                <TextBlock Grid.Row="3" Text="선택된 심볼 크기:" FontWeight="Bold" Margin="0,10,0,5"/>
+                                <Slider Grid.Row="4" x:Name="SelectedSymbolSizeSlider" 
+                                       Style="{StaticResource SettingSliderStyle}"
+                                       Minimum="6" Maximum="75" 
+                                       Value="18" ValueChanged="SelectedSymbolSizeSlider_ValueChanged"/>
+                            </Grid>
+                        </GroupBox>
+
+                        <!-- 심볼 투명도 -->
+                        <GroupBox Header="심볼 투명도" Style="{StaticResource SettingGroupBoxStyle}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                
+                                <TextBlock Grid.Row="0" 
+                                          Text="심볼의 투명도를 설정합니다 (0.1 = 매우 투명, 1.0 = 불투명)." 
+                                          FontSize="12" Foreground="#666" Margin="0,0,0,10"/>
+                                
+                                <Slider Grid.Row="1" x:Name="SymbolTransparencySlider" 
+                                       Style="{StaticResource SettingSliderStyle}"
+                                       Minimum="0.1" Maximum="1.0" 
+                                       Value="0.8" ValueChanged="SymbolTransparencySlider_ValueChanged"/>
+                                
+                                <TextBlock Grid.Row="2" x:Name="SymbolTransparencyText" 
+                                          Text="80%" FontWeight="Bold" 
+                                          HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                            </Grid>
+                        </GroupBox>
+
+                        <!-- 심각도별 색상 -->
+                        <GroupBox Header="심각도별 색상" Style="{StaticResource SettingGroupBoxStyle}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="100"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- CRIT -->
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="치명적 (CRIT):" VerticalAlignment="Center"/>
+                                <TextBox Grid.Row="0" Grid.Column="1" x:Name="CritColorTextBox" 
+                                        Text="#F44336" Margin="5,2" Padding="5"/>
+                                <Button Grid.Row="0" Grid.Column="2" x:Name="CritColorButton" 
+                                       Style="{StaticResource ColorButtonStyle}" 
+                                       Background="#F44336" Click="ColorButton_Click" Tag="CRIT"/>
+
+                                <!-- MAJOR -->
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="주요 (MAJOR):" VerticalAlignment="Center"/>
+                                <TextBox Grid.Row="1" Grid.Column="1" x:Name="MajorColorTextBox" 
+                                        Text="#FF9800" Margin="5,2" Padding="5"/>
+                                <Button Grid.Row="1" Grid.Column="2" x:Name="MajorColorButton" 
+                                       Style="{StaticResource ColorButtonStyle}" 
+                                       Background="#FF9800" Click="ColorButton_Click" Tag="MAJOR"/>
+
+                                <!-- MINOR -->
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="경미 (MINOR):" VerticalAlignment="Center"/>
+                                <TextBox Grid.Row="2" Grid.Column="1" x:Name="MinorColorTextBox" 
+                                        Text="#FFC107" Margin="5,2" Padding="5"/>
+                                <Button Grid.Row="2" Grid.Column="2" x:Name="MinorColorButton" 
+                                       Style="{StaticResource ColorButtonStyle}" 
+                                       Background="#FFC107" Click="ColorButton_Click" Tag="MINOR"/>
+
+                                <!-- INFO -->
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="정보 (INFO):" VerticalAlignment="Center"/>
+                                <TextBox Grid.Row="3" Grid.Column="1" x:Name="InfoColorTextBox" 
+                                        Text="#2196F3" Margin="5,2" Padding="5"/>
+                                <Button Grid.Row="3" Grid.Column="2" x:Name="InfoColorButton" 
+                                       Style="{StaticResource ColorButtonStyle}" 
+                                       Background="#2196F3" Click="ColorButton_Click" Tag="INFO"/>
+                            </Grid>
+                        </GroupBox>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- 클러스터링 탭 -->
+            <TabItem Header="🔗 클러스터링">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10">
+                    <StackPanel>
+                        
+                        <!-- 클러스터링 활성화 -->
+                        <GroupBox Header="클러스터링 설정" Style="{StaticResource SettingGroupBoxStyle}">
+                            <StackPanel>
+                                <CheckBox x:Name="EnableClusteringCheckBox" 
+                                         Content="클러스터링 활성화" 
+                                         FontWeight="Bold" Margin="0,0,0,10"
+                                         IsChecked="True" Checked="EnableClusteringCheckBox_CheckedChanged" 
+                                         Unchecked="EnableClusteringCheckBox_CheckedChanged"/>
+                                
+                                <TextBlock Text="오류가 많은 지역에서 클러스터링을 사용하여 가독성을 향상시킵니다." 
+                                          FontSize="12" Foreground="#666" Margin="0,0,0,15"/>
+
+                                <!-- 클러스터링 허용 거리 -->
+                                <TextBlock Text="클러스터링 허용 거리:" FontWeight="Bold" Margin="0,0,0,5"/>
+                                <Slider x:Name="ClusterToleranceSlider" 
+                                       Style="{StaticResource SettingSliderStyle}"
+                                       Minimum="10" Maximum="1000" 
+                                       Value="100" ValueChanged="ClusterToleranceSlider_ValueChanged"/>
+                                <TextBlock x:Name="ClusterToleranceText" 
+                                          Text="100 미터" FontWeight="Bold" 
+                                          HorizontalAlignment="Center" Margin="0,5,0,15"/>
+
+                                <!-- 최소 클러스터 크기 -->
+                                <TextBlock Text="최소 클러스터 크기:" FontWeight="Bold" Margin="0,0,0,5"/>
+                                <Slider x:Name="MinClusterSizeSlider" 
+                                       Style="{StaticResource SettingSliderStyle}"
+                                       Minimum="2" Maximum="20" 
+                                       Value="3" ValueChanged="MinClusterSizeSlider_ValueChanged"/>
+                                <TextBlock x:Name="MinClusterSizeText" 
+                                          Text="3 개" FontWeight="Bold" 
+                                          HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- 성능 탭 -->
+            <TabItem Header="⚡ 성능">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10">
+                    <StackPanel>
+                        
+                        <!-- 렌더링 성능 -->
+                        <GroupBox Header="렌더링 성능" Style="{StaticResource SettingGroupBoxStyle}">
+                            <StackPanel>
+                                <!-- 최대 렌더링 개수 -->
+                                <TextBlock Text="최대 렌더링 개수:" FontWeight="Bold" Margin="0,0,0,5"/>
+                                <TextBlock Text="한 번에 렌더링할 수 있는 최대 오류 개수를 설정합니다." 
+                                          FontSize="12" Foreground="#666" Margin="0,0,0,10"/>
+                                <Slider x:Name="MaxRenderCountSlider" 
+                                       Style="{StaticResource SettingSliderStyle}"
+                                       Minimum="100" Maximum="50000" 
+                                       Value="10000" ValueChanged="MaxRenderCountSlider_ValueChanged"/>
+                                <TextBlock x:Name="MaxRenderCountText" 
+                                          Text="10,000 개" FontWeight="Bold" 
+                                          HorizontalAlignment="Center" Margin="0,5,0,15"/>
+
+                                <!-- 프로그레시브 렌더링 -->
+                                <CheckBox x:Name="EnableProgressiveRenderingCheckBox" 
+                                         Content="프로그레시브 렌더링 활성화" 
+                                         FontWeight="Bold" Margin="0,0,0,5"
+                                         IsChecked="True"/>
+                                <TextBlock Text="대용량 데이터를 점진적으로 렌더링하여 UI 응답성을 향상시킵니다." 
+                                          FontSize="12" Foreground="#666" Margin="0,0,0,0"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- UI 설정 탭 -->
+            <TabItem Header="🖥️ UI 설정">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10">
+                    <StackPanel>
+                        
+                        <!-- 사용자 인터페이스 -->
+                        <GroupBox Header="사용자 인터페이스" Style="{StaticResource SettingGroupBoxStyle}">
+                            <StackPanel>
+                                <!-- 툴팁 표시 -->
+                                <CheckBox x:Name="ShowTooltipsCheckBox" 
+                                         Content="툴팁 표시" 
+                                         FontWeight="Bold" Margin="0,0,0,5"
+                                         IsChecked="True"/>
+                                <TextBlock Text="버튼과 컨트롤에 도움말 툴팁을 표시합니다." 
+                                          FontSize="12" Foreground="#666" Margin="0,0,0,15"/>
+
+                                <!-- 키보드 단축키 -->
+                                <CheckBox x:Name="EnableKeyboardShortcutsCheckBox" 
+                                         Content="키보드 단축키 활성화" 
+                                         FontWeight="Bold" Margin="0,0,0,5"
+                                         IsChecked="True"/>
+                                <TextBlock Text="키보드 단축키를 사용하여 빠른 조작을 가능하게 합니다." 
+                                          FontSize="12" Foreground="#666" Margin="0,0,0,15"/>
+
+                                <!-- 언어 설정 -->
+                                <TextBlock Text="언어 설정:" FontWeight="Bold" Margin="0,0,0,5"/>
+                                <ComboBox x:Name="LanguageComboBox" Margin="0,0,0,5">
+                                    <ComboBoxItem Content="한국어 (ko-KR)" Tag="ko-KR" IsSelected="True"/>
+                                    <ComboBoxItem Content="English (en-US)" Tag="en-US"/>
+                                </ComboBox>
+                                <TextBlock Text="애플리케이션의 표시 언어를 선택합니다." 
+                                          FontSize="12" Foreground="#666" Margin="0,0,0,0"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+        </TabControl>
+
+        <!-- 버튼 영역 -->
+        <Grid Grid.Row="2" Margin="0,20,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 기본값 복원 버튼 -->
+            <Button Grid.Column="1" x:Name="RestoreDefaultsButton" Content="🔄 기본값 복원" 
+                    Width="120" Height="35" Margin="5"
+                    Background="#FFF3E0" BorderBrush="#FF9800" BorderThickness="2"
+                    FontWeight="Bold" Click="RestoreDefaultsButton_Click"/>
+
+            <!-- 취소 버튼 -->
+            <Button Grid.Column="2" x:Name="CancelButton" Content="❌ 취소" 
+                    Width="80" Height="35" Margin="5"
+                    Background="#FFCDD2" BorderBrush="#F44336" BorderThickness="2"
+                    FontWeight="Bold" Click="CancelButton_Click"/>
+
+            <!-- 적용 버튼 -->
+            <Button Grid.Column="3" x:Name="ApplyButton" Content="✅ 적용" 
+                    Width="80" Height="35" Margin="5"
+                    Background="#C8E6C9" BorderBrush="#4CAF50" BorderThickness="2"
+                    FontWeight="Bold" Click="ApplyButton_Click"/>
+
+            <!-- 확인 버튼 -->
+            <Button Grid.Column="4" x:Name="OkButton" Content="💾 확인" 
+                    Width="80" Height="35" Margin="5"
+                    Background="#E3F2FD" BorderBrush="#2196F3" BorderThickness="2"
+                    FontWeight="Bold" Click="OkButton_Click"/>
+        </Grid>
+    </Grid>
+</Window>

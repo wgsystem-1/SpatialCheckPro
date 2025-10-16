@@ -1,0 +1,218 @@
+<Window x:Class="SpatialCheckPro.GUI.Views.BulkStatusChangeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="일괄 상태 변경" Height="500" Width="600"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize">
+    
+    <Window.Resources>
+        <!-- 상태별 색상 스타일 -->
+        <Style x:Key="StatusButtonStyle" TargetType="Button">
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Padding" Value="15,8"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        
+        <!-- 진행률 바 스타일 -->
+        <Style x:Key="ProgressBarStyle" TargetType="ProgressBar">
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="Margin" Value="0,5"/>
+            <Setter Property="Background" Value="#E0E0E0"/>
+            <Setter Property="Foreground" Value="#4CAF50"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 제목 -->
+        <TextBlock Grid.Row="0" Text="선택된 오류들의 상태를 일괄 변경합니다" 
+                   FontSize="16" FontWeight="Bold" 
+                   Margin="0,0,0,20" HorizontalAlignment="Center"/>
+
+        <!-- 선택된 오류 정보 -->
+        <Border Grid.Row="1" Background="#F5F5F5" Padding="15" 
+                BorderBrush="#E0E0E0" BorderThickness="1" 
+                CornerRadius="5" Margin="0,0,0,20">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                
+                <TextBlock Grid.Column="0" Text="선택된 오류:" FontWeight="Bold" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" x:Name="SelectedCountText" Text="0개" 
+                          FontSize="14" FontWeight="Bold" 
+                          Foreground="#2196F3" VerticalAlignment="Center" Margin="10,0"/>
+                
+                <TextBlock Grid.Column="2" Text="예상 소요 시간:" FontWeight="Bold" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="3" x:Name="EstimatedTimeText" Text="계산 중..." 
+                          FontSize="14" Foreground="#FF9800" VerticalAlignment="Center" Margin="10,0"/>
+            </Grid>
+        </Border>
+
+        <!-- 상태 선택 -->
+        <GroupBox Grid.Row="2" Header="변경할 상태 선택" Margin="0,0,0,20">
+            <Grid Margin="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- OPEN 상태 -->
+                <Button Grid.Row="0" Grid.Column="0" x:Name="OpenStatusButton"
+                        Content="🔴 열림 (OPEN)" 
+                        Style="{StaticResource StatusButtonStyle}"
+                        Background="#FFCDD2" BorderBrush="#F44336"
+                        Click="StatusButton_Click" Tag="OPEN"/>
+
+                <!-- FIXED 상태 -->
+                <Button Grid.Row="0" Grid.Column="1" x:Name="FixedStatusButton"
+                        Content="✅ 수정됨 (FIXED)" 
+                        Style="{StaticResource StatusButtonStyle}"
+                        Background="#C8E6C9" BorderBrush="#4CAF50"
+                        Click="StatusButton_Click" Tag="FIXED"/>
+
+                <!-- IGNORED 상태 -->
+                <Button Grid.Row="1" Grid.Column="0" x:Name="IgnoredStatusButton"
+                        Content="⚫ 무시됨 (IGNORED)" 
+                        Style="{StaticResource StatusButtonStyle}"
+                        Background="#E0E0E0" BorderBrush="#9E9E9E"
+                        Click="StatusButton_Click" Tag="IGNORED"/>
+
+                <!-- FALSE_POS 상태 -->
+                <Button Grid.Row="1" Grid.Column="1" x:Name="FalsePosStatusButton"
+                        Content="⚠️ 오탐 (FALSE_POS)" 
+                        Style="{StaticResource StatusButtonStyle}"
+                        Background="#FFECB3" BorderBrush="#FF9800"
+                        Click="StatusButton_Click" Tag="FALSE_POS"/>
+            </Grid>
+        </GroupBox>
+
+        <!-- 진행 상황 표시 -->
+        <GroupBox Grid.Row="3" Header="진행 상황" x:Name="ProgressGroupBox" Visibility="Collapsed">
+            <Grid Margin="10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- 전체 진행률 -->
+                <TextBlock Grid.Row="0" x:Name="ProgressText" Text="준비 중..." 
+                          FontSize="14" FontWeight="Bold" Margin="0,0,0,5"/>
+                
+                <ProgressBar Grid.Row="1" x:Name="OverallProgressBar" 
+                            Style="{StaticResource ProgressBarStyle}"
+                            Value="0" Maximum="100"/>
+
+                <!-- 현재 작업 정보 -->
+                <TextBlock Grid.Row="2" x:Name="CurrentTaskText" Text="" 
+                          FontSize="12" Foreground="#666" Margin="0,5,0,10"/>
+
+                <!-- 상세 로그 -->
+                <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" 
+                             MaxHeight="150" Background="White" 
+                             BorderBrush="#E0E0E0" BorderThickness="1">
+                    <TextBlock x:Name="LogTextBlock" FontFamily="Consolas" 
+                              FontSize="11" Padding="10" 
+                              TextWrapping="Wrap"/>
+                </ScrollViewer>
+            </Grid>
+        </GroupBox>
+
+        <!-- 결과 요약 -->
+        <Border Grid.Row="4" x:Name="ResultSummaryBorder" 
+                Background="#E8F5E8" BorderBrush="#4CAF50" BorderThickness="2" 
+                CornerRadius="5" Padding="15" Margin="0,10,0,20" 
+                Visibility="Collapsed">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                
+                <TextBlock Grid.Column="0" Text="✅" FontSize="24" 
+                          VerticalAlignment="Center" Margin="0,0,10,0"/>
+                
+                <StackPanel Grid.Column="1">
+                    <TextBlock x:Name="ResultSummaryText" 
+                              Text="일괄 상태 변경이 완료되었습니다!" 
+                              FontSize="14" FontWeight="Bold" 
+                              Foreground="#2E7D32"/>
+                    <TextBlock x:Name="ResultDetailsText" 
+                              Text="성공: 0개, 실패: 0개, 소요 시간: 0초" 
+                              FontSize="12" Foreground="#388E3C" 
+                              Margin="0,5,0,0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 버튼 영역 -->
+        <Grid Grid.Row="5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 취소 버튼 -->
+            <Button Grid.Column="1" x:Name="CancelButton" Content="❌ 취소" 
+                    Width="100" Height="35" Margin="5"
+                    Background="#FFCDD2" BorderBrush="#F44336" BorderThickness="2"
+                    FontWeight="Bold" Click="CancelButton_Click"/>
+
+            <!-- 시작 버튼 -->
+            <Button Grid.Column="2" x:Name="StartButton" Content="🚀 시작" 
+                    Width="100" Height="35" Margin="5"
+                    Background="#C8E6C9" BorderBrush="#4CAF50" BorderThickness="2"
+                    FontWeight="Bold" Click="StartButton_Click" IsEnabled="False"/>
+
+            <!-- 닫기 버튼 -->
+            <Button Grid.Column="3" x:Name="CloseButton" Content="✅ 닫기" 
+                    Width="100" Height="35" Margin="5"
+                    Background="#E3F2FD" BorderBrush="#2196F3" BorderThickness="2"
+                    FontWeight="Bold" Click="CloseButton_Click" Visibility="Collapsed"/>
+        </Grid>
+
+        <!-- 상태 표시줄 -->
+        <Border Grid.Row="6" Background="#F5F5F5" Padding="10,5" 
+                BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="-20,10,-20,-20">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <TextBlock Grid.Column="0" x:Name="StatusText" Text="상태를 선택하고 시작 버튼을 클릭하세요" 
+                          VerticalAlignment="Center" FontSize="12"/>
+                
+                <TextBlock Grid.Column="1" x:Name="ElapsedTimeText" Text="" 
+                          VerticalAlignment="Center" FontSize="12" 
+                          FontWeight="Bold" Foreground="#666"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

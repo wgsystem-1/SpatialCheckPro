@@ -1,0 +1,34 @@
+[2025-10-16 10:29:41.861] [Information] [SpatialCheckPro.Services.CentralizedResourceMonitor] 중앙집중식 리소스 모니터 초기화 완료
+[2025-10-16 10:29:41.865] [Debug] [SpatialCheckPro.Services.CentralizedResourceMonitor] 리소스 정보 새로고침 요청: AppStartupWarmup
+[2025-10-16 10:29:41.866] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 새로운 리소스 분석 시작
+[2025-10-16 10:29:41.877] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 병렬도 계산: CPU 20개, 사용가능메모리 47.293670654296875GB, 총메모리 63.37975311279297GB → 권장 7개
+[2025-10-16 10:29:41.877] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 병렬도 계산: CPU 20개, 사용가능메모리 47.29429244995117GB, 총메모리 63.37975311279297GB → 권장 7개
+[2025-10-16 10:29:41.880] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 배치 크기 계산: 메모리 47.29309844970703GB, CPU 20개 → 권장 10000개
+[2025-10-16 10:29:41.882] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 배치 크기 계산: 메모리 47.29248809814453GB, CPU 20개 → 권장 10000개
+[2025-10-16 10:29:41.882] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 최대 메모리 사용량 계산: 총 63.37975311279297GB, 사용가능 47.29315948486328GB → 권장 33899MB
+[2025-10-16 10:29:41.883] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 시스템 리소스 분석 완료: CPU 20개, RAM 63.37975311279297GB, 권장 병렬도 7
+[2025-10-16 10:29:41.883] [Debug] [SpatialCheckPro.Services.CentralizedResourceMonitor] 주기적 리소스 분석 완료: CPU 20개, RAM 63.37975311279297GB
+[2025-10-16 10:29:41.884] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 최대 메모리 사용량 계산: 총 63.37975311279297GB, 사용가능 47.29433822631836GB → 권장 33900MB
+[2025-10-16 10:29:41.884] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 시스템 리소스 분석 완료: CPU 20개, RAM 63.37975311279297GB, 권장 병렬도 7
+[2025-10-16 10:29:41.886] [Information] [SpatialCheckPro.GUI.App] 애플리케이션 시작됨
+[2025-10-16 10:29:41.886] [Information] [SpatialCheckPro.GUI.App] 로그 시스템 정상 작동 확인
+[2025-10-16 10:29:41.890] [Information] [SpatialCheckPro.GUI.Services.GdalInitializationService] GDAL 3.11.3 초기화 시작...
+[2025-10-16 10:29:41.891] [Information] [SpatialCheckPro.GUI.Services.GdalInitializationService] PROJ 데이터베이스 발견: G:\SpatialCheckPro\SpatialCheckPro.GUI\bin\Release\net8.0-windows\gdal\share\proj.db
+[2025-10-16 10:29:41.902] [Warning] [SpatialCheckPro.GUI.Services.GdalInitializationService] PostgreSQL PROJ 경로 발견: C:\Program Files\PostgreSQL\15\share\contrib\postgis-3.5\proj
+[2025-10-16 10:29:41.902] [Information] [SpatialCheckPro.GUI.Services.GdalInitializationService] PROJ 라이브러리 경로 설정 완료: G:\SpatialCheckPro\SpatialCheckPro.GUI\bin\Release\net8.0-windows\gdal\share
+[2025-10-16 10:29:41.902] [Debug] [SpatialCheckPro.GUI.Services.GdalInitializationService] 현재 PATH: G:\SpatialCheckPro\SpatialCheckPro.GUI\bin\Release\net8.0-windows\gdal\share;G:\SpatialCheckPro\SpatialCheckPro.GUI\bin\Release\net8.0-windows\gdal\share;G:\SpatialCheckPro\SpatialCheckPro.GUI\bin\Release\net8.0-windows\;C:\Program Files (x86)\NAT Service;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Program Files\Git\cmd;c:\Program Files\QGISQT6 3.42.1\bin;C:\Program Files\Pandoc\;C:\Program Files\nodejs\;C:\Program Files\PowerShell\7\;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\gdal\bin;C:\Users\niceg\AppData\Local\Programs\Python\Python312;C:\Users\niceg\AppData\Local\Programs\Python\Python312\Scripts;C:\Users\niceg\AppData\Local\Programs\Python\Launcher\;C:\Users\niceg\AppData\Local\Microsoft\WindowsApps;C:\Program Files\JetBrains\PyCharm Community Edition 2024.3.2\bin;C:\Users\niceg\AppData\Local\Programs\cursor\resources\app\bin;C:\Users\niceg\.dotnet\tools;C:\Program Files\JetBrains\PyCharm 2025.1.1\bin;C:\Users\niceg\AppData\Local\Programs\Kiro\bin;C:\Users\niceg\AppData\Roaming\npm;C:\WiX311;C:\Program Files\QGIS 3.40.10\bin;C:\Program Files\QGIS 3.40.10\bin;C:\Program Files\QGIS 3.40.10\bin;C:\Users\niceg\.dotnet\tools
+[2025-10-16 10:29:41.902] [Debug] [SpatialCheckPro.GUI.Services.GdalInitializationService] PROJ_LIB: G:\SpatialCheckPro\SpatialCheckPro.GUI\bin\Release\net8.0-windows\gdal\share
+[2025-10-16 10:29:41.903] [Debug] [SpatialCheckPro.GUI.Services.GdalInitializationService] 기본 디렉토리: G:\SpatialCheckPro\SpatialCheckPro.GUI\bin\Release\net8.0-windows\
+[2025-10-16 10:29:41.903] [Debug] [SpatialCheckPro.GUI.Services.GdalInitializationService] GDAL_DATA 경로 설정: G:\SpatialCheckPro\SpatialCheckPro.GUI\bin\Release\net8.0-windows\gdal\data
+[2025-10-16 10:29:41.903] [Debug] [SpatialCheckPro.GUI.Services.GdalInitializationService] 환경 변수 설정 완료
+[2025-10-16 10:29:41.912] [Information] [SpatialCheckPro.GUI.Services.GdalInitializationService] GDAL/OGR 초기화 성공
+[2025-10-16 10:29:41.916] [Information] [SpatialCheckPro.GUI.Services.GdalInitializationService] 사용 가능한 GDAL 드라이버 수: 204
+[2025-10-16 10:29:41.917] [Information] [SpatialCheckPro.GUI.Services.GdalInitializationService] OpenFileGDB 드라이버가 사용 가능합니다.
+[2025-10-16 10:29:41.917] [Information] [SpatialCheckPro.GUI.Services.GdalInitializationService] GDAL 초기화 완료
+[2025-10-16 10:29:41.918] [Information] [SpatialCheckPro.GUI.App] GDAL 초기화 완료 (백그라운드)
+[2025-10-16 10:29:42.008] [Information] [SpatialCheckPro.Services.MemoryOptimizationService] 메모리 최적화 서비스 초기화 완료 (자동 GC 비활성화됨)
+[2025-10-16 10:29:42.008] [Information] [SpatialCheckPro.Services.ParallelProcessingManager] 병렬 처리 관리자 초기화: 최대 병렬도 20, 동적 조정 True
+[2025-10-16 10:29:42.012] [Information] [SpatialCheckPro.Services.ParallelProcessingManager] 병렬도 동적 조정: 7 → 7 (부하: Low)
+[2025-10-16 10:30:50.307] [Information] [SpatialCheckPro.Processors.RelationCheckProcessor] RelationCheckProcessor 리소스 정리 완료
+[2025-10-16 10:30:50.309] [Information] [SpatialCheckPro.Services.DataSourcePool] DataSourcePool 리소스 정리 완료
+[2025-10-16 10:30:50.309] [Information] [SpatialCheckPro.Services.CentralizedResourceMonitor] 중앙집중식 리소스 모니터 종료

@@ -1,0 +1,801 @@
+[2025-10-13 01:27:11.278] [Information] [SpatialCheckPro.GUI.App] 애플리케이션 시작됨
+[2025-10-13 01:27:11.279] [Information] [SpatialCheckPro.GUI.App] 로그 시스템 정상 작동 확인
+[2025-10-13 01:27:11.284] [Information] [SpatialCheckPro.GUI.Services.GdalInitializationService] GDAL 3.11.3 초기화 시작...
+[2025-10-13 01:27:11.287] [Information] [SpatialCheckPro.GUI.Services.GdalInitializationService] PROJ 데이터베이스 발견: G:\SpatialCheckPro\SpatialCheckPro.GUI\bin\Debug\net8.0-windows\gdal\share\proj.db
+[2025-10-13 01:27:11.298] [Warning] [SpatialCheckPro.GUI.Services.GdalInitializationService] PostgreSQL PROJ 경로 발견: C:\Program Files\PostgreSQL\15\share\contrib\postgis-3.5\proj
+[2025-10-13 01:27:11.298] [Information] [SpatialCheckPro.GUI.Services.GdalInitializationService] PROJ 라이브러리 경로 설정 완료: G:\SpatialCheckPro\SpatialCheckPro.GUI\bin\Debug\net8.0-windows\gdal\share
+[2025-10-13 01:27:11.298] [Debug] [SpatialCheckPro.GUI.Services.GdalInitializationService] 현재 PATH: G:\SpatialCheckPro\SpatialCheckPro.GUI\bin\Debug\net8.0-windows\gdal\share;G:\SpatialCheckPro\SpatialCheckPro.GUI\bin\Debug\net8.0-windows\gdal\share;G:\SpatialCheckPro\SpatialCheckPro.GUI\bin\Debug\net8.0-windows\;C:\Program Files (x86)\NAT Service;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Program Files\Git\cmd;c:\Program Files\QGISQT6 3.42.1\bin;C:\Program Files\Pandoc\;C:\Program Files\nodejs\;C:\Program Files\PowerShell\7\;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\gdal\bin;C:\Program Files\PowerShell\7;C:\Program Files (x86)\NAT Service;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Program Files\Git\cmd;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;c:\Program Files\QGISQT6 3.42.1\bin;C:\Program Files\PowerShell\7\;C:\Program Files\Pandoc\;C:\Program Files\nodejs\;C:\Users\niceg\AppData\Local\Programs\Python\Python312;C:\Users\niceg\AppData\Local\Programs\Python\Python312\Scripts;C:\Users\niceg\AppData\Local\Programs\Python\Launcher\;C:\Users\niceg\AppData\Local\Microsoft\WindowsApps;C:\Program Files\JetBrains\PyCharm Community Edition 2024.3.2\bin;C:\Users\niceg\AppData\Local\Programs\cursor\resources\app\bin;C:\Users\niceg\.dotnet\tools;C:\Program Files\JetBrains\PyCharm 2025.1.1\bin;C:\Users\niceg\AppData\Local\Programs\Kiro\bin;C:\Users\niceg\AppData\Roaming\npm;C:\WiX311;C:\Program Files\QGIS 3.40.10\bin;C:\Program Files\QGIS 3.40.10\bin;C:\Program Files\QGIS 3.40.10\bin;C:\Users\niceg\.dotnet\tools
+[2025-10-13 01:27:11.298] [Debug] [SpatialCheckPro.GUI.Services.GdalInitializationService] PROJ_LIB: G:\SpatialCheckPro\SpatialCheckPro.GUI\bin\Debug\net8.0-windows\gdal\share
+[2025-10-13 01:27:11.299] [Debug] [SpatialCheckPro.GUI.Services.GdalInitializationService] 기본 디렉토리: G:\SpatialCheckPro\SpatialCheckPro.GUI\bin\Debug\net8.0-windows\
+[2025-10-13 01:27:11.299] [Debug] [SpatialCheckPro.GUI.Services.GdalInitializationService] GDAL_DATA 경로 설정: G:\SpatialCheckPro\SpatialCheckPro.GUI\bin\Debug\net8.0-windows\gdal\data
+[2025-10-13 01:27:11.299] [Debug] [SpatialCheckPro.GUI.Services.GdalInitializationService] 환경 변수 설정 완료
+[2025-10-13 01:27:11.308] [Information] [SpatialCheckPro.GUI.Services.GdalInitializationService] GDAL/OGR 초기화 성공
+[2025-10-13 01:27:11.310] [Information] [SpatialCheckPro.GUI.Services.GdalInitializationService] 사용 가능한 GDAL 드라이버 수: 204
+[2025-10-13 01:27:11.311] [Information] [SpatialCheckPro.GUI.Services.GdalInitializationService] OpenFileGDB 드라이버가 사용 가능합니다.
+[2025-10-13 01:27:11.311] [Information] [SpatialCheckPro.GUI.Services.GdalInitializationService] GDAL 초기화 완료
+[2025-10-13 01:27:11.312] [Information] [SpatialCheckPro.GUI.App] GDAL 초기화 완료 (백그라운드)
+[2025-10-13 01:27:11.405] [Information] [SpatialCheckPro.GUI.Services.GdalDataAnalysisService] GDAL 사용 가능. 드라이버 수: 77
+[2025-10-13 01:27:11.406] [Information] [SpatialCheckPro.Services.CentralizedResourceMonitor] 중앙집중식 리소스 모니터 초기화 완료
+[2025-10-13 01:27:11.407] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 새로운 리소스 분석 시작
+[2025-10-13 01:27:11.407] [Information] [SpatialCheckPro.Services.ParallelProcessingManager] 병렬 처리 관리자 초기화: 최대 병렬도 20, 동적 조정 True
+[2025-10-13 01:27:11.407] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 새로운 리소스 분석 시작
+[2025-10-13 01:27:11.410] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 새로운 리소스 분석 시작
+[2025-10-13 01:27:11.427] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 병렬도 계산: CPU 20개, 사용가능메모리 40.611053466796875GB, 총메모리 63.37975311279297GB → 권장 7개
+[2025-10-13 01:27:11.427] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 병렬도 계산: CPU 20개, 사용가능메모리 40.6096305847168GB, 총메모리 63.37975311279297GB → 권장 7개
+[2025-10-13 01:27:11.427] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 병렬도 계산: CPU 20개, 사용가능메모리 40.61033630371094GB, 총메모리 63.37975311279297GB → 권장 7개
+[2025-10-13 01:27:11.433] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 배치 크기 계산: 메모리 40.609222412109375GB, CPU 20개 → 권장 10000개
+[2025-10-13 01:27:11.433] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 배치 크기 계산: 메모리 40.61134719848633GB, CPU 20개 → 권장 10000개
+[2025-10-13 01:27:11.433] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 배치 크기 계산: 메모리 40.61063003540039GB, CPU 20개 → 권장 10000개
+[2025-10-13 01:27:11.439] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 최대 메모리 사용량 계산: 총 63.37975311279297GB, 사용가능 40.60951614379883GB → 권장 29108MB
+[2025-10-13 01:27:11.439] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 최대 메모리 사용량 계산: 총 63.37975311279297GB, 사용가능 40.610843658447266GB → 권장 29109MB
+[2025-10-13 01:27:11.439] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 최대 메모리 사용량 계산: 총 63.37975311279297GB, 사용가능 40.61155700683594GB → 권장 29110MB
+[2025-10-13 01:27:11.439] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 시스템 리소스 분석 완료: CPU 20개, RAM 63.37975311279297GB, 권장 병렬도 7
+[2025-10-13 01:27:11.439] [Debug] [SpatialCheckPro.Services.CentralizedResourceMonitor] 리소스 정보 새로고침 요청: AdvancedParallelProcessingManager_Init
+[2025-10-13 01:27:11.439] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 시스템 리소스 분석 완료: CPU 20개, RAM 63.37975311279297GB, 권장 병렬도 7
+[2025-10-13 01:27:11.440] [Debug] [SpatialCheckPro.Services.CentralizedResourceMonitor] 리소스 정보 새로고침 요청: ParallelProcessingManager
+[2025-10-13 01:27:11.440] [Debug] [SpatialCheckPro.Services.CentralizedResourceMonitor] 주기적 리소스 분석 완료: CPU 20개, RAM 63.37975311279297GB
+[2025-10-13 01:27:11.441] [Information] [SpatialCheckPro.Services.AdvancedParallelProcessingManager] 고급 병렬 처리 관리자 초기화: 최대 병렬도 20, 동적 조정 True
+[2025-10-13 01:27:11.442] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 시스템 리소스 기반 최적화 설정 적용 시작
+[2025-10-13 01:27:11.442] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 정상 부하 시스템 - 병렬 처리 활성화: 병렬도 7
+[2025-10-13 01:27:11.442] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 최적화 설정 적용 완료: 병렬처리=True, 병렬도=7, 배치크기=10000, 메모리제한=29109MB
+[2025-10-13 01:27:11.444] [Information] [SpatialCheckPro.Services.ParallelProcessingManager] 병렬도 동적 조정: 7 → 7 (부하: Low)
+[2025-10-13 01:27:11.445] [Information] [SpatialCheckPro.Services.AdvancedParallelProcessingManager] 병렬도 동적 조정: 7 → 7 (부하: Low)
+[2025-10-13 01:27:42.825] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 검수 시작: G:\sample\제주도_갱신작업1\c_33611047.gdb
+[2025-10-13 01:27:42.826] [Debug] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 모니터링 시작: 전체 검수 - 검수 프로세스 전체 실행
+[2025-10-13 01:27:42.826] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] QC_ERRORS 시스템 초기화 시작: G:\sample\제주도_갱신작업1\c_33611047.gdb
+[2025-10-13 01:27:42.827] [Information] [SpatialCheckPro.Services.QcErrorDataService] QC_ERRORS 데이터베이스 초기화: G:\sample\제주도_갱신작업1\c_33611047.gdb
+[2025-10-13 01:27:42.828] [Information] [SpatialCheckPro.Services.FgdbSchemaService] QC_ERRORS 스키마 생성 시작: G:\sample\제주도_갱신작업1\c_33611047.gdb
+[2025-10-13 01:27:42.828] [Debug] [SpatialCheckPro.Services.FgdbSchemaService] GDAL 초기화 상태 확인 중...
+[2025-10-13 01:27:42.828] [Debug] [SpatialCheckPro.Services.FgdbSchemaService] GDAL 초기화 상태 정상. 등록된 드라이버 수: 77
+[2025-10-13 01:27:42.829] [Debug] [SpatialCheckPro.Services.FgdbSchemaService] GDAL FileGDB 드라이버 초기화 중...
+[2025-10-13 01:27:42.829] [Debug] [SpatialCheckPro.Services.FgdbSchemaService] OpenFileGDB 드라이버 사용
+[2025-10-13 01:27:42.829] [Debug] [SpatialCheckPro.Services.FgdbSchemaService] FileGDB 드라이버 초기화 성공
+[2025-10-13 01:27:42.829] [Debug] [SpatialCheckPro.Services.FgdbSchemaService] PROJ 환경 설정 완료: G:\SpatialCheckPro\SpatialCheckPro.GUI\bin\Debug\net8.0-windows\gdal\share
+[2025-10-13 01:27:42.829] [Debug] [SpatialCheckPro.Services.FgdbSchemaService] 기존 FileGDB 열기: G:\sample\제주도_갱신작업1\c_33611047.gdb
+[2025-10-13 01:27:42.838] [Debug] [SpatialCheckPro.Services.FgdbSchemaService] FileGDB 데이터소스 준비 완료
+[2025-10-13 01:27:42.838] [Debug] [SpatialCheckPro.Services.FgdbSchemaService] 공간 참조 시스템 생성 중 (EPSG:5179)...
+[2025-10-13 01:27:42.838] [Debug] [SpatialCheckPro.Services.FgdbSchemaService] QC_Runs 테이블 생성 중...
+[2025-10-13 01:27:42.839] [Information] [SpatialCheckPro.Services.FgdbSchemaService] QC_Runs 테이블이 이미 존재합니다
+[2025-10-13 01:27:42.839] [Debug] [SpatialCheckPro.Services.FgdbSchemaService] QC_Errors Feature Classes 생성 중...
+[2025-10-13 01:27:42.840] [Warning] [SpatialCheckPro.Services.FgdbSchemaService] QC_Errors_Point Feature Class가 이미 존재합니다. 스키마 업데이트를 위해 삭제 후 재생성합니다.
+[2025-10-13 01:27:42.871] [Information] [SpatialCheckPro.Services.FgdbSchemaService] QC_Errors_Point Feature Class 삭제 성공
+[2025-10-13 01:27:42.871] [Information] [SpatialCheckPro.Services.FgdbSchemaService] QC_Errors_Point Feature Class 생성 중...
+[2025-10-13 01:27:42.904] [Warning] [SpatialCheckPro.Services.FgdbSchemaService] QC_Errors_Line Feature Class가 이미 존재합니다. 스키마 업데이트를 위해 삭제 후 재생성합니다.
+[2025-10-13 01:27:42.937] [Information] [SpatialCheckPro.Services.FgdbSchemaService] QC_Errors_Line Feature Class 삭제 성공
+[2025-10-13 01:27:42.937] [Information] [SpatialCheckPro.Services.FgdbSchemaService] QC_Errors_Line Feature Class 생성 중...
+[2025-10-13 01:27:42.962] [Warning] [SpatialCheckPro.Services.FgdbSchemaService] QC_Errors_Polygon Feature Class가 이미 존재합니다. 스키마 업데이트를 위해 삭제 후 재생성합니다.
+[2025-10-13 01:27:43.004] [Information] [SpatialCheckPro.Services.FgdbSchemaService] QC_Errors_Polygon Feature Class 삭제 성공
+[2025-10-13 01:27:43.005] [Information] [SpatialCheckPro.Services.FgdbSchemaService] QC_Errors_Polygon Feature Class 생성 중...
+[2025-10-13 01:27:43.030] [Debug] [SpatialCheckPro.Services.FgdbSchemaService] QC_Errors_NoGeom 테이블 생성 중...
+[2025-10-13 01:27:43.031] [Warning] [SpatialCheckPro.Services.FgdbSchemaService] QC_Errors_NoGeom 테이블이 이미 존재합니다. 스키마 업데이트를 위해 삭제 후 재생성합니다.
+[2025-10-13 01:27:43.066] [Information] [SpatialCheckPro.Services.FgdbSchemaService] QC_Errors_NoGeom 테이블 삭제 성공
+[2025-10-13 01:27:43.066] [Information] [SpatialCheckPro.Services.FgdbSchemaService] QC_Errors_NoGeom 테이블 생성 중...
+[2025-10-13 01:27:43.091] [Debug] [SpatialCheckPro.Services.FgdbSchemaService] 인덱스 생성 중...
+[2025-10-13 01:27:43.091] [Information] [SpatialCheckPro.Services.FgdbSchemaService] 인덱스 생성 중...
+[2025-10-13 01:27:43.091] [Information] [SpatialCheckPro.Services.FgdbSchemaService] 인덱스 생성 완료 (Status, Severity, RuleId, ErrCode, RunID, SourceOID)
+[2025-10-13 01:27:43.233] [Information] [SpatialCheckPro.Services.FgdbSchemaService] QC_ERRORS 스키마 생성 완료 - 모든 테이블과 인덱스가 성공적으로 생성되었습니다
+[2025-10-13 01:27:43.234] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] QC_ERRORS 시스템 초기화 성공
+[2025-10-13 01:27:43.235] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 진행률 업데이트: 0단계 FileGDB 완전성 검수 - 전체 0.0%, 단계 0.0% - FileGDB 사전 점검을 시작합니다...
+[2025-10-13 01:27:43.237] [Information] [SpatialCheckPro.Services.DataSourcePool] 새 DataSource 생성: G:\sample\제주도_갱신작업1\c_33611047.gdb
+[2025-10-13 01:27:43.268] [Information] [SpatialCheckPro.Services.DataSourcePool] DataSource 풀에 추가: G:\sample\제주도_갱신작업1\c_33611047.gdb, 풀 크기: 1
+[2025-10-13 01:27:43.269] [Debug] [SpatialCheckPro.Services.DataSourcePool] DataSource 반환: G:\sample\제주도_갱신작업1\c_33611047.gdb, 참조 카운트: 0
+[2025-10-13 01:27:43.270] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 진행률 업데이트: 0단계 FileGDB 완전성 검수 - 전체 20.0%, 단계 100.0% - FileGDB 완전성 검수 완료
+[2025-10-13 01:27:43.270] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] === 순차 처리 모드로 실행 ===
+[2025-10-13 01:27:43.271] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 진행률 업데이트: 1단계 테이블 검수 - 전체 0.0%, 단계 0.0% - 테이블 검수를 시작합니다...
+[2025-10-13 01:27:43.271] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 1단계: 테이블 검수 시작
+[2025-10-13 01:27:43.272] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 테이블 설정 파일: G:\SpatialCheckPro\SpatialCheckPro.GUI\bin\Debug\net8.0-windows\Config\1_table_check.csv
+[2025-10-13 01:27:43.272] [Debug] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 모니터링 시작: 테이블 검수 - 1단계 테이블 검수 실행
+[2025-10-13 01:27:43.273] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 1단계 테이블 검수 시작: G:\SpatialCheckPro\SpatialCheckPro.GUI\bin\Debug\net8.0-windows\Config\1_table_check.csv
+[2025-10-13 01:27:43.291] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 테이블 검수 대상: 52개
+[2025-10-13 01:27:43.292] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 고도화된 테이블 검수 시작: G:\sample\제주도_갱신작업1\c_33611047.gdb, 설정 테이블 수: 52
+[2025-10-13 01:27:43.312] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] GDB 레이어 수: 53
+[2025-10-13 01:27:43.313] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_FCLTY_ZONE_BNDRY - POLYGON (9개)
+[2025-10-13 01:27:43.313] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_FARM - POLYGON (0개)
+[2025-10-13 01:27:43.313] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_LNRFC - LINESTRING (115개)
+[2025-10-13 01:27:43.313] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_LNAFC - LINESTRING (0개)
+[2025-10-13 01:27:43.314] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_RLROAD_BNDRY - POLYGON (0개)
+[2025-10-13 01:27:43.314] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_ARRFC - POLYGON (107개)
+[2025-10-13 01:27:43.314] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_FERDK - POINT (0개)
+[2025-10-13 01:27:43.314] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_BCYCL_CTLN - LINESTRING (4개)
+[2025-10-13 01:27:43.314] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_ARHFC - POLYGON (0개)
+[2025-10-13 01:27:43.315] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_RODWAY_BNDRY - POLYGON (1147개)
+[2025-10-13 01:27:43.315] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_FERCS - LINESTRING (0개)
+[2025-10-13 01:27:43.315] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_RODWAY_BNDRYLN - LINESTRING (572개)
+[2025-10-13 01:27:43.315] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_RODWAY_CTLN - LINESTRING (2131개)
+[2025-10-13 01:27:43.315] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_PTAFC - POINT (0개)
+[2025-10-13 01:27:43.316] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_PTHFC - POINT (0개)
+[2025-10-13 01:27:43.316] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_PTRFC - POINT (13개)
+[2025-10-13 01:27:43.316] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_FTPTH_BNDRY - POLYGON (86개)
+[2025-10-13 01:27:43.316] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_FTPTH_CTLN - LINESTRING (86개)
+[2025-10-13 01:27:43.317] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_RLROAD_CTLN - LINESTRING (0개)
+[2025-10-13 01:27:43.317] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_ARWFC - POLYGON (0개)
+[2025-10-13 01:27:43.317] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_PTWFC - POINT (0개)
+[2025-10-13 01:27:43.317] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_ARAFC - POLYGON (0개)
+[2025-10-13 01:27:43.317] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_BULD - POLYGON (2669개)
+[2025-10-13 01:27:43.318] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_BULD_ADCLS - LINESTRING (127개)
+[2025-10-13 01:27:43.318] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_RFT_FCLTY - POLYGON (0개)
+[2025-10-13 01:27:43.318] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_ARSFC - POLYGON (12개)
+[2025-10-13 01:27:43.318] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_LNSFC - LINESTRING (156개)
+[2025-10-13 01:27:43.318] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_BULD_CTPT - POINT (2648개)
+[2025-10-13 01:27:43.319] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_PTSFC - POINT (906개)
+[2025-10-13 01:27:43.319] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_LNPGR - LINESTRING (141개)
+[2025-10-13 01:27:43.319] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_ARPGR - POLYGON (0개)
+[2025-10-13 01:27:43.319] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_ISOBATH - LINESTRING (0개)
+[2025-10-13 01:27:43.319] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_SHORLINE - LINESTRING (0개)
+[2025-10-13 01:27:43.320] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_CTRLN - LINESTRING (69개)
+[2025-10-13 01:27:43.320] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_CTRLN_5k - LINESTRING (223개)
+[2025-10-13 01:27:43.320] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_CTRLPNT - POINT (1개)
+[2025-10-13 01:27:43.320] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_ALPT - POINT (483개)
+[2025-10-13 01:27:43.321] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_PTPGR - POINT (0개)
+[2025-10-13 01:27:43.321] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_PTWTCORS_FCLTY - POINT (2개)
+[2025-10-13 01:27:43.321] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_RIVER_CTLN - LINESTRING (34개)
+[2025-10-13 01:27:43.321] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_LKMH - POLYGON (14개)
+[2025-10-13 01:27:43.321] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_LNWTCORS_FCLTY - LINESTRING (76개)
+[2025-10-13 01:27:43.322] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_RIVER_RT - LINESTRING (2개)
+[2025-10-13 01:27:43.322] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_ARWTCORS_FCLTY - POLYGON (0개)
+[2025-10-13 01:27:43.322] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_RIVER_BNDRY - POLYGON (6개)
+[2025-10-13 01:27:43.322] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_RIVER_BT - POLYGON (3개)
+[2025-10-13 01:27:43.322] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_PTVGT_FCLTY - POINT (0개)
+[2025-10-13 01:27:43.323] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 피처클래스 발견: TN_FMLND_BNDRY - POLYGON (895개)
+[2025-10-13 01:27:43.323] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 검수 제외 레이어: QC_Runs
+[2025-10-13 01:27:43.323] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 검수 제외 레이어: QC_Errors_Point
+[2025-10-13 01:27:43.323] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 검수 제외 레이어: QC_Errors_Line
+[2025-10-13 01:27:43.323] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 검수 제외 레이어: QC_Errors_Polygon
+[2025-10-13 01:27:43.324] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 검수 제외 레이어: QC_Errors_NoGeom
+[2025-10-13 01:27:43.325] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 📋 GDB에서 발견된 피처클래스: 48개
+[2025-10-13 01:27:43.325] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_FCLTY_ZONE_BNDRY: POLYGON (9개 피처)
+[2025-10-13 01:27:43.325] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_FARM: POLYGON (0개 피처)
+[2025-10-13 01:27:43.325] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_LNRFC: LINESTRING (115개 피처)
+[2025-10-13 01:27:43.325] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_LNAFC: LINESTRING (0개 피처)
+[2025-10-13 01:27:43.325] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_RLROAD_BNDRY: POLYGON (0개 피처)
+[2025-10-13 01:27:43.326] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_ARRFC: POLYGON (107개 피처)
+[2025-10-13 01:27:43.326] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_FERDK: POINT (0개 피처)
+[2025-10-13 01:27:43.326] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_BCYCL_CTLN: LINESTRING (4개 피처)
+[2025-10-13 01:27:43.326] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_ARHFC: POLYGON (0개 피처)
+[2025-10-13 01:27:43.326] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_RODWAY_BNDRY: POLYGON (1147개 피처)
+[2025-10-13 01:27:43.326] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_FERCS: LINESTRING (0개 피처)
+[2025-10-13 01:27:43.326] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_RODWAY_BNDRYLN: LINESTRING (572개 피처)
+[2025-10-13 01:27:43.326] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_RODWAY_CTLN: LINESTRING (2131개 피처)
+[2025-10-13 01:27:43.326] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_PTAFC: POINT (0개 피처)
+[2025-10-13 01:27:43.326] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_PTHFC: POINT (0개 피처)
+[2025-10-13 01:27:43.327] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_PTRFC: POINT (13개 피처)
+[2025-10-13 01:27:43.327] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_FTPTH_BNDRY: POLYGON (86개 피처)
+[2025-10-13 01:27:43.327] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_FTPTH_CTLN: LINESTRING (86개 피처)
+[2025-10-13 01:27:43.327] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_RLROAD_CTLN: LINESTRING (0개 피처)
+[2025-10-13 01:27:43.327] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_ARWFC: POLYGON (0개 피처)
+[2025-10-13 01:27:43.327] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_PTWFC: POINT (0개 피처)
+[2025-10-13 01:27:43.327] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_ARAFC: POLYGON (0개 피처)
+[2025-10-13 01:27:43.327] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_BULD: POLYGON (2669개 피처)
+[2025-10-13 01:27:43.327] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_BULD_ADCLS: LINESTRING (127개 피처)
+[2025-10-13 01:27:43.327] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_RFT_FCLTY: POLYGON (0개 피처)
+[2025-10-13 01:27:43.327] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_ARSFC: POLYGON (12개 피처)
+[2025-10-13 01:27:43.327] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_LNSFC: LINESTRING (156개 피처)
+[2025-10-13 01:27:43.327] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_BULD_CTPT: POINT (2648개 피처)
+[2025-10-13 01:27:43.328] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_PTSFC: POINT (906개 피처)
+[2025-10-13 01:27:43.328] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_LNPGR: LINESTRING (141개 피처)
+[2025-10-13 01:27:43.328] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_ARPGR: POLYGON (0개 피처)
+[2025-10-13 01:27:43.328] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_ISOBATH: LINESTRING (0개 피처)
+[2025-10-13 01:27:43.328] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_SHORLINE: LINESTRING (0개 피처)
+[2025-10-13 01:27:43.328] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_CTRLN: LINESTRING (69개 피처)
+[2025-10-13 01:27:43.328] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_CTRLN_5k: LINESTRING (223개 피처)
+[2025-10-13 01:27:43.328] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_CTRLPNT: POINT (1개 피처)
+[2025-10-13 01:27:43.328] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_ALPT: POINT (483개 피처)
+[2025-10-13 01:27:43.328] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_PTPGR: POINT (0개 피처)
+[2025-10-13 01:27:43.328] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_PTWTCORS_FCLTY: POINT (2개 피처)
+[2025-10-13 01:27:43.328] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_RIVER_CTLN: LINESTRING (34개 피처)
+[2025-10-13 01:27:43.328] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_LKMH: POLYGON (14개 피처)
+[2025-10-13 01:27:43.328] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_LNWTCORS_FCLTY: LINESTRING (76개 피처)
+[2025-10-13 01:27:43.328] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_RIVER_RT: LINESTRING (2개 피처)
+[2025-10-13 01:27:43.329] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_ARWTCORS_FCLTY: POLYGON (0개 피처)
+[2025-10-13 01:27:43.329] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_RIVER_BNDRY: POLYGON (6개 피처)
+[2025-10-13 01:27:43.329] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_RIVER_BT: POLYGON (3개 피처)
+[2025-10-13 01:27:43.329] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_PTVGT_FCLTY: POINT (0개 피처)
+[2025-10-13 01:27:43.329] [Debug] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_FMLND_BNDRY: POLYGON (895개 피처)
+[2025-10-13 01:27:43.329] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 테이블 검수 병렬 처리 모드로 실행: 52개 테이블
+[2025-10-13 01:27:43.330] [Information] [SpatialCheckPro.Services.ParallelProcessingManager] 테이블 검수 병렬 처리 시작: 52개 항목, 병렬도 7
+[2025-10-13 01:27:43.332] [Warning] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ❌ 테이블 없음: tn_signgu_bndry
+[2025-10-13 01:27:43.332] [Warning] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ❌ 테이블 없음: tn_ctprvn_bndry
+[2025-10-13 01:27:43.332] [Warning] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ❌ 테이블 없음: tn_emd_bndry
+[2025-10-13 01:27:43.332] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_farm -> TN_FARM (0개 피처)
+[2025-10-13 01:27:43.332] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_fclty_zone_bndry -> TN_FCLTY_ZONE_BNDRY (9개 피처)
+[2025-10-13 01:27:43.332] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_rodway_ctln -> TN_RODWAY_CTLN (2131개 피처)
+[2025-10-13 01:27:43.332] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_rodway_bndry -> TN_RODWAY_BNDRY (1147개 피처)
+[2025-10-13 01:27:43.332] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POLYGON', 실제='POLYGON'
+[2025-10-13 01:27:43.332] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POLYGON', 실제='POLYGON'
+[2025-10-13 01:27:43.333] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='LINESTRING', 실제='LINESTRING'
+[2025-10-13 01:27:43.333] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POLYGON', 실제='POLYGON'
+[2025-10-13 01:27:43.333] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_farm
+[2025-10-13 01:27:43.333] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_fclty_zone_bndry
+[2025-10-13 01:27:43.333] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_rodway_ctln
+[2025-10-13 01:27:43.333] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_rodway_bndry
+[2025-10-13 01:27:43.344] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_rodway_bndryln -> TN_RODWAY_BNDRYLN (572개 피처)
+[2025-10-13 01:27:43.344] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='LINESTRING', 실제='LINESTRING'
+[2025-10-13 01:27:43.344] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_rodway_bndryln
+[2025-10-13 01:27:43.344] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_ftpth_ctln -> TN_FTPTH_CTLN (86개 피처)
+[2025-10-13 01:27:43.344] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_ftpth_bndry -> TN_FTPTH_BNDRY (86개 피처)
+[2025-10-13 01:27:43.344] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='LINESTRING', 실제='LINESTRING'
+[2025-10-13 01:27:43.344] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POLYGON', 실제='POLYGON'
+[2025-10-13 01:27:43.345] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_ftpth_ctln
+[2025-10-13 01:27:43.345] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_ftpth_bndry
+[2025-10-13 01:27:43.357] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_arrfc -> TN_ARRFC (107개 피처)
+[2025-10-13 01:27:43.357] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POLYGON', 실제='POLYGON'
+[2025-10-13 01:27:43.357] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_arrfc
+[2025-10-13 01:27:43.357] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_lnrfc -> TN_LNRFC (115개 피처)
+[2025-10-13 01:27:43.357] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_bcycl_ctln -> TN_BCYCL_CTLN (4개 피처)
+[2025-10-13 01:27:43.357] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_ptrfc -> TN_PTRFC (13개 피처)
+[2025-10-13 01:27:43.357] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='LINESTRING', 실제='LINESTRING'
+[2025-10-13 01:27:43.357] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='LINESTRING', 실제='LINESTRING'
+[2025-10-13 01:27:43.358] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_bcycl_ctln
+[2025-10-13 01:27:43.358] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_lnrfc
+[2025-10-13 01:27:43.357] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POINT', 실제='POINT'
+[2025-10-13 01:27:43.358] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_ptrfc
+[2025-10-13 01:27:43.366] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_rlroad_ctln -> TN_RLROAD_CTLN (0개 피처)
+[2025-10-13 01:27:43.367] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='LINESTRING', 실제='LINESTRING'
+[2025-10-13 01:27:43.366] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_rlroad_bndry -> TN_RLROAD_BNDRY (0개 피처)
+[2025-10-13 01:27:43.366] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_arwfc -> TN_ARWFC (0개 피처)
+[2025-10-13 01:27:43.367] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_rlroad_ctln
+[2025-10-13 01:27:43.367] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POLYGON', 실제='POLYGON'
+[2025-10-13 01:27:43.367] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POLYGON', 실제='POLYGON'
+[2025-10-13 01:27:43.367] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_rlroad_bndry
+[2025-10-13 01:27:43.368] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_arwfc
+[2025-10-13 01:27:43.379] [Warning] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ❌ 테이블 없음: tn_lnwfc
+[2025-10-13 01:27:43.379] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_ptwfc -> TN_PTWFC (0개 피처)
+[2025-10-13 01:27:43.379] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_arafc -> TN_ARAFC (0개 피처)
+[2025-10-13 01:27:43.379] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_lnafc -> TN_LNAFC (0개 피처)
+[2025-10-13 01:27:43.380] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POINT', 실제='POINT'
+[2025-10-13 01:27:43.380] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POLYGON', 실제='POLYGON'
+[2025-10-13 01:27:43.380] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_arafc
+[2025-10-13 01:27:43.380] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_ptwfc
+[2025-10-13 01:27:43.380] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='LINESTRING', 실제='LINESTRING'
+[2025-10-13 01:27:43.381] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_lnafc
+[2025-10-13 01:27:43.389] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_arhfc -> TN_ARHFC (0개 피처)
+[2025-10-13 01:27:43.389] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POLYGON', 실제='POLYGON'
+[2025-10-13 01:27:43.389] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_pthfc -> TN_PTHFC (0개 피처)
+[2025-10-13 01:27:43.389] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POINT', 실제='POINT'
+[2025-10-13 01:27:43.389] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_arhfc
+[2025-10-13 01:27:43.389] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_ptafc -> TN_PTAFC (0개 피처)
+[2025-10-13 01:27:43.390] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_pthfc
+[2025-10-13 01:27:43.390] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POINT', 실제='POINT'
+[2025-10-13 01:27:43.390] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_ptafc
+[2025-10-13 01:27:43.401] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_fercs -> TN_FERCS (0개 피처)
+[2025-10-13 01:27:43.402] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='LINESTRING', 실제='LINESTRING'
+[2025-10-13 01:27:43.402] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_fercs
+[2025-10-13 01:27:43.401] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_buld_adcls -> TN_BULD_ADCLS (127개 피처)
+[2025-10-13 01:27:43.401] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_ferdk -> TN_FERDK (0개 피처)
+[2025-10-13 01:27:43.402] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POINT', 실제='POINT'
+[2025-10-13 01:27:43.402] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_ferdk
+[2025-10-13 01:27:43.401] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_buld -> TN_BULD (2669개 피처)
+[2025-10-13 01:27:43.402] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='LINESTRING', 실제='LINESTRING'
+[2025-10-13 01:27:43.402] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_buld_adcls
+[2025-10-13 01:27:43.402] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POLYGON', 실제='POLYGON'
+[2025-10-13 01:27:43.403] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_buld
+[2025-10-13 01:27:43.410] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_lnsfc -> TN_LNSFC (156개 피처)
+[2025-10-13 01:27:43.411] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='LINESTRING', 실제='LINESTRING'
+[2025-10-13 01:27:43.411] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_lnsfc
+[2025-10-13 01:27:43.410] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_arsfc -> TN_ARSFC (12개 피처)
+[2025-10-13 01:27:43.411] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POLYGON', 실제='POLYGON'
+[2025-10-13 01:27:43.411] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_ptsfc -> TN_PTSFC (906개 피처)
+[2025-10-13 01:27:43.411] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_arsfc
+[2025-10-13 01:27:43.411] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POINT', 실제='POINT'
+[2025-10-13 01:27:43.412] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_ptsfc
+[2025-10-13 01:27:43.423] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_buld_ctpt -> TN_BULD_CTPT (2648개 피처)
+[2025-10-13 01:27:43.423] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POINT', 실제='POINT'
+[2025-10-13 01:27:43.424] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_buld_ctpt
+[2025-10-13 01:27:43.423] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_ctrln -> TN_CTRLN (69개 피처)
+[2025-10-13 01:27:43.423] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_rft_fclty -> TN_RFT_FCLTY (0개 피처)
+[2025-10-13 01:27:43.423] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_shorline -> TN_SHORLINE (0개 피처)
+[2025-10-13 01:27:43.424] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='LINESTRING', 실제='LINESTRING'
+[2025-10-13 01:27:43.424] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POLYGON', 실제='POLYGON'
+[2025-10-13 01:27:43.424] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='LINESTRING', 실제='LINESTRING'
+[2025-10-13 01:27:43.424] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_ctrln
+[2025-10-13 01:27:43.424] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_rft_fclty
+[2025-10-13 01:27:43.424] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_shorline
+[2025-10-13 01:27:43.433] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_alpt -> TN_ALPT (483개 피처)
+[2025-10-13 01:27:43.433] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_isobath -> TN_ISOBATH (0개 피처)
+[2025-10-13 01:27:43.433] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_ptpgr -> TN_PTPGR (0개 피처)
+[2025-10-13 01:27:43.434] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POINT', 실제='POINT'
+[2025-10-13 01:27:43.434] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='LINESTRING', 실제='LINESTRING'
+[2025-10-13 01:27:43.433] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POINT', 실제='POINT'
+[2025-10-13 01:27:43.434] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_alpt
+[2025-10-13 01:27:43.434] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_isobath
+[2025-10-13 01:27:43.434] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_ptpgr
+[2025-10-13 01:27:43.445] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_arpgr -> TN_ARPGR (0개 피처)
+[2025-10-13 01:27:43.446] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POLYGON', 실제='POLYGON'
+[2025-10-13 01:27:43.446] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_arpgr
+[2025-10-13 01:27:43.446] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_river_bndry -> TN_RIVER_BNDRY (6개 피처)
+[2025-10-13 01:27:43.446] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POLYGON', 실제='POLYGON'
+[2025-10-13 01:27:43.445] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_ctrlpnt -> TN_CTRLPNT (1개 피처)
+[2025-10-13 01:27:43.446] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POINT', 실제='POINT'
+[2025-10-13 01:27:43.446] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_river_bndry
+[2025-10-13 01:27:43.445] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_lnpgr -> TN_LNPGR (141개 피처)
+[2025-10-13 01:27:43.447] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='LINESTRING', 실제='LINESTRING'
+[2025-10-13 01:27:43.446] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_ctrlpnt
+[2025-10-13 01:27:43.447] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_lnpgr
+[2025-10-13 01:27:43.455] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_river_bt -> TN_RIVER_BT (3개 피처)
+[2025-10-13 01:27:43.455] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POLYGON', 실제='POLYGON'
+[2025-10-13 01:27:43.455] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_river_bt
+[2025-10-13 01:27:43.455] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_river_ctln -> TN_RIVER_CTLN (34개 피처)
+[2025-10-13 01:27:43.455] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='LINESTRING', 실제='LINESTRING'
+[2025-10-13 01:27:43.456] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_river_ctln
+[2025-10-13 01:27:43.455] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_lkmh -> TN_LKMH (14개 피처)
+[2025-10-13 01:27:43.456] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POLYGON', 실제='POLYGON'
+[2025-10-13 01:27:43.456] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_lkmh
+[2025-10-13 01:27:43.466] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_arwtcors_fclty -> TN_ARWTCORS_FCLTY (0개 피처)
+[2025-10-13 01:27:43.466] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POLYGON', 실제='POLYGON'
+[2025-10-13 01:27:43.466] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_river_rt -> TN_RIVER_RT (2개 피처)
+[2025-10-13 01:27:43.467] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='LINESTRING', 실제='LINESTRING'
+[2025-10-13 01:27:43.467] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_river_rt
+[2025-10-13 01:27:43.467] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_arwtcors_fclty
+[2025-10-13 01:27:43.466] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_ptwtcors_fclty -> TN_PTWTCORS_FCLTY (2개 피처)
+[2025-10-13 01:27:43.467] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POINT', 실제='POINT'
+[2025-10-13 01:27:43.466] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_lnwtcors_fclty -> TN_LNWTCORS_FCLTY (76개 피처)
+[2025-10-13 01:27:43.467] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='LINESTRING', 실제='LINESTRING'
+[2025-10-13 01:27:43.467] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_ptwtcors_fclty
+[2025-10-13 01:27:43.467] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_lnwtcors_fclty
+[2025-10-13 01:27:43.475] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_fmlnd_bndry -> TN_FMLND_BNDRY (895개 피처)
+[2025-10-13 01:27:43.476] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POLYGON', 실제='POLYGON'
+[2025-10-13 01:27:43.476] [Warning] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ❌ 테이블 없음: tn_mapindx_5k
+[2025-10-13 01:27:43.475] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 테이블 발견: tn_ptvgt_fclty -> TN_PTVGT_FCLTY (0개 피처)
+[2025-10-13 01:27:43.476] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_fmlnd_bndry
+[2025-10-13 01:27:43.476] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] 🔍 지오메트리 타입 비교: 예상='POINT', 실제='POINT'
+[2025-10-13 01:27:43.476] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 지오메트리 타입 일치: tn_ptvgt_fclty
+[2025-10-13 01:27:43.496] [Information] [SpatialCheckPro.Services.ParallelProcessingManager] 테이블 검수 병렬 처리 완료: 52개 결과
+[2025-10-13 01:27:43.497] [Error] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ❌ 설정파일에 정의되지 않은 피처클래스 1개 발견 (오류로 처리):
+[2025-10-13 01:27:43.497] [Error] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService]   - TN_CTRLN_5k: LINESTRING (223개 피처) - 정의되지 않은 테이블
+[2025-10-13 01:27:43.497] [Information] [SpatialCheckPro.GUI.Services.AdvancedTableCheckService] ✅ 고도화된 테이블 검수 완료: 통과 47개, 실패 6개, 추가 1개
+[2025-10-13 01:27:43.498] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 모니터링 완료: 테이블 검수 - 0.2초, 0.0 items/sec
+[2025-10-13 01:27:43.499] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 진행률 업데이트: 1단계 테이블 검수 - 전체 20.0%, 단계 100.0% - 테이블 검수 완료
+[2025-10-13 01:27:43.499] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 1단계: 테이블 검수 완료 - 오류: 6개, 경고: 0개
+[2025-10-13 01:27:43.499] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 진행률 업데이트: 2단계 스키마 검수 - 전체 20.0%, 단계 0.0% - 스키마 검수를 시작합니다...
+[2025-10-13 01:27:43.499] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 2단계: 스키마 검수 시작
+[2025-10-13 01:27:43.499] [Debug] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 모니터링 시작: 스키마 검수 - 2단계 스키마 검수 실행
+[2025-10-13 01:27:43.500] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 2단계 스키마 검수 시작: G:\SpatialCheckPro\SpatialCheckPro.GUI\bin\Debug\net8.0-windows\Config\2_schema_check.csv
+[2025-10-13 01:27:43.504] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 스키마 검수 대상: 781개
+[2025-10-13 01:27:43.505] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 모니터링 완료: 스키마 검수 - 0.0초, 0.0 items/sec
+[2025-10-13 01:27:43.505] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 진행률 업데이트: 2단계 스키마 검수 - 전체 40.0%, 단계 100.0% - 스키마 검수 완료
+[2025-10-13 01:27:43.505] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 2단계: 스키마 검수 완료 - 오류: 0개, 경고: 0개
+[2025-10-13 01:27:43.505] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 진행률 업데이트: 3단계 지오메트리 검수 - 전체 40.0%, 단계 0.0% - 지오메트리 검수를 시작합니다...
+[2025-10-13 01:27:43.505] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 3단계: 지오메트리 검수 시작
+[2025-10-13 01:27:43.506] [Debug] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 모니터링 시작: 지오메트리 검수 - 3단계 지오메트리 검수 실행
+[2025-10-13 01:27:43.506] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 3단계 지오메트리 검수 시작: G:\SpatialCheckPro\SpatialCheckPro.GUI\bin\Debug\net8.0-windows\Config\3_geometry_check.csv
+[2025-10-13 01:27:43.509] [Information] [SpatialCheckPro.GUI.Services.SimpleValidationService] 지오메트리 검수 대상: 53개
+[2025-10-13 01:27:43.511] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] === 3단계 지오메트리 검수 시작 (중복 방지) ===
+[2025-10-13 01:27:43.512] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 검수 대상 테이블: 47개
+[2025-10-13 01:27:43.512] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 테이블별 병렬 처리 모드로 실행
+[2025-10-13 01:27:43.512] [Information] [SpatialCheckPro.Services.ParallelProcessingManager] 지오메트리 검수 병렬 처리 시작: 47개 항목, 병렬도 7
+[2025-10-13 01:27:43.528] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 테이블 지오메트리 검수 시작: tn_fclty_zone_bndry (시설구역경계)
+[2025-10-13 01:27:43.542] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 실제 지오메트리 검수 시작: 9개 피처
+[2025-10-13 01:27:43.543] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 기본검사 시작: 총 9개 피처
+[2025-10-13 01:27:43.545] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 테이블 지오메트리 검수 시작: tn_farm (목장)
+[2025-10-13 01:27:43.545] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 기본 지오메트리 검수 완료: 총 9개 피처 중 0개 오류 (NULL 기하, 빈 기하, 무효한 기하)
+[2025-10-13 01:27:43.545] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 기본 검수 상세: 실제 오류 개수 0개
+[2025-10-13 01:27:43.557] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 실제 지오메트리 검수 시작: 0개 피처
+[2025-10-13 01:27:43.557] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 기본검사 시작: 총 0개 피처
+[2025-10-13 01:27:43.557] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 테이블 지오메트리 검수 시작: tn_rodway_ctln (도로중심선)
+[2025-10-13 01:27:43.557] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 기본 지오메트리 검수 완료: 총 0개 피처 중 0개 오류 (NULL 기하, 빈 기하, 무효한 기하)
+[2025-10-13 01:27:43.557] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 기본 검수 상세: 실제 오류 개수 0개
+[2025-10-13 01:27:43.570] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 실제 지오메트리 검수 시작: 2131개 피처
+[2025-10-13 01:27:43.570] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 테이블 지오메트리 검수 시작: tn_rodway_bndry (도로경계면)
+[2025-10-13 01:27:43.570] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 기본검사 시작: 총 2131개 피처
+[2025-10-13 01:27:43.582] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 실제 지오메트리 검수 시작: 1147개 피처
+[2025-10-13 01:27:43.583] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 기본검사 시작: 총 1147개 피처
+[2025-10-13 01:27:43.583] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 테이블 지오메트리 검수 시작: tn_rodway_bndryln (도로경계선)
+[2025-10-13 01:27:43.608] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 실제 지오메트리 검수 시작: 572개 피처
+[2025-10-13 01:27:43.608] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 기본검사 시작: 총 572개 피처
+[2025-10-13 01:27:43.608] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 테이블 지오메트리 검수 시작: tn_ftpth_ctln (보도중심선)
+[2025-10-13 01:27:43.610] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 기본 지오메트리 검수 완료: 총 2131개 피처 중 0개 오류 (NULL 기하, 빈 기하, 무효한 기하)
+[2025-10-13 01:27:43.610] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 기본 검수 상세: 실제 오류 개수 0개
+[2025-10-13 01:27:43.618] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 기본 지오메트리 검수 완료: 총 1147개 피처 중 0개 오류 (NULL 기하, 빈 기하, 무효한 기하)
+[2025-10-13 01:27:43.618] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 기본 검수 상세: 실제 오류 개수 0개
+[2025-10-13 01:27:43.622] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 실제 지오메트리 검수 시작: 86개 피처
+[2025-10-13 01:27:43.622] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 기본검사 시작: 총 86개 피처
+[2025-10-13 01:27:43.622] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 테이블 지오메트리 검수 시작: tn_ftpth_bndry (보도경계면)
+[2025-10-13 01:27:43.625] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 기본 지오메트리 검수 완료: 총 572개 피처 중 0개 오류 (NULL 기하, 빈 기하, 무효한 기하)
+[2025-10-13 01:27:43.625] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 기본 검수 상세: 실제 오류 개수 0개
+[2025-10-13 01:27:43.626] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 기본 지오메트리 검수 완료: 총 86개 피처 중 0개 오류 (NULL 기하, 빈 기하, 무효한 기하)
+[2025-10-13 01:27:43.626] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 기본 검수 상세: 실제 오류 개수 0개
+[2025-10-13 01:27:43.635] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 실제 지오메트리 검수 시작: 86개 피처
+[2025-10-13 01:27:43.636] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 기본검사 시작: 총 86개 피처
+[2025-10-13 01:27:43.636] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 지오메트리 검수 설정 확인: 중복=True, 겹침=True, 자체꼬임=True, 슬리버=True, 짧은객체=False, 작은면적=True, 홀폴리곤=True
+[2025-10-13 01:27:43.636] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 중복 지오메트리 검수 시작
+[2025-10-13 01:27:43.636] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 고성능 중복 검수 모드 사용
+[2025-10-13 01:27:43.638] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 중복 지오메트리 검수 시작: TN_FCLTY_ZONE_BNDRY (허용오차: 0.001m)
+[2025-10-13 01:27:43.638] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 공간 인덱스 생성 중: 9개 피처
+[2025-10-13 01:27:43.638] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 시작: TN_FCLTY_ZONE_BNDRY, 허용오차: 0.001m
+[2025-10-13 01:27:43.639] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 기본 지오메트리 검수 완료: 총 86개 피처 중 0개 오류 (NULL 기하, 빈 기하, 무효한 기하)
+[2025-10-13 01:27:43.640] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 기본 검수 상세: 실제 오류 개수 0개
+[2025-10-13 01:27:44.519] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 완료: TN_FCLTY_ZONE_BNDRY, 피처 9개, 소요시간: 0.88초
+[2025-10-13 01:27:44.524] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 배치 처리 시작: 1개 배치, 배치 크기: 10000
+[2025-10-13 01:27:44.524] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 지오메트리 검수 설정 확인: 중복=True, 겹침=True, 자체꼬임=True, 슬리버=True, 짧은객체=False, 작은면적=True, 홀폴리곤=True
+[2025-10-13 01:27:44.524] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 중복 지오메트리 검수 시작
+[2025-10-13 01:27:44.524] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 고성능 중복 검수 모드 사용
+[2025-10-13 01:27:44.525] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 중복 지오메트리 검수 시작: TN_FARM (허용오차: 0.001m)
+[2025-10-13 01:27:44.525] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 검수할 피처가 없습니다: TN_FARM
+[2025-10-13 01:27:44.525] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 중복 지오메트리 검수 완료: 0개 오류
+[2025-10-13 01:27:44.525] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 겹침 지오메트리 검수 시작
+[2025-10-13 01:27:44.525] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 고성능 겹침 검수 모드 사용
+[2025-10-13 01:27:44.526] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 겹침 지오메트리 검수 시작: TN_FARM
+[2025-10-13 01:27:44.526] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 시작: TN_FARM, 허용오차: 0.001m
+[2025-10-13 01:27:44.526] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 완료: TN_FARM, 피처 0개, 소요시간: 0.00초
+[2025-10-13 01:27:44.527] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 기반 겹침 검사 시작: TN_FARM
+[2025-10-13 01:27:44.527] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 기반 겹침 검사 완료: TN_FARM, 겹침 0개, 소요시간: 0.00초
+[2025-10-13 01:27:44.527] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 겹침 검수 완료: 0개 겹침, 소요시간: 0.00초
+[2025-10-13 01:27:44.527] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 겹침 지오메트리 검수 완료: 0개 오류
+[2025-10-13 01:27:44.527] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 시작
+[2025-10-13 01:27:44.528] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 지오메트리 검수 설정 확인: 중복=True, 겹침=True, 자체꼬임=True, 슬리버=False, 짧은객체=True, 작은면적=False, 홀폴리곤=False
+[2025-10-13 01:27:44.528] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 중복 지오메트리 검수 시작
+[2025-10-13 01:27:44.528] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 시작 (자기교차 검출)
+[2025-10-13 01:27:44.528] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 고성능 중복 검수 모드 사용
+[2025-10-13 01:27:44.528] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 완료: 0개 발견 (총 0개 지오메트리 검사)
+[2025-10-13 01:27:44.528] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 공간 인덱스 생성 중: 2131개 피처
+[2025-10-13 01:27:44.528] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 시작: TN_RODWAY_CTLN, 허용오차: 0.001m
+[2025-10-13 01:27:44.529] [Error] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 배치 중복 검사 실패: 시작=0, 크기=9
+System.ApplicationException: Invalid field name: 'OBJECTID'
+   at OSGeo.OGR.Feature.GetFieldAsInteger(String field_name)
+   at SpatialCheckPro.Services.HighPerformanceGeometryValidator.ProcessBatchForDuplicates(Layer layer, BatchInfo batch, Object spatialIndex, Double tolerance, ConcurrentDictionary`2 duplicateGroups) in G:\SpatialCheckPro\SpatialCheckPro\Services\HighPerformanceGeometryValidator.cs:line 276
+[2025-10-13 01:27:45.985] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 완료: TN_RODWAY_CTLN, 피처 2131개, 소요시간: 1.46초
+[2025-10-13 01:27:45.989] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 배치 처리 시작: 1개 배치, 배치 크기: 10000
+[2025-10-13 01:27:45.990] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 지오메트리 검수 설정 확인: 중복=True, 겹침=True, 자체꼬임=True, 슬리버=True, 짧은객체=False, 작은면적=True, 홀폴리곤=True
+[2025-10-13 01:27:45.990] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 중복 지오메트리 검수 시작
+[2025-10-13 01:27:45.990] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 고성능 중복 검수 모드 사용
+[2025-10-13 01:27:45.990] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 중복 지오메트리 검수 시작: TN_RODWAY_BNDRY (허용오차: 0.001m)
+[2025-10-13 01:27:45.990] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 공간 인덱스 생성 중: 1147개 피처
+[2025-10-13 01:27:45.990] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 시작: TN_RODWAY_BNDRY, 허용오차: 0.001m
+[2025-10-13 01:27:47.506] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 완료: TN_RODWAY_BNDRY, 피처 1147개, 소요시간: 1.52초
+[2025-10-13 01:27:47.511] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 배치 처리 시작: 1개 배치, 배치 크기: 10000
+[2025-10-13 01:27:47.511] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 지오메트리 검수 설정 확인: 중복=True, 겹침=True, 자체꼬임=True, 슬리버=False, 짧은객체=True, 작은면적=False, 홀폴리곤=False
+[2025-10-13 01:27:47.511] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 중복 지오메트리 검수 시작
+[2025-10-13 01:27:47.511] [Error] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 배치 중복 검사 실패: 시작=0, 크기=1147
+System.ApplicationException: Invalid field name: 'OBJECTID'
+   at OSGeo.OGR.Feature.GetFieldAsInteger(String field_name)
+   at SpatialCheckPro.Services.HighPerformanceGeometryValidator.ProcessBatchForDuplicates(Layer layer, BatchInfo batch, Object spatialIndex, Double tolerance, ConcurrentDictionary`2 duplicateGroups) in G:\SpatialCheckPro\SpatialCheckPro\Services\HighPerformanceGeometryValidator.cs:line 276
+[2025-10-13 01:27:47.511] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 중복 지오메트리 검수 시작: TN_RODWAY_BNDRYLN (허용오차: 0.001m)
+[2025-10-13 01:27:47.511] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 공간 인덱스 생성 중: 572개 피처
+[2025-10-13 01:27:47.512] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 시작: TN_RODWAY_BNDRYLN, 허용오차: 0.001m
+[2025-10-13 01:27:51.625] [Information] [SpatialCheckPro.Services.AdvancedParallelProcessingManager] 병렬도 동적 조정: 3 → 3 (부하: Low)
+[2025-10-13 01:27:51.631] [Information] [SpatialCheckPro.Services.ParallelProcessingManager] 병렬도 동적 조정: 3 → 3 (부하: Low)
+[2025-10-13 01:27:53.813] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 완료: TN_RODWAY_BNDRYLN, 피처 572개, 소요시간: 6.30초
+[2025-10-13 01:27:53.817] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 배치 처리 시작: 1개 배치, 배치 크기: 10000
+[2025-10-13 01:27:53.818] [Error] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 배치 중복 검사 실패: 시작=0, 크기=572
+System.ApplicationException: Invalid field name: 'OBJECTID'
+   at OSGeo.OGR.Feature.GetFieldAsInteger(String field_name)
+   at SpatialCheckPro.Services.HighPerformanceGeometryValidator.ProcessBatchForDuplicates(Layer layer, BatchInfo batch, Object spatialIndex, Double tolerance, ConcurrentDictionary`2 duplicateGroups) in G:\SpatialCheckPro\SpatialCheckPro\Services\HighPerformanceGeometryValidator.cs:line 276
+[2025-10-13 01:27:53.825] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 지오메트리 검수 설정 확인: 중복=True, 겹침=True, 자체꼬임=True, 슬리버=False, 짧은객체=True, 작은면적=False, 홀폴리곤=False
+[2025-10-13 01:27:53.826] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 중복 지오메트리 검수 시작
+[2025-10-13 01:27:53.826] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 고성능 중복 검수 모드 사용
+[2025-10-13 01:27:53.826] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 중복 지오메트리 검수 시작: TN_FTPTH_CTLN (허용오차: 0.001m)
+[2025-10-13 01:27:53.826] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 공간 인덱스 생성 중: 86개 피처
+[2025-10-13 01:27:53.826] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 시작: TN_FTPTH_CTLN, 허용오차: 0.001m
+[2025-10-13 01:27:54.191] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 완료: TN_FTPTH_CTLN, 피처 86개, 소요시간: 0.36초
+[2025-10-13 01:27:54.195] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 배치 처리 시작: 1개 배치, 배치 크기: 10000
+[2025-10-13 01:27:54.196] [Error] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 배치 중복 검사 실패: 시작=0, 크기=86
+System.ApplicationException: Invalid field name: 'OBJECTID'
+   at OSGeo.OGR.Feature.GetFieldAsInteger(String field_name)
+   at SpatialCheckPro.Services.HighPerformanceGeometryValidator.ProcessBatchForDuplicates(Layer layer, BatchInfo batch, Object spatialIndex, Double tolerance, ConcurrentDictionary`2 duplicateGroups) in G:\SpatialCheckPro\SpatialCheckPro\Services\HighPerformanceGeometryValidator.cs:line 276
+[2025-10-13 01:27:54.196] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 중복 검수 완료: 0개 중복, 소요시간: 10.56초, 처리속도: 1 피처/초
+[2025-10-13 01:27:54.196] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 중복 검수 완료: 0개 중복, 소요시간: 9.67초, 처리속도: 220 피처/초
+[2025-10-13 01:27:54.196] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 중복 검수 완료: 0개 중복, 소요시간: 8.21초, 처리속도: 140 피처/초
+[2025-10-13 01:27:54.196] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 중복 검수 완료: 0개 중복, 소요시간: 6.69초, 처리속도: 86 피처/초
+[2025-10-13 01:27:54.197] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 지오메트리 검수 설정 확인: 중복=True, 겹침=True, 자체꼬임=True, 슬리버=True, 짧은객체=False, 작은면적=True, 홀폴리곤=True
+[2025-10-13 01:27:54.197] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 중복 지오메트리 검수 시작
+[2025-10-13 01:27:54.197] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 고성능 중복 검수 모드 사용
+[2025-10-13 01:27:54.197] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 중복 지오메트리 검수 시작: TN_FTPTH_BNDRY (허용오차: 0.001m)
+[2025-10-13 01:27:54.197] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 공간 인덱스 생성 중: 86개 피처
+[2025-10-13 01:27:54.197] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 시작: TN_FTPTH_BNDRY, 허용오차: 0.001m
+[2025-10-13 01:27:54.554] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 완료: TN_FTPTH_BNDRY, 피처 86개, 소요시간: 0.36초
+[2025-10-13 01:27:54.558] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 배치 처리 시작: 1개 배치, 배치 크기: 10000
+[2025-10-13 01:27:54.558] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 완료: 0개 오류
+[2025-10-13 01:27:54.559] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 슬리버 폴리곤 검수 시작
+[2025-10-13 01:27:54.559] [Error] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 배치 중복 검사 실패: 시작=0, 크기=86
+System.ApplicationException: Invalid field name: 'OBJECTID'
+   at OSGeo.OGR.Feature.GetFieldAsInteger(String field_name)
+   at SpatialCheckPro.Services.HighPerformanceGeometryValidator.ProcessBatchForDuplicates(Layer layer, BatchInfo batch, Object spatialIndex, Double tolerance, ConcurrentDictionary`2 duplicateGroups) in G:\SpatialCheckPro\SpatialCheckPro\Services\HighPerformanceGeometryValidator.cs:line 276
+[2025-10-13 01:27:54.559] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 중복 검수 완료: 0개 중복, 소요시간: 0.73초, 처리속도: 117 피처/초
+[2025-10-13 01:27:54.559] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 중복 지오메트리 검수 완료: 0개 오류
+[2025-10-13 01:27:54.559] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 겹침 지오메트리 검수 시작
+[2025-10-13 01:27:54.559] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 고성능 겹침 검수 모드 사용
+[2025-10-13 01:27:54.559] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 슬리버폴리곤 검수 시작 (면적, 형태지수, 신장률 기준)
+[2025-10-13 01:27:54.560] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 시작: TN_FCLTY_ZONE_BNDRY, 허용오차: 0.001m
+[2025-10-13 01:27:54.560] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 슬리버폴리곤 검수 완료: 0개 발견 (총 0개 폴리곤 검사)
+[2025-10-13 01:27:55.231] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 완료: TN_FCLTY_ZONE_BNDRY, 피처 9개, 소요시간: 0.67초
+[2025-10-13 01:27:55.232] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 기반 겹침 검사 시작: TN_FCLTY_ZONE_BNDRY
+[2025-10-13 01:27:58.550] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 기반 겹침 검사 완료: TN_FCLTY_ZONE_BNDRY, 겹침 0개, 소요시간: 3.32초
+[2025-10-13 01:27:58.550] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 겹침 검수 완료: 0개 겹침, 소요시간: 3.99초
+[2025-10-13 01:27:58.550] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 겹침 지오메트리 검수 완료: 0개 오류
+[2025-10-13 01:27:58.551] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 시작
+[2025-10-13 01:27:58.551] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 시작 (자기교차 검출)
+[2025-10-13 01:27:58.552] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 완료: 0개 발견 (총 9개 지오메트리 검사)
+[2025-10-13 01:27:58.551] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 중복 지오메트리 검수 완료: 0개 오류
+[2025-10-13 01:27:58.554] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 겹침 지오메트리 검수 시작
+[2025-10-13 01:27:58.554] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 고성능 겹침 검수 모드 사용
+[2025-10-13 01:27:58.554] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 겹침 지오메트리 검수 시작: TN_RODWAY_CTLN
+[2025-10-13 01:27:58.554] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 시작: TN_RODWAY_CTLN, 허용오차: 0.001m
+[2025-10-13 01:27:59.524] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 완료: TN_RODWAY_CTLN, 피처 2131개, 소요시간: 0.97초
+[2025-10-13 01:27:59.525] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 기반 겹침 검사 시작: TN_RODWAY_CTLN
+[2025-10-13 01:28:00.244] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 기반 겹침 검사 완료: TN_RODWAY_CTLN, 겹침 0개, 소요시간: 0.72초
+[2025-10-13 01:28:00.244] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 겹침 검수 완료: 0개 겹침, 소요시간: 1.69초
+[2025-10-13 01:28:00.244] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 겹침 지오메트리 검수 완료: 0개 오류
+[2025-10-13 01:28:00.244] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 시작
+[2025-10-13 01:28:00.244] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 시작 (자기교차 검출)
+[2025-10-13 01:28:00.244] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 중복 지오메트리 검수 완료: 0개 오류
+[2025-10-13 01:28:00.245] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 겹침 지오메트리 검수 시작
+[2025-10-13 01:28:00.245] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 고성능 겹침 검수 모드 사용
+[2025-10-13 01:28:00.245] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 겹침 지오메트리 검수 시작: TN_RODWAY_BNDRY
+[2025-10-13 01:28:00.245] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 시작: TN_RODWAY_BNDRY, 허용오차: 0.001m
+[2025-10-13 01:28:00.548] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 완료: 0개 발견 (총 2131개 지오메트리 검사)
+[2025-10-13 01:28:02.075] [Information] [SpatialCheckPro.Services.ParallelProcessingManager] 병렬도 동적 조정: 1 → 1 (부하: Low)
+[2025-10-13 01:28:02.077] [Information] [SpatialCheckPro.Services.AdvancedParallelProcessingManager] 병렬도 동적 조정: 1 → 1 (부하: Low)
+[2025-10-13 01:28:04.171] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 완료: TN_RODWAY_BNDRY, 피처 1147개, 소요시간: 3.93초
+[2025-10-13 01:28:04.172] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 기반 겹침 검사 시작: TN_RODWAY_BNDRY
+[2025-10-13 01:28:04.910] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 기반 겹침 검사 완료: TN_RODWAY_BNDRY, 겹침 1개, 소요시간: 0.74초
+[2025-10-13 01:28:04.910] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 겹침 검수 완료: 1개 겹침, 소요시간: 4.67초
+[2025-10-13 01:28:04.911] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 겹침 지오메트리 검수 완료: 1개 오류
+[2025-10-13 01:28:04.911] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 시작
+[2025-10-13 01:28:04.911] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 시작 (자기교차 검출)
+[2025-10-13 01:28:04.911] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 중복 지오메트리 검수 완료: 0개 오류
+[2025-10-13 01:28:04.911] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 겹침 지오메트리 검수 시작
+[2025-10-13 01:28:04.911] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 고성능 겹침 검수 모드 사용
+[2025-10-13 01:28:04.911] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 겹침 지오메트리 검수 시작: TN_RODWAY_BNDRYLN
+[2025-10-13 01:28:04.912] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 시작: TN_RODWAY_BNDRYLN, 허용오차: 0.001m
+[2025-10-13 01:28:05.110] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 완료: 0개 발견 (총 1147개 지오메트리 검사)
+[2025-10-13 01:28:14.202] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:28:15.390] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 완료: TN_RODWAY_BNDRYLN, 피처 572개, 소요시간: 10.48초
+[2025-10-13 01:28:15.390] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 기반 겹침 검사 시작: TN_RODWAY_BNDRYLN
+[2025-10-13 01:28:24.848] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 기반 겹침 검사 완료: TN_RODWAY_BNDRYLN, 겹침 0개, 소요시간: 9.46초
+[2025-10-13 01:28:24.848] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 겹침 검수 완료: 0개 겹침, 소요시간: 19.94초
+[2025-10-13 01:28:24.848] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 겹침 지오메트리 검수 완료: 0개 오류
+[2025-10-13 01:28:24.849] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 시작
+[2025-10-13 01:28:24.849] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 시작 (자기교차 검출)
+[2025-10-13 01:28:24.857] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 중복 검수 완료: 0개 중복, 소요시간: 30.66초, 처리속도: 3 피처/초
+[2025-10-13 01:28:24.857] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 중복 지오메트리 검수 완료: 0개 오류
+[2025-10-13 01:28:24.857] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 겹침 지오메트리 검수 시작
+[2025-10-13 01:28:24.857] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 고성능 겹침 검수 모드 사용
+[2025-10-13 01:28:24.858] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 겹침 지오메트리 검수 시작: TN_FTPTH_CTLN
+[2025-10-13 01:28:24.858] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 시작: TN_FTPTH_CTLN, 허용오차: 0.001m
+[2025-10-13 01:28:24.944] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 완료: 0개 발견 (총 572개 지오메트리 검사)
+[2025-10-13 01:28:25.157] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 완료: TN_FTPTH_CTLN, 피처 86개, 소요시간: 0.30초
+[2025-10-13 01:28:25.157] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 기반 겹침 검사 시작: TN_FTPTH_CTLN
+[2025-10-13 01:28:25.393] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 기반 겹침 검사 완료: TN_FTPTH_CTLN, 겹침 0개, 소요시간: 0.24초
+[2025-10-13 01:28:25.393] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 겹침 검수 완료: 0개 겹침, 소요시간: 0.54초
+[2025-10-13 01:28:25.393] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 겹침 지오메트리 검수 완료: 0개 오류
+[2025-10-13 01:28:25.393] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 시작
+[2025-10-13 01:28:25.394] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 시작 (자기교차 검출)
+[2025-10-13 01:28:25.394] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 중복 지오메트리 검수 완료: 0개 오류
+[2025-10-13 01:28:25.394] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 겹침 지오메트리 검수 시작
+[2025-10-13 01:28:25.394] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 고성능 겹침 검수 모드 사용
+[2025-10-13 01:28:25.394] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 겹침 지오메트리 검수 시작: TN_FTPTH_BNDRY
+[2025-10-13 01:28:25.394] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 시작: TN_FTPTH_BNDRY, 허용오차: 0.001m
+[2025-10-13 01:28:25.405] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 완료: 0개 발견 (총 86개 지오메트리 검사)
+[2025-10-13 01:28:28.429] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 생성 완료: TN_FTPTH_BNDRY, 피처 86개, 소요시간: 3.03초
+[2025-10-13 01:28:28.429] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 기반 겹침 검사 시작: TN_FTPTH_BNDRY
+[2025-10-13 01:28:28.709] [Information] [SpatialCheckPro.Services.SpatialIndexService] 공간 인덱스 기반 겹침 검사 완료: TN_FTPTH_BNDRY, 겹침 0개, 소요시간: 0.28초
+[2025-10-13 01:28:28.709] [Information] [SpatialCheckPro.Services.HighPerformanceGeometryValidator] 고성능 겹침 검수 완료: 0개 겹침, 소요시간: 3.32초
+[2025-10-13 01:28:28.709] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 겹침 지오메트리 검수 완료: 0개 오류
+[2025-10-13 01:28:28.709] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 시작
+[2025-10-13 01:28:28.710] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 시작 (자기교차 검출)
+[2025-10-13 01:28:28.710] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 슬리버 폴리곤 검수 완료: 0개 오류
+[2025-10-13 01:28:28.711] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 작은 면적 객체 검수 시작
+[2025-10-13 01:28:28.712] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 완료: 0개 오류
+[2025-10-13 01:28:28.712] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 슬리버 폴리곤 검수 시작
+[2025-10-13 01:28:28.712] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 완료: 0개 오류
+[2025-10-13 01:28:28.712] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 짧은 객체 검수 시작
+[2025-10-13 01:28:28.712] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 작은면적객체 검수 시작 (최소면적: 1m²)
+[2025-10-13 01:28:28.712] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 작은면적객체 검수 완료: 0개 발견 (총 0개 면형 지오메트리 검사)
+[2025-10-13 01:28:28.712] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 완료: 0개 오류
+[2025-10-13 01:28:28.713] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 슬리버 폴리곤 검수 시작
+[2025-10-13 01:28:28.712] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 슬리버폴리곤 검수 시작 (면적, 형태지수, 신장률 기준)
+[2025-10-13 01:28:28.713] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 짧은객체 검수 시작 (최소길이: 0.01m)
+[2025-10-13 01:28:28.713] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 완료: 0개 오류
+[2025-10-13 01:28:28.714] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 짧은 객체 검수 시작
+[2025-10-13 01:28:28.714] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 짧은객체 검수 시작 (최소길이: 0.01m)
+[2025-10-13 01:28:28.713] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 슬리버폴리곤 검수 시작 (면적, 형태지수, 신장률 기준)
+[2025-10-13 01:28:28.713] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 완료: 0개 발견 (총 86개 지오메트리 검사)
+[2025-10-13 01:28:28.714] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 완료: 0개 오류
+[2025-10-13 01:28:28.715] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 짧은 객체 검수 시작
+[2025-10-13 01:28:28.715] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 슬리버폴리곤 검수 완료: 0개 발견 (총 9개 폴리곤 검사)
+[2025-10-13 01:28:28.716] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 짧은객체 검수 시작 (최소길이: 0.01m)
+[2025-10-13 01:28:28.716] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 작은 면적 객체 검수 완료: 0개 오류
+[2025-10-13 01:28:28.716] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 홀 폴리곤 오류 검수 시작
+[2025-10-13 01:28:28.716] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 자체 꼬임 검수 완료: 0개 오류
+[2025-10-13 01:28:28.716] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 슬리버 폴리곤 검수 시작
+[2025-10-13 01:28:28.717] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 슬리버폴리곤 검수 시작 (면적, 형태지수, 신장률 기준)
+[2025-10-13 01:28:28.717] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 슬리버 폴리곤 검수 완료: 0개 오류
+[2025-10-13 01:28:28.717] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 작은 면적 객체 검수 시작
+[2025-10-13 01:28:28.717] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 작은면적객체 검수 시작 (최소면적: 1m²)
+[2025-10-13 01:28:28.719] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 작은면적객체 검수 완료: 0개 발견 (총 9개 면형 지오메트리 검사)
+[2025-10-13 01:28:28.719] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 홀 폴리곤 오류 검수 시작
+[2025-10-13 01:28:28.720] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 홀 폴리곤 오류 검수: 0개 폴리곤 수집 완료
+[2025-10-13 01:28:28.720] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 홀 폴리곤 오류 검수 완료: 0개 발견 (홀 0개, 폴리곤 0개)
+[2025-10-13 01:28:28.721] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 슬리버폴리곤 검수 완료: 0개 발견 (총 86개 폴리곤 검사)
+[2025-10-13 01:28:28.721] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 짧은객체 검수 완료: 0개 발견 (총 86개 선형 지오메트리 검사)
+[2025-10-13 01:28:28.721] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 작은 면적 객체 검수 완료: 0개 오류
+[2025-10-13 01:28:28.722] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 홀 폴리곤 오류 검수 시작
+[2025-10-13 01:28:28.722] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 홀 폴리곤 오류 검수 완료: 0개 오류
+[2025-10-13 01:28:28.722] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 전체 지오메트리 검수 완료: 총 0개 오류 검출
+[2025-10-13 01:28:28.722] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 홀 폴리곤 오류 검수 시작
+[2025-10-13 01:28:28.723] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 슬리버 폴리곤 검수 완료: 0개 오류
+[2025-10-13 01:28:28.723] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 작은 면적 객체 검수 시작
+[2025-10-13 01:28:28.723] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 짧은 객체 검수 완료: 0개 오류
+[2025-10-13 01:28:28.723] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 작은면적객체 검수 시작 (최소면적: 1m²)
+[2025-10-13 01:28:28.723] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 전체 지오메트리 검수 완료: 총 0개 오류 검출
+[2025-10-13 01:28:28.724] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 홀 폴리곤 오류 검수: 9개 폴리곤 수집 완료
+[2025-10-13 01:28:28.724] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 그룹화 완료: 총 0개 오류를 0개 타입으로 그룹화
+[2025-10-13 01:28:28.724] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 검수 항목 생성 완료: tn_farm, 총 0개 항목 (중복 제거됨)
+[2025-10-13 01:28:28.725] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_farm_중복 지오메트리
+[2025-10-13 01:28:28.725] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_farm_겹침 지오메트리
+[2025-10-13 01:28:28.725] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_farm_자체 꼬임
+[2025-10-13 01:28:28.725] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_farm_슬리버폴리곤
+[2025-10-13 01:28:28.725] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_farm_작은면적객체
+[2025-10-13 01:28:28.725] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_farm_홀 폴리곤 오류
+[2025-10-13 01:28:28.725] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 테이블 지오메트리 검수 완료: tn_farm, 검수 항목: 6개
+[2025-10-13 01:28:28.725] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 홀 폴리곤 오류 검수 완료: 0개 발견 (홀 1개, 폴리곤 9개)
+[2025-10-13 01:28:28.726] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 그룹화 완료: 총 0개 오류를 0개 타입으로 그룹화
+[2025-10-13 01:28:28.726] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 검수 항목 생성 완료: tn_ftpth_ctln, 총 0개 항목 (중복 제거됨)
+[2025-10-13 01:28:28.726] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_ftpth_ctln_중복 지오메트리
+[2025-10-13 01:28:28.726] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_ftpth_ctln_겹침 지오메트리
+[2025-10-13 01:28:28.726] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_ftpth_ctln_자체 꼬임
+[2025-10-13 01:28:28.726] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_ftpth_ctln_짧은객체
+[2025-10-13 01:28:28.727] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 테이블 지오메트리 검수 완료: tn_ftpth_ctln, 검수 항목: 4개
+[2025-10-13 01:28:28.726] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 작은면적객체 검수 완료: 0개 발견 (총 86개 면형 지오메트리 검사)
+[2025-10-13 01:28:30.008] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 홀 폴리곤 오류 검수 완료: 0개 오류
+[2025-10-13 01:28:30.009] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 전체 지오메트리 검수 완료: 총 0개 오류 검출
+[2025-10-13 01:28:31.270] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 작은 면적 객체 검수 완료: 0개 오류
+[2025-10-13 01:28:31.270] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 홀 폴리곤 오류 검수 시작
+[2025-10-13 01:28:31.270] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 그룹화 완료: 총 0개 오류를 0개 타입으로 그룹화
+[2025-10-13 01:28:31.271] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 검수 항목 생성 완료: tn_fclty_zone_bndry, 총 0개 항목 (중복 제거됨)
+[2025-10-13 01:28:31.271] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_fclty_zone_bndry_중복 지오메트리
+[2025-10-13 01:28:31.271] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_fclty_zone_bndry_겹침 지오메트리
+[2025-10-13 01:28:31.271] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_fclty_zone_bndry_자체 꼬임
+[2025-10-13 01:28:31.271] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_fclty_zone_bndry_슬리버폴리곤
+[2025-10-13 01:28:31.271] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_fclty_zone_bndry_작은면적객체
+[2025-10-13 01:28:31.271] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_fclty_zone_bndry_홀 폴리곤 오류
+[2025-10-13 01:28:31.271] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 테이블 지오메트리 검수 완료: tn_fclty_zone_bndry, 검수 항목: 6개
+[2025-10-13 01:28:31.271] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 홀 폴리곤 오류 검수 시작
+[2025-10-13 01:28:31.272] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 짧은객체 검수 완료: 0개 발견 (총 572개 선형 지오메트리 검사)
+[2025-10-13 01:28:33.789] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 짧은 객체 검수 완료: 0개 오류
+[2025-10-13 01:28:33.789] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 전체 지오메트리 검수 완료: 총 0개 오류 검출
+[2025-10-13 01:28:33.789] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 홀 폴리곤 오류 검수: 86개 폴리곤 수집 완료
+[2025-10-13 01:28:33.792] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 홀 폴리곤 오류 검수 완료: 0개 발견 (홀 0개, 폴리곤 86개)
+[2025-10-13 01:28:33.790] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 그룹화 완료: 총 0개 오류를 0개 타입으로 그룹화
+[2025-10-13 01:28:33.792] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 검수 항목 생성 완료: tn_rodway_bndryln, 총 0개 항목 (중복 제거됨)
+[2025-10-13 01:28:33.792] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_rodway_bndryln_중복 지오메트리
+[2025-10-13 01:28:33.792] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_rodway_bndryln_겹침 지오메트리
+[2025-10-13 01:28:33.793] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_rodway_bndryln_자체 꼬임
+[2025-10-13 01:28:33.793] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_rodway_bndryln_짧은객체
+[2025-10-13 01:28:33.793] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 테이블 지오메트리 검수 완료: tn_rodway_bndryln, 검수 항목: 4개
+[2025-10-13 01:28:33.793] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 홀 폴리곤 오류 검수 완료: 0개 오류
+[2025-10-13 01:28:33.793] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 전체 지오메트리 검수 완료: 총 0개 오류 검출
+[2025-10-13 01:28:36.315] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 그룹화 완료: 총 0개 오류를 0개 타입으로 그룹화
+[2025-10-13 01:28:36.316] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 검수 항목 생성 완료: tn_ftpth_bndry, 총 0개 항목 (중복 제거됨)
+[2025-10-13 01:28:36.316] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_ftpth_bndry_중복 지오메트리
+[2025-10-13 01:28:36.316] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_ftpth_bndry_겹침 지오메트리
+[2025-10-13 01:28:36.316] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_ftpth_bndry_자체 꼬임
+[2025-10-13 01:28:36.316] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_ftpth_bndry_슬리버폴리곤
+[2025-10-13 01:28:36.316] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_ftpth_bndry_작은면적객체
+[2025-10-13 01:28:36.316] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_ftpth_bndry_홀 폴리곤 오류
+[2025-10-13 01:28:36.316] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 테이블 지오메트리 검수 완료: tn_ftpth_bndry, 검수 항목: 6개
+[2025-10-13 01:28:40.079] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 슬리버폴리곤 검수 완료: 0개 발견 (총 1147개 폴리곤 검사)
+[2025-10-13 01:28:40.079] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 슬리버 폴리곤 검수 완료: 0개 오류
+[2025-10-13 01:28:40.079] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 작은 면적 객체 검수 시작
+[2025-10-13 01:28:40.079] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 작은면적객체 검수 시작 (최소면적: 1m²)
+[2025-10-13 01:28:40.108] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 짧은객체 검수 완료: 0개 발견 (총 2131개 선형 지오메트리 검사)
+[2025-10-13 01:28:40.108] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 짧은 객체 검수 완료: 0개 오류
+[2025-10-13 01:28:40.108] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 전체 지오메트리 검수 완료: 총 0개 오류 검출
+[2025-10-13 01:28:40.109] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 그룹화 완료: 총 0개 오류를 0개 타입으로 그룹화
+[2025-10-13 01:28:40.109] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 검수 항목 생성 완료: tn_rodway_ctln, 총 0개 항목 (중복 제거됨)
+[2025-10-13 01:28:40.109] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_rodway_ctln_중복 지오메트리
+[2025-10-13 01:28:40.109] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_rodway_ctln_겹침 지오메트리
+[2025-10-13 01:28:40.109] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_rodway_ctln_자체 꼬임
+[2025-10-13 01:28:40.109] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_rodway_ctln_짧은객체
+[2025-10-13 01:28:40.109] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 테이블 지오메트리 검수 완료: tn_rodway_ctln, 검수 항목: 4개
+[2025-10-13 01:28:43.908] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 작은면적객체 검수 완료: 0개 발견 (총 1147개 면형 지오메트리 검사)
+[2025-10-13 01:28:43.908] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 작은 면적 객체 검수 완료: 0개 오류
+[2025-10-13 01:28:43.908] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 홀 폴리곤 오류 검수 시작
+[2025-10-13 01:28:43.908] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 홀 폴리곤 오류 검수 시작
+[2025-10-13 01:28:43.922] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 홀 폴리곤 오류 검수: 1147개 폴리곤 수집 완료
+[2025-10-13 01:28:43.922] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 홀 폴리곤 오류 검수 완료: 0개 발견 (홀 0개, 폴리곤 1147개)
+[2025-10-13 01:28:43.923] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 홀 폴리곤 오류 검수 완료: 0개 오류
+[2025-10-13 01:28:43.923] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 전체 지오메트리 검수 완료: 총 1개 오류 검출
+[2025-10-13 01:28:43.923] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 타입 '겹침 지오메트리': 1개
+[2025-10-13 01:28:43.924] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 그룹화 완료: 총 1개 오류를 1개 타입으로 그룹화
+[2025-10-13 01:28:43.924] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 검수 항목 생성: tn_rodway_bndry - 겹침 지오메트리 (기준값: 0.001m², 오류: 1개)
+[2025-10-13 01:28:43.924] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 검수 항목 생성 완료: tn_rodway_bndry, 총 1개 항목 (중복 제거됨)
+[2025-10-13 01:28:43.924] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_rodway_bndry_중복 지오메트리
+[2025-10-13 01:28:43.924] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_rodway_bndry_자체 꼬임
+[2025-10-13 01:28:43.924] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_rodway_bndry_슬리버폴리곤
+[2025-10-13 01:28:43.924] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_rodway_bndry_작은면적객체
+[2025-10-13 01:28:43.924] [Debug] [SpatialCheckPro.GUI.Services.GeometryValidationService] 오류 없는 활성 항목 추가: tn_rodway_bndry_홀 폴리곤 오류
+[2025-10-13 01:28:43.925] [Information] [SpatialCheckPro.GUI.Services.GeometryValidationService] 테이블 지오메트리 검수 완료: tn_rodway_bndry, 검수 항목: 6개
+[2025-10-13 01:29:11.831] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:30:13.194] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:31:11.877] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:32:11.852] [Information] [SpatialCheckPro.Services.MemoryOptimizationService] 정기적 GC 실행: 4249MB (간격: 5.0분)
+[2025-10-13 01:32:12.505] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:32:14.471] [Information] [SpatialCheckPro.Services.MemoryOptimizationService] GC 실행 완료: 4245MB → 4245MB (해제: 0MB, 총 실행횟수: 1)
+[2025-10-13 01:33:11.845] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:34:11.871] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:35:11.876] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:36:11.841] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:37:11.904] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 새로운 리소스 분석 시작
+[2025-10-13 01:37:11.907] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 새로운 리소스 분석 시작
+[2025-10-13 01:37:11.909] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 새로운 리소스 분석 시작
+[2025-10-13 01:37:11.912] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:37:11.915] [Information] [SpatialCheckPro.Services.MemoryOptimizationService] 메모리 압박 낮음 - GC 빈도 감소: 0
+[2025-10-13 01:37:11.915] [Information] [SpatialCheckPro.Services.MemoryOptimizationService] GC 빈도 조절: 1 → 0 (메모리 압박: 14.64 %)
+[2025-10-13 01:37:13.263] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 병렬도 계산: CPU 20개, 사용가능메모리 36.03324890136719GB, 총메모리 63.37975311279297GB → 권장 7개
+[2025-10-13 01:37:13.263] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 병렬도 계산: CPU 20개, 사용가능메모리 36.033363342285156GB, 총메모리 63.37975311279297GB → 권장 7개
+[2025-10-13 01:37:13.268] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 배치 크기 계산: 메모리 36.03127670288086GB, CPU 20개 → 권장 10000개
+[2025-10-13 01:37:13.268] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 배치 크기 계산: 메모리 36.03127670288086GB, CPU 20개 → 권장 10000개
+[2025-10-13 01:37:13.269] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 병렬도 계산: CPU 20개, 사용가능메모리 36.0341911315918GB, 총메모리 63.37975311279297GB → 권장 7개
+[2025-10-13 01:37:13.275] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 배치 크기 계산: 메모리 36.031681060791016GB, CPU 20개 → 권장 10000개
+[2025-10-13 01:37:13.275] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 최대 메모리 사용량 계산: 총 63.37975311279297GB, 사용가능 36.031681060791016GB → 권장 25827MB
+[2025-10-13 01:37:13.276] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 최대 메모리 사용량 계산: 총 63.37975311279297GB, 사용가능 36.03459548950195GB → 권장 25829MB
+[2025-10-13 01:37:13.276] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 시스템 리소스 분석 완료: CPU 20개, RAM 63.37975311279297GB, 권장 병렬도 7
+[2025-10-13 01:37:13.276] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 시스템 리소스 분석 완료: CPU 20개, RAM 63.37975311279297GB, 권장 병렬도 7
+[2025-10-13 01:37:13.276] [Debug] [SpatialCheckPro.Services.CentralizedResourceMonitor] 리소스 정보 새로고침 요청: ParallelProcessingManager
+[2025-10-13 01:37:13.276] [Debug] [SpatialCheckPro.Services.CentralizedResourceMonitor] 리소스 정보 새로고침 요청: AdvancedParallelProcessingManager
+[2025-10-13 01:37:13.280] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 최대 메모리 사용량 계산: 총 63.37975311279297GB, 사용가능 36.031612396240234GB → 권장 25827MB
+[2025-10-13 01:37:13.280] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 시스템 리소스 분석 완료: CPU 20개, RAM 63.37975311279297GB, 권장 병렬도 7
+[2025-10-13 01:37:13.280] [Debug] [SpatialCheckPro.Services.CentralizedResourceMonitor] 주기적 리소스 분석 완료: CPU 20개, RAM 63.37975311279297GB
+[2025-10-13 01:37:13.280] [Debug] [SpatialCheckPro.Services.CentralizedResourceMonitor] 오래된 캐시 정리 완료: 2개 항목 제거
+[2025-10-13 01:38:11.901] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:39:11.866] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:40:11.892] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:41:11.894] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:42:11.885] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:43:13.168] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:44:13.165] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:45:11.915] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:46:11.923] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:47:11.911] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:47:16.942] [Information] [SpatialCheckPro.Services.MemoryOptimizationService] 메모리 압박 낮음 - GC 빈도 감소: 0
+[2025-10-13 01:47:16.942] [Information] [SpatialCheckPro.Services.MemoryOptimizationService] 정기적 GC 실행: 4280MB (간격: 15.0분)
+[2025-10-13 01:47:19.609] [Information] [SpatialCheckPro.Services.MemoryOptimizationService] GC 실행 완료: 4278MB → 4276MB (해제: 2MB, 총 실행횟수: 2)
+[2025-10-13 01:47:21.900] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 새로운 리소스 분석 시작
+[2025-10-13 01:47:21.900] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 새로운 리소스 분석 시작
+[2025-10-13 01:47:21.915] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 병렬도 계산: CPU 20개, 사용가능메모리 35.96937942504883GB, 총메모리 63.37975311279297GB → 권장 7개
+[2025-10-13 01:47:23.227] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 병렬도 계산: CPU 20개, 사용가능메모리 35.97092056274414GB, 총메모리 63.37975311279297GB → 권장 7개
+[2025-10-13 01:47:23.233] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 배치 크기 계산: 메모리 35.970298767089844GB, CPU 20개 → 권장 10000개
+[2025-10-13 01:47:23.234] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 배치 크기 계산: 메모리 35.969810485839844GB, CPU 20개 → 권장 10000개
+[2025-10-13 01:47:23.237] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 최대 메모리 사용량 계산: 총 63.37975311279297GB, 사용가능 35.96980667114258GB → 권장 25783MB
+[2025-10-13 01:47:23.237] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 시스템 리소스 분석 완료: CPU 20개, RAM 63.37975311279297GB, 권장 병렬도 7
+[2025-10-13 01:47:23.237] [Debug] [SpatialCheckPro.Services.CentralizedResourceMonitor] 리소스 정보 새로고침 요청: ParallelProcessingManager
+[2025-10-13 01:47:23.238] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 최대 메모리 사용량 계산: 총 63.37975311279297GB, 사용가능 35.969783782958984GB → 권장 25783MB
+[2025-10-13 01:47:23.238] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 시스템 리소스 분석 완료: CPU 20개, RAM 63.37975311279297GB, 권장 병렬도 7
+[2025-10-13 01:47:23.238] [Debug] [SpatialCheckPro.Services.CentralizedResourceMonitor] 리소스 정보 새로고침 요청: AdvancedParallelProcessingManager
+[2025-10-13 01:48:11.904] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:49:11.907] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:50:11.900] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:51:11.908] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:52:11.907] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:53:11.910] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:54:11.891] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:55:11.939] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:56:11.916] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:57:11.952] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:57:21.950] [Information] [SpatialCheckPro.Services.MemoryOptimizationService] 메모리 압박 낮음 - GC 빈도 감소: 0
+[2025-10-13 01:57:31.902] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 새로운 리소스 분석 시작
+[2025-10-13 01:57:31.902] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 새로운 리소스 분석 시작
+[2025-10-13 01:57:33.210] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 병렬도 계산: CPU 20개, 사용가능메모리 34.26609420776367GB, 총메모리 63.37975311279297GB → 권장 7개
+[2025-10-13 01:57:33.215] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 배치 크기 계산: 메모리 34.266082763671875GB, CPU 20개 → 권장 10000개
+[2025-10-13 01:57:33.215] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 병렬도 계산: CPU 20개, 사용가능메모리 34.266082763671875GB, 총메모리 63.37975311279297GB → 권장 7개
+[2025-10-13 01:57:33.220] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 최대 메모리 사용량 계산: 총 63.37975311279297GB, 사용가능 34.266082763671875GB → 권장 24561MB
+[2025-10-13 01:57:33.220] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 배치 크기 계산: 메모리 34.266082763671875GB, CPU 20개 → 권장 10000개
+[2025-10-13 01:57:33.221] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 시스템 리소스 분석 완료: CPU 20개, RAM 63.37975311279297GB, 권장 병렬도 7
+[2025-10-13 01:57:33.221] [Debug] [SpatialCheckPro.Services.CentralizedResourceMonitor] 리소스 정보 새로고침 요청: ParallelProcessingManager
+[2025-10-13 01:57:33.226] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 최대 메모리 사용량 계산: 총 63.37975311279297GB, 사용가능 34.266082763671875GB → 권장 24561MB
+[2025-10-13 01:57:33.227] [Debug] [SpatialCheckPro.Services.SystemResourceAnalyzer] 시스템 리소스 분석 완료: CPU 20개, RAM 63.37975311279297GB, 권장 병렬도 7
+[2025-10-13 01:57:33.227] [Debug] [SpatialCheckPro.Services.CentralizedResourceMonitor] 리소스 정보 새로고침 요청: AdvancedParallelProcessingManager
+[2025-10-13 01:58:11.932] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 01:59:11.923] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 02:00:11.934] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 02:01:11.940] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 02:02:11.922] [Information] [SpatialCheckPro.Services.DataSourcePool] 만료된 DataSource 정리: G:\sample\제주도_갱신작업1\c_33611047.gdb
+[2025-10-13 02:02:11.924] [Information] [SpatialCheckPro.Services.DataSourcePool] 만료된 DataSource 정리 완료: 1개 항목
+[2025-10-13 02:02:11.927] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 02:02:21.928] [Information] [SpatialCheckPro.Services.MemoryOptimizationService] 정기적 GC 실행: 4315MB (간격: 15.0분)
+[2025-10-13 02:02:24.562] [Information] [SpatialCheckPro.Services.MemoryOptimizationService] GC 실행 완료: 4312MB → 4312MB (해제: 0MB, 총 실행횟수: 3)
+[2025-10-13 02:03:11.944] [Information] [SpatialCheckPro.Services.ParallelPerformanceMonitor] 성능 보고서 생성: 4개 작업, 평균 0.0 items/sec
+[2025-10-13 02:03:48.999] [Information] [SpatialCheckPro.Processors.RelationCheckProcessor] RelationCheckProcessor 리소스 정리 완료
+[2025-10-13 02:03:49.045] [Information] [SpatialCheckPro.Services.CentralizedResourceMonitor] 중앙집중식 리소스 모니터 종료
+[2025-10-13 02:03:49.045] [Information] [SpatialCheckPro.Services.DataSourcePool] DataSourcePool 리소스 정리 완료

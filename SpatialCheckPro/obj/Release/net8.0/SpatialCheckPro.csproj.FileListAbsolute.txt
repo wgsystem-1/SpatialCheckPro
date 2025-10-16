@@ -1,0 +1,15 @@
+G:\SpatialCheckPro\SpatialCheckPro\bin\Release\net8.0\SpatialCheckPro.deps.json
+G:\SpatialCheckPro\SpatialCheckPro\bin\Release\net8.0\SpatialCheckPro.dll
+G:\SpatialCheckPro\SpatialCheckPro\bin\Release\net8.0\SpatialCheckPro.pdb
+G:\SpatialCheckPro\SpatialCheckPro\obj\Release\net8.0\NuGet\94727DE4D9907A92A783A2A224CA9A712D7B2210\GDAL\3.10.3\GdalConfiguration.cs
+G:\SpatialCheckPro\SpatialCheckPro\obj\Release\net8.0\SpatialCheckPro.csproj.AssemblyReference.cache
+G:\SpatialCheckPro\SpatialCheckPro\obj\Release\net8.0\SpatialCheckPro.GeneratedMSBuildEditorConfig.editorconfig
+G:\SpatialCheckPro\SpatialCheckPro\obj\Release\net8.0\SpatialCheckPro.AssemblyInfoInputs.cache
+G:\SpatialCheckPro\SpatialCheckPro\obj\Release\net8.0\SpatialCheckPro.AssemblyInfo.cs
+G:\SpatialCheckPro\SpatialCheckPro\obj\Release\net8.0\SpatialCheckPro.csproj.CoreCompileInputs.cache
+G:\SpatialCheckPro\SpatialCheckPro\obj\Release\net8.0\EFCoreSqliteNetTopologySuite.cs
+G:\SpatialCheckPro\SpatialCheckPro\obj\Release\net8.0\SpatialCheckPro.dll
+G:\SpatialCheckPro\SpatialCheckPro\obj\Release\net8.0\refint\SpatialCheckPro.dll
+G:\SpatialCheckPro\SpatialCheckPro\obj\Release\net8.0\SpatialCheckPro.pdb
+G:\SpatialCheckPro\SpatialCheckPro\obj\Release\net8.0\ref\SpatialCheckPro.dll
+G:\SpatialCheckPro\SpatialCheckPro\obj\Release\net8.0\SpatialCheckPro.sourcelink.json

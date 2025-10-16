@@ -1,0 +1,2 @@
+﻿OverlapTolerance,SliverArea,SliverShapeIndex,SliverElongation,MinLineLength,MinPolygonArea,SpikeAngleThreshold
+0,0.001,15,0.1,20,0.1,0.1,10

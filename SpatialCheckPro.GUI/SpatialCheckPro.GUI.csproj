@@ -1,0 +1,104 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>disable</Nullable>
+    <NoWarn>CS8632;CS8602;CS8601;CS8604;CS8618;CS0618;CS1998</NoWarn>
+    <!-- 지침서 준수: 빌드 경고 완전 제거 -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <WarningsNotAsErrors />
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyTitle>국가기본도 DB 검수 시스템</AssemblyTitle>
+    <AssemblyDescription>데이터 품질 검수 도구</AssemblyDescription>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <!-- 빌드 타임스탬프: 매 빌드 시 현재 시각을 문자열로 생성 -->
+    <BuildTimestamp>$([System.DateTime]::Now.ToString("yyyy-MM-dd HH:mm:ss"))</BuildTimestamp>
+    <!-- InformationalVersion에 빌드 시각 포함 (파일 속성 정보용) -->
+    <AssemblyInformationalVersion>v1.0.0 | $(BuildTimestamp)</AssemblyInformationalVersion>
+
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="GDAL" Version="3.10.3" />
+    <PackageReference Include="GDAL.Native" Version="3.10.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.122" />
+    <PackageReference Include="NetTopologySuite" Version="2.6.0" />
+    <PackageReference Include="Serilog" Version="4.2.0" />
+    
+    <!-- 지도 라이브러리 제거 -->
+    
+    <!-- 지오메트리 처리 -->
+    <PackageReference Include="NetTopologySuite.IO.GeoJSON" Version="4.0.0" />
+    <PackageReference Include="PdfSharp-MigraDoc" Version="6.2.1" />
+    
+    <!-- 속성 편집 UI -->
+    <PackageReference Include="Xceed.Wpf.Toolkit" Version="4.5.22477.12540" />
+    
+    <!-- PDF 생성 -->
+    <PackageReference Include="iTextSharp.LGPLv2.Core" Version="3.4.21" />
+    
+    <!-- Visual Basic 런타임 (InputBox 사용) -->
+    <PackageReference Include="Microsoft.VisualBasic" Version="10.3.0" />
+    
+    <!-- gRPC 클라이언트 -->
+    <PackageReference Include="Grpc.Net.Client" Version="2.57.0" />
+    <PackageReference Include="Google.Protobuf" Version="3.25.1" />
+    <PackageReference Include="Grpc.Tools" Version="2.57.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <None Update="runtimes\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SpatialCheckPro\SpatialCheckPro.csproj" />
+  </ItemGroup>
+
+  <!-- 지도 관련 소스 제외 -->
+  <ItemGroup>
+    <Compile Remove="Views\MapView.xaml.cs" />
+    <Page Remove="Views\MapView.xaml" />
+    <Compile Remove="Services\GdalMapService.cs" />
+    <Compile Remove="Services\MapInteractionService.cs" />
+    <Compile Remove="Services\IMapInteractionService.cs" />
+    <Compile Remove="Services\IErrorLayerService.cs" />
+    <Compile Remove="Services\ErrorLayerService.cs" />
+    <Compile Remove="Services\IMapErrorTrackingService.cs" />
+    <Compile Remove="Services\IErrorRenderingService.cs" />
+    <Compile Remove="Services\ErrorRenderingService.cs" />
+  </ItemGroup>
+
+  <!-- GDAL Native DLL 복사 설정 -->
+  <Target Name="CopyGdalNativeFiles" AfterTargets="Build">
+    <ItemGroup>
+      <GdalNativeFiles Include="$(NuGetPackageRoot)gdal.native\3.10.3\build\gdal\x64\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(GdalNativeFiles)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
+    <Message Text="GDAL Native 파일 복사 완료" Importance="high" />
+  </Target>
+
+  <!-- Config 파일 복사 설정 -->
+  <ItemGroup>
+    <None Include="..\SpatialCheckPro\Config\**\*.*">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>Config\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+
+</Project>

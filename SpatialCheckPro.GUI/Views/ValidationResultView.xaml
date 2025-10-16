@@ -1,0 +1,1204 @@
+<UserControl x:Class="SpatialCheckPro.GUI.Views.ValidationResultView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <!-- 배치 통계 대시보드 (배치 검수 시에만 표시) - 탭 위 전용 행으로 분리하여 겹침 방지 -->
+        <Border x:Name="BatchStatisticsCard" 
+                Grid.Row="1" 
+                Style="{StaticResource ModernCard}" 
+                Margin="0,0,0,24"
+                Visibility="Collapsed">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                
+                <!-- 카드 헤더 -->
+                <StackPanel Grid.Row="0" Margin="0,0,0,20">
+                    <TextBlock Text="전체 검수 통계" Style="{StaticResource HeadingMedium}"/>
+                    <TextBlock Text="배치 검수 전체 결과 요약" Style="{StaticResource CaptionText}" Margin="0,4,0,0"/>
+                </StackPanel>
+                
+                <!-- 통계 그리드 -->
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <!-- 총 파일 수 -->
+                    <Border Grid.Column="0" Style="{StaticResource ModernCard}" Background="#F8FAFC" Padding="20" Margin="0,0,8,0">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="검수 파일" Style="{StaticResource CaptionText}" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="TotalFilesValueText" 
+                                      Text="0개" 
+                                      FontSize="32" 
+                                      FontWeight="Bold" 
+                                      Foreground="{StaticResource PrimaryColor}"
+                                      HorizontalAlignment="Center"
+                                      Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- 성공 -->
+                    <Border Grid.Column="1" Style="{StaticResource ModernCard}" Background="#ECFDF5" Padding="20" Margin="0,0,8,0">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="성공" Style="{StaticResource CaptionText}" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="SuccessCountValueText" 
+                                      Text="0개" 
+                                      FontSize="32" 
+                                      FontWeight="Bold" 
+                                      Foreground="#10B981"
+                                      HorizontalAlignment="Center"
+                                      Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- 실패 -->
+                    <Border Grid.Column="2" Style="{StaticResource ModernCard}" Background="#FEF2F2" Padding="20" Margin="0,0,8,0">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="실패" Style="{StaticResource CaptionText}" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="FailureCountValueText" 
+                                      Text="0개" 
+                                      FontSize="32" 
+                                      FontWeight="Bold" 
+                                      Foreground="#EF4444"
+                                      HorizontalAlignment="Center"
+                                      Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- 총 오류 -->
+                    <Border Grid.Column="3" Style="{StaticResource ModernCard}" Background="#FFF7ED" Padding="20" Margin="0,0,8,0">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="총 오류" Style="{StaticResource CaptionText}" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="TotalErrorsValueText" 
+                                      Text="0개" 
+                                      FontSize="32" 
+                                      FontWeight="Bold" 
+                                      Foreground="#F97316"
+                                      HorizontalAlignment="Center"
+                                      Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- 전체 소요 시간 -->
+                    <Border Grid.Column="4" Style="{StaticResource ModernCard}" Background="#F0F9FF" Padding="20">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="소요 시간" Style="{StaticResource CaptionText}" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="TotalDurationText" 
+                                      Text="00:00" 
+                                      FontSize="28" 
+                                      FontWeight="Bold" 
+                                      Foreground="#0EA5E9"
+                                      HorizontalAlignment="Center"
+                                      Margin="0,8,0,4"/>
+                            <TextBlock Text="분:초" Style="{StaticResource CaptionText}" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Border>
+        <!-- 헤더 -->
+        <Grid Grid.Row="0" Margin="0,0,0,24">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="검수 결과 대시보드" Style="{StaticResource HeadingLarge}"/>
+                <TextBlock x:Name="BatchSummaryText" 
+                          Text="" 
+                          Style="{StaticResource CaptionText}" 
+                          Margin="0,4,0,0"
+                          Visibility="Collapsed"/>
+            </StackPanel>
+            
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <!-- 배치 파일 선택 콤보박스 -->
+                <ComboBox x:Name="BatchResultSelector" Width="360" Margin="0,0,8,0"
+                          Visibility="Collapsed"
+                          SelectionChanged="BatchResultSelector_SelectionChanged"/>
+                <!-- 판정설명 버튼 -->
+                <Button x:Name="ExplainButton" Style="{StaticResource SecondaryButton}" Click="ExplainButton_Click" Padding="20,12" Margin="12,0,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource InfoIcon}" Fill="{StaticResource PrimaryColor}" Width="16" Height="16" Stretch="Uniform" Margin="0,0,8,0"/>
+                        <TextBlock Text="판정설명"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+        
+        
+        
+        <!-- 탭 컨트롤 (대시보드/단계별/전체 결과) -->
+        <TabControl Grid.Row="2" x:Name="ResultTabControl"
+                   Background="Transparent" 
+                   BorderThickness="0">
+            <TabControl.Resources>
+                <!-- 탭 배경/테두리 색상 (모던 톤) -->
+                <SolidColorBrush x:Key="TabNormalBg" Color="#F1F5F9"/>
+                <SolidColorBrush x:Key="TabHoverBg" Color="#E2E8F0"/>
+                <SolidColorBrush x:Key="TabSelectedBg" Color="#DBEAFE"/>
+                <SolidColorBrush x:Key="TabSelectedBorder" Color="#3B82F6"/>
+                <SolidColorBrush x:Key="TabTextNormal" Color="#334155"/>
+                <SolidColorBrush x:Key="TabTextSelected" Color="#2563EB"/>
+
+                <!-- 탭 아이템 스타일: 라운드 칩 형태 -->
+                <Style TargetType="TabItem">
+                    <Setter Property="Background" Value="{StaticResource TabNormalBg}"/>
+                    <Setter Property="BorderBrush" Value="Transparent"/>
+                    <Setter Property="Foreground" Value="{StaticResource TabTextNormal}"/>
+                    <Setter Property="Padding" Value="14,8"/>
+                    <Setter Property="Margin" Value="0,0,8,0"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="TabItem">
+                                <Border x:Name="Bd"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="10"
+                                        Padding="{TemplateBinding Padding}"
+                                        SnapsToDevicePixels="True">
+                                    <ContentPresenter x:Name="ContentSite"
+                                                      ContentSource="Header"
+                                                      HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"
+                                                      RecognizesAccessKey="True"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <!-- 선택 상태 -->
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter TargetName="Bd" Property="Background" Value="{StaticResource TabSelectedBg}"/>
+                                        <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource TabSelectedBorder}"/>
+                                        <Setter Property="Foreground" Value="{StaticResource TabTextSelected}"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                        <Setter Property="Panel.ZIndex" Value="1"/>
+                                    </Trigger>
+                                    <!-- 호버 상태 -->
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Bd" Property="Background" Value="{StaticResource TabHoverBg}"/>
+                                    </Trigger>
+                                    <!-- 비활성화 -->
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter Property="Foreground" Value="#9CA3AF"/>
+                                        <Setter TargetName="Bd" Property="Opacity" Value="0.8"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </TabControl.Resources>
+
+            <!-- 대시보드 탭 -->
+            <TabItem Header="대시보드" x:Name="DashboardTab">
+                <TabItem.Resources>
+                    <!-- 하위 XAML의 기존 참조(Compact*)와의 호환을 위해 매핑 제공 -->
+                    <Style x:Key="CompactCard" TargetType="Border" BasedOn="{StaticResource KpiCard}"/>
+                    <Style x:Key="CompactCaption" TargetType="TextBlock" BasedOn="{StaticResource KpiCaption}"/>
+                    <Style x:Key="CompactValue" TargetType="TextBlock" BasedOn="{StaticResource KpiValue}"/>
+                </TabItem.Resources>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16" HorizontalAlignment="Stretch">
+                        <Grid HorizontalAlignment="Stretch">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- 검수 요약 카드 (대시보드로 편입) : 바깥 카드 제거로 평면화 -->
+                            <Border Grid.Row="1" Background="Transparent" BorderThickness="0" Margin="0,0,0,12" Padding="0" HorizontalAlignment="Stretch">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- 카드 헤더 -->
+                                    <StackPanel Grid.Row="0" Margin="0,0,0,8"/>
+
+                                    <!-- 요약 그리드 -->
+                                    <Grid Grid.Row="1">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- 검수 상태 -->
+                                        <Border Grid.Column="0" Style="{StaticResource KpiCard}" Background="#F0FDF4" BorderBrush="Transparent" BorderThickness="0" Margin="0,0,8,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="검수 상태" Style="{StaticResource KpiCaption}" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="ValidationStatusText" Text="완료" Style="{StaticResource KpiValue}" Foreground="#16A34A" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- 소요 시간 -->
+                                        <Border Grid.Column="1" Style="{StaticResource KpiCard}" Background="#F0F9FF" BorderBrush="Transparent" BorderThickness="0" Margin="8,0,8,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="소요 시간" Style="{StaticResource KpiCaption}" 
+                                                          HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="ElapsedTimeText" Text="0초" 
+                                                          Style="{StaticResource KpiValue}" 
+                                                          Foreground="#2563EB"
+                                                          HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- 오류 수 -->
+                                        <Border Grid.Column="2" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="8,0,8,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="총 오류" Style="{StaticResource KpiCaption}" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="ErrorCountText" Text="0" Style="{StaticResource KpiValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- 경고 수 -->
+                                        <Border Grid.Column="3" Style="{StaticResource KpiCard}" Background="#FFFBEB" BorderBrush="Transparent" BorderThickness="0" Margin="8,0,0,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="총 경고" Style="{StaticResource KpiCaption}" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="WarningCountText" Text="0" Style="{StaticResource KpiValue}" Foreground="#D97706" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+
+                            <!-- 1단계 카드 : 바깥 카드 제거로 평면화 -->
+                            <Border Grid.Row="2" Background="Transparent" BorderThickness="0" Margin="0,0,0,12" Padding="0" HorizontalAlignment="Stretch">
+                                <StackPanel>
+                                    <TextBlock Text="1단계: 테이블 검수" Style="{StaticResource SectionHeader}" Margin="0,0,0,8"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Column="0" Style="{StaticResource KpiCard}" Background="#F0F9FF" BorderBrush="Transparent" BorderThickness="0" Margin="0,0,8,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="정의된 테이블" Style="{StaticResource KpiCaption}" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="DashStage1TotalTablesText" Text="0" Style="{StaticResource KpiValue}" Foreground="#2563EB" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Grid.Column="1" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="8,0,8,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="정의된 테이블 누락 수" Style="{StaticResource KpiCaption}" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="DashStage1MissingDefinedTablesText" Text="0" Style="{StaticResource KpiValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Grid.Column="2" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="8,0,8,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="정의되지 않은 테이블 수" Style="{StaticResource KpiCaption}" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="DashStage1UndefinedTablesText" Text="0" Style="{StaticResource KpiValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Grid.Column="3" Style="{StaticResource KpiCard}" Background="#FFFBEB" BorderBrush="Transparent" BorderThickness="0" Margin="8,0,0,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="객체가 없는 테이블 수" Style="{StaticResource KpiCaption}" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="DashStage1ZeroFeatureTablesText" Text="0" Style="{StaticResource KpiValue}" Foreground="#D97706" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- 2단계 카드 : 바깥 카드 제거로 평면화 -->
+                            <Border Grid.Row="3" Background="Transparent" BorderThickness="0" Margin="0,0,0,12" Padding="0" HorizontalAlignment="Stretch">
+                                <StackPanel>
+                                    <TextBlock Text="2단계: 스키마 검수" Style="{StaticResource SectionHeader}" Margin="0,0,0,8"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Column="0" Style="{StaticResource KpiCard}" Background="#F0F9FF" BorderBrush="Transparent" BorderThickness="0" Margin="0,0,8,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="총 컬럼 검사 규칙" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="DashStage2TotalColumnsText" Text="0" Style="{StaticResource CompactValue}" Foreground="#2563EB" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Grid.Column="1" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="8,0,8,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="오류" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="DashStage2ErrorCountText" Text="0" Style="{StaticResource CompactValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Grid.Column="2" Style="{StaticResource KpiCard}" Background="#FFFBEB" BorderBrush="Transparent" BorderThickness="0" Margin="8,0,0,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="경고" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="DashStage2WarningCountText" Text="0" Style="{StaticResource CompactValue}" Foreground="#D97706" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- 3단계 카드 : 바깥 카드 제거로 평면화 -->
+                            <Border Grid.Row="4" Background="Transparent" BorderThickness="0" Margin="0,0,0,12" Padding="0" HorizontalAlignment="Stretch">
+                                <StackPanel>
+                                    <TextBlock Text="3단계: 지오메트리 검수" Style="{StaticResource SectionHeader}" Margin="0,0,0,8"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <UniformGrid Grid.Row="0" Columns="6" Margin="0,0,0,0">
+                                            <Border Grid.Column="0" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="0,0,4,4">
+                                                <StackPanel HorizontalAlignment="Center">
+                                                    <TextBlock Text="중복" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                    <TextBlock x:Name="DashStage3DuplicateText" Text="0" Style="{StaticResource CompactValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
+                                            <Border Grid.Column="1" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="4,0,4,4">
+                                                <StackPanel HorizontalAlignment="Center">
+                                                    <TextBlock Text="겹침" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                    <TextBlock x:Name="DashStage3OverlapText" Text="0" Style="{StaticResource CompactValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
+                                            <Border Grid.Column="2" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="4,0,4,4">
+                                                <StackPanel HorizontalAlignment="Center">
+                                                    <TextBlock Text="자체꼬임" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                    <TextBlock x:Name="DashStage3SelfIntersectionText" Text="0" Style="{StaticResource CompactValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
+                                            <Border Grid.Column="3" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="4,0,4,4">
+                                                <StackPanel HorizontalAlignment="Center">
+                                                    <TextBlock Text="자기중첩" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                    <TextBlock x:Name="DashStage3SelfOverlapText" Text="0" Style="{StaticResource CompactValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
+                                            <Border Grid.Column="5" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="4,0,4,4">
+                                                <StackPanel HorizontalAlignment="Center">
+                                                    <TextBlock Text="슬리버" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                    <TextBlock x:Name="DashStage3SliverText" Text="0" Style="{StaticResource CompactValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
+                                            <Border Grid.Column="5" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="4,0,0,4">
+                                                <StackPanel HorizontalAlignment="Center">
+                                                    <TextBlock Text="스파이크" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                    <TextBlock x:Name="DashStage3SpikeText" Text="0" Style="{StaticResource CompactValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </UniformGrid>
+                                        <UniformGrid Grid.Row="1" Columns="6">
+                                            <Border Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="0,4,4,0">
+                                                <StackPanel HorizontalAlignment="Center">
+                                                    <TextBlock Text="짧은객체" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                    <TextBlock x:Name="DashStage3ShortObjectText" Text="0" Style="{StaticResource CompactValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
+                                            <Border Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="4,4,4,0">
+                                                <StackPanel HorizontalAlignment="Center">
+                                                    <TextBlock Text="작은면적" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                    <TextBlock x:Name="DashStage3SmallAreaText" Text="0" Style="{StaticResource CompactValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
+                                            <Border Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="4,4,4,0">
+                                                <StackPanel HorizontalAlignment="Center">
+                                                    <TextBlock Text="홀" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                    <TextBlock x:Name="DashStage3HoleText" Text="0" Style="{StaticResource CompactValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
+                                            <Border Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="4,4,4,0">
+                                                <StackPanel HorizontalAlignment="Center">
+                                                    <TextBlock Text="최소정점" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                    <TextBlock x:Name="DashStage3MinPointText" Text="0" Style="{StaticResource CompactValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
+                                            <Border Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="4,4,4,0">
+                                                <StackPanel HorizontalAlignment="Center">
+                                                    <TextBlock Text="언더슛" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                    <TextBlock x:Name="DashStage3UndershootText" Text="0" Style="{StaticResource CompactValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
+                                            <Border Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="4,4,0,0">
+                                                <StackPanel HorizontalAlignment="Center">
+                                                    <TextBlock Text="오버슛" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                    <TextBlock x:Name="DashStage3OvershootText" Text="0" Style="{StaticResource CompactValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </UniformGrid>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- 4단계 카드: 속성 관계 검수 -->
+                            <Border Grid.Row="5" Background="Transparent" BorderThickness="0" Margin="0,0,0,0" Padding="0" HorizontalAlignment="Stretch">
+                                <StackPanel>
+                                    <TextBlock Text="4단계: 속성 관계 검수" Style="{StaticResource SectionHeader}" Margin="0,0,0,8"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <!-- 검사된 규칙: 첫 번째 -->
+                                        <Border Grid.Column="0" Style="{StaticResource KpiCard}" Background="#F0F9FF" BorderBrush="Transparent" BorderThickness="0" Margin="0,0,8,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="검사된 규칙" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="DashStage4RuleCountText" Text="0" Style="{StaticResource CompactValue}" Foreground="#2563EB" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <!-- 속성 관계 오류: 두 번째 -->
+                                        <Border Grid.Column="1" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="8,0,8,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="속성 관계 오류" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="DashStage4AttrErrorText" Text="0" Style="{StaticResource CompactValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <!-- 속성 관계 경고: 세 번째 -->
+                                        <Border Grid.Column="2" Style="{StaticResource KpiCard}" Background="#FFFBEB" BorderBrush="Transparent" BorderThickness="0" Margin="8,0,0,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="속성 관계 경고" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="DashStage4AttrWarnText" Text="0" Style="{StaticResource CompactValue}" Foreground="#D97706" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- 5단계 카드: 공간 관계 검수 : 바깥 카드 제거로 평면화 -->
+                            <Border Grid.Row="6" Background="Transparent" BorderThickness="0" Margin="0,0,0,12" Padding="0" HorizontalAlignment="Stretch">
+                                <StackPanel>
+                                    <TextBlock Text="5단계: 공간 관계 검수" Style="{StaticResource SectionHeader}" Margin="0,0,0,8"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <!-- 검사된 규칙: 첫 번째 -->
+                                        <Border Grid.Column="0" Style="{StaticResource KpiCard}" Background="#F0F9FF" BorderBrush="Transparent" BorderThickness="0" Margin="0,0,8,0">
+                                            <StackPanel HorizontalAlignment="Center" Margin="0,4,0,4">
+                                                <TextBlock Text="검사된 규칙" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="DashTotalRulesText" Text="0" Style="{StaticResource CompactValue}" Foreground="#2563EB" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <!-- 공간 관계 오류: 붉은 계열 두 번째 -->
+                                        <Border Grid.Column="1" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="8,0,8,0">
+                                            <StackPanel HorizontalAlignment="Center" Margin="0,4,0,4">
+                                                <TextBlock Text="공간 관계 오류" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="DashSpatialErrorCountText" Text="0" Style="{StaticResource CompactValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <!-- 공간 관계 경고: 노란 계열 세 번째 -->
+                                        <Border Grid.Column="2" Style="{StaticResource KpiCard}" Background="#FFFBEB" BorderBrush="Transparent" BorderThickness="0" Margin="8,0,0,0">
+                                            <StackPanel HorizontalAlignment="Center" Margin="0,4,0,4">
+                                                <TextBlock Text="경고" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="DashSpatialWarnCountText" Text="0" Style="{StaticResource CompactValue}" Foreground="#D97706" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+            
+            
+            <!-- 1단계 테이블 검수 탭 -->
+            <TabItem Header="1단계: 테이블 검수" x:Name="Stage1Tab">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+                        <Border Style="{StaticResource ModernCard}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                
+                                <StackPanel Grid.Row="0" Margin="0,0,0,20">
+                                    <TextBlock Text="1단계: 테이블 검수 결과" Style="{StaticResource HeadingMedium}"/>
+                                    <TextBlock Text="테이블 구조 및 피처 타입 검증 결과" 
+                                              Style="{StaticResource CaptionText}" Margin="0,4,0,0"/>
+                                </StackPanel>
+
+                                <!-- 1단계 검수 요약 -->
+                                <Grid Grid.Row="1" Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- 총 테이블 -->
+                                    <Border Grid.Column="0" Style="{StaticResource KpiCard}" 
+                                           Background="#F0F9FF" BorderBrush="#2563EB" Margin="0,0,8,0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="총 테이블" Style="{StaticResource CaptionText}" 
+                                                      HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                            <TextBlock x:Name="Stage1TotalTablesText" Text="0" 
+                                                      Style="{StaticResource HeadingMedium}" 
+                                                      Foreground="#2563EB"
+                                                      HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- 정의된 테이블 없음 수 -->
+                                    <Border Grid.Column="1" Style="{StaticResource KpiCard}" 
+                                           Background="#FEF2F2" BorderBrush="#DC2626" Margin="8,0,8,0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="정의된 테이블 없음" Style="{StaticResource CaptionText}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                            <TextBlock x:Name="Stage1MissingDefinedTablesText" Text="0" Style="{StaticResource HeadingMedium}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- 미정의된 테이블 수 -->
+                                    <Border Grid.Column="2" Style="{StaticResource KpiCard}" 
+                                           Background="#FEF2F2" BorderBrush="#DC2626" Margin="8,0,8,0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="미정의된 테이블" Style="{StaticResource CaptionText}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                            <TextBlock x:Name="Stage1UndefinedTablesText" Text="0" Style="{StaticResource HeadingMedium}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- 객체 미존재 테이블 수 -->
+                                    <Border Grid.Column="3" Style="{StaticResource KpiCard}" 
+                                           Background="#FFFBEB" BorderBrush="#D97706" Margin="8,0,0,0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="객체 미존재 테이블" Style="{StaticResource CaptionText}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                            <TextBlock x:Name="Stage1ZeroFeatureTablesText" Text="0" Style="{StaticResource HeadingMedium}" Foreground="#D97706" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                                
+                                <DataGrid Grid.Row="2" x:Name="TableResultsGrid" 
+                                         AutoGenerateColumns="False" 
+                                         IsReadOnly="True"
+                                         GridLinesVisibility="None"
+                                         HeadersVisibility="Column"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         RowBackground="Transparent"
+                                         AlternatingRowBackground="#F8FAFC"
+                                         MinHeight="300"
+                                         MaxHeight="400"
+                                         ScrollViewer.CanContentScroll="True"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                         VerticalScrollBarVisibility="Auto"
+                                         HorizontalScrollBarVisibility="Auto"
+                                         CanUserResizeColumns="True"
+                                         ColumnWidth="*">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="테이블ID" Binding="{Binding TableId}" Width="*"/>
+                                        <DataGridTextColumn Header="테이블명" Binding="{Binding TableName}" Width="*"/>
+                                        <DataGridTextColumn Header="피처객체수" Binding="{Binding FeatureCount, TargetNullValue='N/A'}" Width="*"/>
+                                        <DataGridTextColumn Header="피처타입" Binding="{Binding FeatureType}" Width="*"/>
+                                        <DataGridTextColumn Header="피처타입확인" Binding="{Binding FeatureTypeCheck}" Width="*"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- 2단계 스키마 검수 탭 -->
+            <TabItem Header="2단계: 스키마 검수" x:Name="Stage2Tab">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+                        <Border Style="{StaticResource ModernCard}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                
+                                <StackPanel Grid.Row="0" Margin="0,0,0,20">
+                                    <TextBlock Text="2단계: 스키마 검수 결과" Style="{StaticResource HeadingMedium}"/>
+                                    <TextBlock Text="컬럼 구조, 데이터 타입, 제약조건 검증 결과" 
+                                              Style="{StaticResource CaptionText}" Margin="0,4,0,0"/>
+                                </StackPanel>
+
+                                <!-- 2단계 검수 요약 -->
+                                <Grid Grid.Row="1" Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- 총 컬럼 검사 -->
+                                        <Border Grid.Column="0" Style="{StaticResource KpiCard}" 
+                                           Background="#F0F9FF" BorderBrush="Transparent" BorderThickness="0" Margin="0,0,8,0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="총 컬럼 검사" Style="{StaticResource CaptionText}" 
+                                                      HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                            <TextBlock x:Name="Stage2TotalColumnsText" Text="0" 
+                                                      Style="{StaticResource HeadingMedium}" 
+                                                      Foreground="#2563EB"
+                                                      HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- 오류 수 -->
+                                        <Border Grid.Column="1" Style="{StaticResource KpiCard}" 
+                                           Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="8,0,8,0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="오류" Style="{StaticResource CaptionText}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                            <TextBlock x:Name="Stage2ErrorCountText" Text="0" Style="{StaticResource HeadingMedium}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- 경고 수 -->
+                                        <Border Grid.Column="2" Style="{StaticResource KpiCard}" 
+                                           Background="#FFFBEB" BorderBrush="Transparent" BorderThickness="0" Margin="8,0,0,0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="경고" Style="{StaticResource CaptionText}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                            <TextBlock x:Name="Stage2WarningCountText" Text="0" Style="{StaticResource HeadingMedium}" Foreground="#D97706" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                                
+                                <DataGrid Grid.Row="2" x:Name="SchemaResultsGrid" 
+                                         AutoGenerateColumns="False" 
+                                         IsReadOnly="True"
+                                         GridLinesVisibility="None"
+                                         HeadersVisibility="Column"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         RowBackground="Transparent"
+                                         AlternatingRowBackground="#F8FAFC"
+                                         MinHeight="300"
+                                         MaxHeight="400"
+                                         ScrollViewer.CanContentScroll="True"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                         VerticalScrollBarVisibility="Auto"
+                                         HorizontalScrollBarVisibility="Auto"
+                                         CanUserResizeColumns="True"
+                                         ColumnWidth="*">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="테이블ID" Binding="{Binding TableId}" Width="*"/>
+                                        <DataGridTextColumn Header="컬럼명" Binding="{Binding ColumnName}" Width="*"/>
+                                        <DataGridTextColumn Header="컬럼한글명" Binding="{Binding ColumnKoreanName}" Width="*"/>
+                                        <DataGridTextColumn Header="예상타입" Binding="{Binding ExpectedDataType}" Width="*"/>
+                                        <DataGridTextColumn Header="실제타입" Binding="{Binding ActualDataType}" Width="*"/>
+                                        <DataGridTextColumn Header="길이일치" Binding="{Binding LengthMatches}" Width="*"/>
+                                        <DataGridTextColumn Header="NN일치" Binding="{Binding NotNullMatches}" Width="*"/>
+                                        <DataGridTextColumn Header="검수결과" Binding="{Binding IsValid}" Width="*"/>
+                                        <DataGridTextColumn Header="내용" Binding="{Binding ErrorContent}" Width="*"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- 3단계 지오메트리 검수 탭 -->
+            <TabItem Header="3단계: 지오메트리 검수" x:Name="Stage3Tab">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+                        <Border Style="{StaticResource ModernCard}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                
+                                <StackPanel Grid.Row="0" Margin="0,0,0,20">
+                                    <TextBlock Text="3단계: 지오메트리 검수 결과" Style="{StaticResource HeadingMedium}"/>
+                                    <TextBlock Text="중복, 겹침, 꼬임, 슬리버 폴리곤 검사 결과" 
+                                              Style="{StaticResource CaptionText}" Margin="0,4,0,0"/>
+                                </StackPanel>
+
+                                <!-- 3단계 검수 요약 -->
+                                <Grid Grid.Row="1" Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- 검사 테이블 수 -->
+                                        <Border Grid.Column="0" Style="{StaticResource KpiCard}" 
+                                           Background="#F0F9FF" BorderBrush="#2563EB" Margin="0,0,8,0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="검사 테이블" Style="{StaticResource CaptionText}" 
+                                                      HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                            <TextBlock x:Name="Stage3TableCountText" Text="0" 
+                                                      Style="{StaticResource HeadingMedium}" 
+                                                      Foreground="#2563EB"
+                                                      HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- 오류 합계 -->
+                                        <Border Grid.Column="1" Style="{StaticResource KpiCard}"
+                                           Background="#FEF2F2" BorderBrush="#DC2626" Margin="8,0,8,0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="오류 합계" Style="{StaticResource CaptionText}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                            <TextBlock x:Name="Stage3ErrorSumText" Text="0" Style="{StaticResource HeadingMedium}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- 경고 합계 -->
+                                        <Border Grid.Column="2" Style="{StaticResource KpiCard}"
+                                           Background="#FFFBEB" BorderBrush="#D97706" Margin="8,0,0,0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="경고 합계" Style="{StaticResource CaptionText}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                            <TextBlock x:Name="Stage3WarningSumText" Text="0" Style="{StaticResource HeadingMedium}" Foreground="#D97706" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                                
+                                <DataGrid Grid.Row="2" x:Name="GeometryResultsGrid"
+                                         AutoGenerateColumns="False" 
+                                         IsReadOnly="True"
+                                         GridLinesVisibility="None"
+                                         HeadersVisibility="Column"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         RowBackground="Transparent"
+                                         AlternatingRowBackground="#F8FAFC"
+                                         MinHeight="300"
+                                         MaxHeight="400"
+                                         CanUserSortColumns="True"
+                                         
+                                         ScrollViewer.CanContentScroll="True"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                         VerticalScrollBarVisibility="Auto"
+                                         HorizontalScrollBarVisibility="Auto"
+                                         CanUserResizeColumns="True">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="테이블ID" Binding="{Binding TableId}" Width="*" 
+                                                           CanUserSort="True" SortMemberPath="TableId"/>
+                                        <DataGridTextColumn Header="검수항목" Binding="{Binding CheckType}" Width="*" 
+                                                           CanUserSort="True" SortMemberPath="CheckType"/>
+                                        <DataGridTextColumn Header="기준값" Binding="{Binding Threshold}" Width="*" 
+                                                           CanUserSort="True" SortMemberPath="Threshold"/>
+                                        <DataGridTemplateColumn Header="종류" Width="*" 
+                                                               CanUserSort="True" SortMemberPath="ErrorTypesSummary">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding ErrorTypesSummary}" 
+                                                              ToolTip="{Binding PrimaryErrorType}"
+                                                              TextWrapping="Wrap">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding HasErrors}" Value="False">
+                                                                        <Setter Property="Foreground" Value="#10B981"/>
+                                                                        <Setter Property="FontWeight" Value="Medium"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding HasErrors}" Value="True">
+                                                                        <Setter Property="Foreground" Value="#EF4444"/>
+                                                                        <Setter Property="FontWeight" Value="Bold"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTemplateColumn Header="개수" Width="*" 
+                                                               CanUserSort="True" SortMemberPath="ErrorCount">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding ErrorCount}">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding ErrorCount}" Value="0">
+                                                                        <Setter Property="Foreground" Value="#10B981"/>
+                                                                        <Setter Property="FontWeight" Value="Medium"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding HasErrors}" Value="True">
+                                                                        <Setter Property="Foreground" Value="#EF4444"/>
+                                                                        <Setter Property="FontWeight" Value="Bold"/>
+                                                                        <Setter Property="Cursor" Value="Hand"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTemplateColumn Header="검수결과" Width="*" 
+                                                               CanUserSort="True" SortMemberPath="Status">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Status}">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Status}" Value="통과">
+                                                                        <Setter Property="Foreground" Value="#10B981"/>
+                                                                        <Setter Property="FontWeight" Value="Medium"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Status}" Value="실패">
+                                                                        <Setter Property="Foreground" Value="#EF4444"/>
+                                                                        <Setter Property="FontWeight" Value="Bold"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Status}" Value="">
+                                                                        <Setter Property="Foreground" Value="#F59E0B"/>
+                                                                        <Setter Property="FontWeight" Value="Medium"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- 4단계 속성 검수 탭 -->
+            <TabItem Header="4단계: 속성 관계 검수" x:Name="Stage4Tab">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+                        
+                        <!-- 속성 검수 요약 카드 -->
+                        <Border Style="{StaticResource ModernCard}" Margin="0,0,0,16">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                
+                                <StackPanel Grid.Row="0" Margin="0,0,0,16">
+                                    <TextBlock Text="속성 검수 요약" Style="{StaticResource HeadingMedium}"/>
+                                    <TextBlock Text="속성 값 기반 규칙 검수 결과 요약" Style="{StaticResource CaptionText}" Margin="0,4,0,0"/>
+                                </StackPanel>
+                                
+                                <Grid Grid.Row="1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="1*"/>
+                                        <ColumnDefinition Width="1*"/>
+                                        <ColumnDefinition Width="1*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- 검사된 규칙(속성): 첫 번째 -->
+                                        <Border Grid.Column="0" Style="{StaticResource KpiCard}" Background="#F0F9FF" BorderBrush="#2563EB" Margin="0,0,8,0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="검사된 규칙" Style="{StaticResource CaptionText}" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="Stage5RuleCountText" Text="0" Style="{StaticResource HeadingMedium}" Foreground="#2563EB" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- 속성 관계 오류: 두 번째 -->
+                                    <Border Grid.Column="1" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="#DC2626" Margin="8,0,8,0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="속성 관계 오류" Style="{StaticResource CaptionText}" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="AttributeErrorCountText" Text="0" Style="{StaticResource HeadingMedium}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- 속성 관계 경고: 세 번째 -->
+                                        <Border Grid.Column="2" Style="{StaticResource KpiCard}" Background="#FFFBEB" BorderBrush="#D97706" Margin="8,0,0,0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="속성 관계 경고" Style="{StaticResource CaptionText}" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="AttributeWarnCountText" Text="0" Style="{StaticResource HeadingMedium}" Foreground="#D97706" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                        
+                        <!-- 속성 관계 오류/경고 목록 -->
+                        <Border Style="{StaticResource ModernCard}" Margin="0,0,0,16">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                
+                                <StackPanel Grid.Row="0" Margin="0,0,0,16">
+                                    <TextBlock Text="속성 관계 결과" Style="{StaticResource HeadingMedium}"/>
+                                    <TextBlock Text="규칙 기반 속성·교차관계 검수 결과" 
+                                              Style="{StaticResource CaptionText}" Margin="0,4,0,0"/>
+                                </StackPanel>
+                                
+                                <DataGrid Grid.Row="1" x:Name="AttributeRelationErrorsGrid" 
+                                         AutoGenerateColumns="False" 
+                                         IsReadOnly="True"
+                                         GridLinesVisibility="None"
+                                         HeadersVisibility="Column"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         RowBackground="Transparent"
+                                         AlternatingRowBackground="#F8FAFC"
+                                         MinHeight="200"
+                                         MaxHeight="300"
+                                         CanUserSortColumns="True"
+                                         
+                                         ScrollViewer.CanContentScroll="True"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                         VerticalScrollBarVisibility="Auto"
+                                         HorizontalScrollBarVisibility="Auto"
+                                         CanUserResizeColumns="True">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="테이블명" Binding="{Binding TableName}" Width="*" 
+                                                           CanUserSort="True" SortMemberPath="TableName"/>
+                                        <DataGridTextColumn Header="필드명" Binding="{Binding FieldName}" Width="*" 
+                                                           CanUserSort="True" SortMemberPath="FieldName"/>
+                                        <DataGridTextColumn Header="규칙명" Binding="{Binding RuleName}" Width="*" 
+                                                           CanUserSort="True" SortMemberPath="RuleName"/>
+                                        <DataGridTextColumn Header="객체ID" Binding="{Binding ObjectId}" Width="*" 
+                                                           CanUserSort="True" SortMemberPath="ObjectId"/>
+                                        <DataGridTextColumn Header="기대값" Binding="{Binding ExpectedValue}" Width="*" 
+                                                           CanUserSort="True" SortMemberPath="ExpectedValue"/>
+                                        <DataGridTextColumn Header="실제값" Binding="{Binding ActualValue}" Width="*" 
+                                                           CanUserSort="True" SortMemberPath="ActualValue"/>
+                                        <DataGridTextColumn Header="메시지" Binding="{Binding Message}" Width="*"/>
+                                        
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Grid>
+                        </Border>
+                        
+                        
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- 5단계 공간 관계 검수 탭 -->
+            <TabItem Header="5단계: 공간 관계 검수" x:Name="Stage5Tab">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+                        
+                        <!-- 공간 관계 요약 카드 -->
+                        <Border Style="{StaticResource ModernCard}" Margin="0,0,0,16" Height="177.12">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                
+                                <StackPanel Grid.Row="0" Margin="0,0,0,16">
+                                    <TextBlock Text="공간 관계 검수 요약" Style="{StaticResource HeadingMedium}"/>
+                                    <TextBlock Text="점-폴리곤, 선-폴리곤, 폴리곤-폴리곤 관계 검수 결과 요약" Style="{StaticResource CaptionText}" Margin="0,4,0,0"/>
+                                </StackPanel>
+                                  <Grid Grid.Row="1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <!-- 검사된 규칙(공간): 첫 번째 -->
+                                    <Border Grid.Column="0" Style="{StaticResource KpiCard}" Background="#F0F9FF" BorderBrush="#2563EB" Margin="0,0,8,0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="검사된 규칙" Style="{StaticResource CaptionText}" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="TotalRulesText" Text="0" Style="{StaticResource HeadingMedium}" Foreground="#2563EB" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    
+                                    <!-- 공간 관계 오류: 붉은 계열 -->
+                                    <Border Grid.Column="1" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="#DC2626" Margin="8,0,8,0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="공간 관계 오류" Style="{StaticResource CaptionText}" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="SpatialErrorCountText" Text="0" Style="{StaticResource HeadingMedium}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    
+                                    <!-- 공간 관계 경고: 노란 계열 -->
+                                    <Border Grid.Column="2" Style="{StaticResource KpiCard}" Background="#FFFBEB" BorderBrush="#D97706" Margin="8,0,0,0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="경고" Style="{StaticResource CaptionText}" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="SpatialWarnCountText" Text="0" Style="{StaticResource HeadingMedium}" Foreground="#D97706" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                        
+                        <!-- 공간 관계 오류 목록 -->
+                        <Border Style="{StaticResource ModernCard}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                
+                                <StackPanel Grid.Row="0" Margin="0,0,0,16">
+                                    <TextBlock Text="공간 관계 결과" Style="{StaticResource HeadingMedium}"/>
+                                    <TextBlock Text="점-폴리곤, 선-폴리곤, 폴리곤-폴리곤 관계 검수 결과" 
+                                              Style="{StaticResource CaptionText}" Margin="0,4,0,0"/>
+                                </StackPanel>
+                                
+                                <DataGrid Grid.Row="1" x:Name="SpatialRelationErrorsGrid" 
+                                         AutoGenerateColumns="False" 
+                                         IsReadOnly="True"
+                                         GridLinesVisibility="None"
+                                         HeadersVisibility="Column"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         RowBackground="Transparent"
+                                         AlternatingRowBackground="#F8FAFC"
+                                         MinHeight="200"
+                                         MaxHeight="400"
+                                         CanUserSortColumns="True"
+                                         
+                                         ScrollViewer.CanContentScroll="True"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                         VerticalScrollBarVisibility="Auto"
+                                         HorizontalScrollBarVisibility="Auto"
+                                         CanUserResizeColumns="True">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="원본 레이어" Binding="{Binding SourceLayer}" Width="*" CanUserSort="True" SortMemberPath="SourceLayer"/>
+                                        <DataGridTextColumn Header="관계 타입" Binding="{Binding RelationType}" Width="*" CanUserSort="True" SortMemberPath="RelationType"/>
+                                        <DataGridTextColumn Header="유형" Binding="{Binding ErrorType}" Width="*" CanUserSort="True" SortMemberPath="ErrorType"/>
+                                        <DataGridTextColumn Header="원본 객체ID" Binding="{Binding SourceObjectId}" Width="*" CanUserSort="True" SortMemberPath="SourceObjectId"/>
+                                        <DataGridTextColumn Header="메시지" Binding="{Binding Message}" Width="*"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Grid>
+                        </Border>
+                        
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- 전체 결과 탭 -->
+            <TabItem Header="전체 결과" x:Name="AllResultsTab">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+                        <Border Style="{StaticResource ModernCard}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                
+                                <StackPanel Grid.Row="0" Margin="0,0,0,20">
+                                    <TextBlock Text="전체 검수 결과" Style="{StaticResource HeadingMedium}"/>
+                                    <TextBlock Text="모든 단계의 결과 통합 목록" 
+                                              Style="{StaticResource CaptionText}" Margin="0,4,0,0"/>
+                                </StackPanel>
+                                
+                                <!-- 고급 필터: 가독성 향상을 위한 2행 그리드 레이아웃 -->
+                                <Grid Grid.Row="1" Margin="0,0,0,16">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- 1행: 포함/제외 키워드 + 테이블 필터 + 초기화 -->
+                                    <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal">
+                                        <StackPanel Width="260" Margin="0,0,12,0">
+                                            <TextBlock Text="포함 키워드" Style="{StaticResource CaptionText}"/>
+                                            <TextBox x:Name="IncludeTextBox" Style="{StaticResource ModernTextBox}"/>
+                                        </StackPanel>
+                                        <StackPanel Width="260" Margin="0,0,12,0">
+                                            <TextBlock Text="제외 키워드" Style="{StaticResource CaptionText}"/>
+                                            <TextBox x:Name="ExcludeTextBox" Style="{StaticResource ModernTextBox}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <!-- 1행: 테이블 필터 검색 -->
+                                    <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Vertical" Margin="0,0,0,0">
+                                        <TextBlock Text="테이블 필터" Style="{StaticResource CaptionText}"/>
+                                        <TextBox x:Name="TableFilterSearchBox" Style="{StaticResource ModernTextBox}" MinWidth="260"/>
+                                    </StackPanel>
+
+                                    <Button Grid.Row="0" Grid.Column="2" x:Name="ClearFiltersButton" Content="모두 지우기" Style="{StaticResource SecondaryButton}" VerticalAlignment="Top"/>
+
+                                    <!-- 2행: 단계/심각도/테이블 -->
+                                    <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,8,0,0">
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,16,0">
+                                            <TextBlock Text="단계" Style="{StaticResource CaptionText}" Margin="0,0,8,0"/>
+                                            <UniformGrid Rows="1" Columns="5" Width="180">
+                                                <CheckBox x:Name="Stage1Check" Content="1"/>
+                                                <CheckBox x:Name="Stage2Check" Content="2"/>
+                                                <CheckBox x:Name="Stage3Check" Content="3"/>
+                                                <CheckBox x:Name="Stage4Check" Content="4"/>
+                                                <CheckBox x:Name="Stage5Check" Content="5"/>
+                                            </UniformGrid>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,16,0">
+                                            <TextBlock Text="심각도" Style="{StaticResource CaptionText}" Margin="0,0,8,0"/>
+                                            <UniformGrid Rows="1" Columns="2" Width="120">
+                                                <CheckBox x:Name="SeverityErrorCheck" Content="오류"/>
+                                                <CheckBox x:Name="SeverityWarnCheck" Content="경고"/>
+                                            </UniformGrid>
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <!-- 테이블 리스트 제거: 검색창만 사용 -->
+                                </Grid>
+                                
+                                <!-- 결과 데이터 그리드 -->
+                                <DataGrid Grid.Row="2" x:Name="ResultsDataGrid" 
+                                         AutoGenerateColumns="False" 
+                                         IsReadOnly="True"
+                                         GridLinesVisibility="None"
+                                         HeadersVisibility="Column"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         RowBackground="Transparent"
+                                         AlternatingRowBackground="#F8FAFC"
+                                         MinHeight="400"
+                                         MaxHeight="500"
+                                         ScrollViewer.CanContentScroll="True"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                         VerticalScrollBarVisibility="Auto"
+                                         HorizontalScrollBarVisibility="Auto"
+                                         CanUserResizeColumns="True">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="검수 단계" Binding="{Binding Stage}" Width="100" SortMemberPath="Stage"/>
+                                        <DataGridTextColumn Header="테이블" Binding="{Binding TableName}" Width="140" SortMemberPath="TableName"/>
+                                        <DataGridTextColumn Header="유형" Binding="{Binding ErrorType}" Width="160" SortMemberPath="ErrorType"/>
+                                        <DataGridTextColumn Header="메시지" Binding="{Binding Message}" Width="*" SortMemberPath="Message"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+        </TabControl>
+    </Grid>
+</UserControl>

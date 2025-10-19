@@ -20,8 +20,7 @@
                 
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="검수 진행" Style="{StaticResource HeadingLarge}"/>
-                    <TextBlock Text="검수 과정을 실시간으로 모니터링합니다" 
-                              Style="{StaticResource CaptionText}" Margin="0,4,0,0"/>
+                    <TextBlock Text="검사 과정을 실시간으로 모니터링합니다" Style="{StaticResource CaptionText}"/>
                 </StackPanel>
                 
                 <Button Grid.Column="1" x:Name="StopValidationButton" 
@@ -60,6 +59,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         
                         <ProgressBar x:Name="ProgressBar" 
@@ -74,6 +74,15 @@
                                   Style="{StaticResource BodyText}" 
                                   FontWeight="Medium"
                                   VerticalAlignment="Center"/>
+
+                        <Border Grid.Column="2" Style="{StaticResource StageStatusBadge}" Background="#E0F2FE" Margin="16,0,0,0"
+                                Visibility="{Binding RemainingTotalEta, Converter={StaticResource NullToVisibilityConverter}}">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="예상 남은 시간" Style="{StaticResource CaptionText}" FontWeight="SemiBold"/>
+                                <TextBlock Text=" " />
+                                <TextBlock Text="{Binding RemainingEtaConfidence, StringFormat=({0:P0})}" Style="{StaticResource CaptionText}"/>
+                            </StackPanel>
+                        </Border>
                     </Grid>
                     
                     <!-- 상세 정보 (통계 대시보드) -->
@@ -194,8 +203,12 @@
                                         </StackPanel>
 
                                         <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="16,0,0,0">
-                                            <Border Style="{StaticResource StageStatusBadge}" Background="#E0F2FE" Visibility="{Binding EstimatedRemaining, Converter={StaticResource NullToVisibilityConverter}}">
-                                                <TextBlock Text="{Binding EstimatedRemaining, StringFormat=남은 시간 {0:hh\\:mm\\:ss}}" Style="{StaticResource EtaBadgeText}"/>
+                                            <Border Style="{StaticResource StageStatusBadge}" Background="#E0F2FE" Visibility="{Binding EtaDisplayHint, Converter={StaticResource NullToVisibilityConverter}}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding EtaDisplayHint}" Style="{StaticResource EtaBadgeText}"/>
+                                                    <TextBlock Text=" " />
+                                                    <TextBlock Text="{Binding EtaConfidence, StringFormat=({0:P0})}" Style="{StaticResource CaptionText}"/>
+                                                </StackPanel>
                                             </Border>
                                             <StackPanel Orientation="Horizontal" Margin="0,8,0,0" Visibility="{Binding HasUnitInfo, Converter={StaticResource BooleanToVisibilityConverter}}">
                                                 <TextBlock Text="단위" Style="{StaticResource CaptionText}" Margin="0,0,4,0"/>

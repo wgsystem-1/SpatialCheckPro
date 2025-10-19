@@ -8,11 +8,15 @@ using System.Windows.Controls;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 using SpatialCheckPro.Services;
 using SpatialCheckPro.Processors;
 using SpatialCheckPro.GUI.Services;
 using SpatialCheckPro.GUI.Views;
 using SpatialCheckPro.GUI.ViewModels;
+using SpatialCheckPro.Models;
+using SpatialCheckPro.Services.RemainingTime;
+using SpatialCheckPro.Data;
 
 namespace SpatialCheckPro.GUI
 {
@@ -22,6 +26,7 @@ namespace SpatialCheckPro.GUI
     public partial class App : Application
     {
         private ServiceProvider? _serviceProvider;
+        public IServiceProvider? ServiceProvider => _serviceProvider;
 
         static App()
         {
@@ -100,6 +105,38 @@ namespace SpatialCheckPro.GUI
 
                 // 기본 서비스들 (의존성 없음)
                 services.AddSingleton<CsvConfigService>();
+                
+                // 데이터베이스 관련 서비스 등록 (다른 서비스들이 필요로 함)
+                services.AddSingleton<IAppSettingsService, AppSettingsService>();
+                
+                // 지오메트리 검수 설정 분석 서비스 등록
+                services.AddSingleton<GeometryConfigAnalysisService>();
+                
+                services.AddDbContextFactory<ValidationDbContext>((serviceProvider, options) =>
+                {
+                    var appSettingsService = serviceProvider.GetRequiredService<IAppSettingsService>();
+                    var databaseSettings = appSettingsService.LoadSettings().Database;
+                    
+                    options.UseSqlite(databaseSettings.ConnectionString);
+                    if (databaseSettings.EnableSensitiveDataLogging)
+                    {
+                        options.EnableSensitiveDataLogging();
+                    }
+                    options.EnableServiceProviderCaching();
+                });
+                
+                // ValidationDbContext 자체도 등록 (다른 서비스에서 필요할 수 있음)
+                services.AddDbContext<ValidationDbContext>((serviceProvider, options) =>
+                {
+                    var appSettingsService = serviceProvider.GetRequiredService<IAppSettingsService>();
+                    var databaseSettings = appSettingsService.LoadSettings().Database;
+                    
+                    options.UseSqlite(databaseSettings.ConnectionString);
+                    if (databaseSettings.EnableSensitiveDataLogging)
+                    {
+                        options.EnableSensitiveDataLogging();
+                    }
+                });
                 
             // 성능 및 병렬 처리 관련 서비스들 먼저 등록
             services.AddSingleton<SystemResourceAnalyzer>();
@@ -200,6 +237,7 @@ namespace SpatialCheckPro.GUI
                 services.AddSingleton<QcStoragePathService>();
 
                 // 뷰모델 등록
+                services.AddSingleton<IRemainingTimeEstimator, AdaptiveRemainingTimeEstimator>();
                 services.AddSingleton<StageSummaryCollectionViewModel>();
                 services.AddSingleton<AlertAggregationService>();
 

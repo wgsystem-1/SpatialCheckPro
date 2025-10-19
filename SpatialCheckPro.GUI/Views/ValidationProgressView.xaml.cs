@@ -34,7 +34,7 @@ namespace SpatialCheckPro.GUI.Views
                 return existing;
             }
 
-            var fallback = new StageSummaryCollectionViewModel();
+            var fallback = ((App)Application.Current).GetService<StageSummaryCollectionViewModel>() ?? throw new InvalidOperationException("StageSummaryCollectionViewModel 서비스를 찾을 수 없습니다.");
             DataContext = fallback;
             return fallback;
         }

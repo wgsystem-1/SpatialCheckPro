@@ -18,6 +18,7 @@ using SpatialCheckPro.Services;
 using WinForms = System.Windows.Forms;
 using SpatialCheckPro.GUI.ViewModels;
 using Microsoft.Extensions.Logging.Abstractions;
+using SpatialCheckPro.Services.RemainingTime;
 
 namespace SpatialCheckPro.GUI
 {
@@ -119,23 +120,26 @@ namespace SpatialCheckPro.GUI
                         _qcErrorService = app.GetService<QcErrorService>();
                         File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] QcErrorService: {_qcErrorService != null}\n");
 
-                var stageSummaryVm = app.GetService<StageSummaryCollectionViewModel>();
-                var alertAggregationService = app.GetService<AlertAggregationService>();
-                        File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] StageSummaryCollectionViewModel: {stageSummaryVm != null}\n");
-                        File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] AlertAggregationService: {alertAggregationService != null}\n");
+                        var etaEstimator = app.ServiceProvider?.GetService(typeof(IRemainingTimeEstimator)) as IRemainingTimeEstimator;
+                        if (etaEstimator != null)
+                        {
+                            _stageSummaryCollectionViewModel = app.GetService<StageSummaryCollectionViewModel>() ?? new StageSummaryCollectionViewModel(etaEstimator);
+                        }
 
-                        if (_validationService != null && _qcErrorService != null && stageSummaryVm != null && alertAggregationService != null)
+                        _alertAggregationService = app.GetService<AlertAggregationService>();
+                        File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] StageSummaryCollectionViewModel: {_stageSummaryCollectionViewModel != null}\n");
+                        File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] AlertAggregationService: {_alertAggregationService != null}\n");
+
+                        if (_validationService != null && _qcErrorService != null && _stageSummaryCollectionViewModel != null && _alertAggregationService != null)
                         {
                             _logger?.LogInformation("서비스 초기화 완료");
                             File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 모든 서비스 초기화 성공\n");
-                    _stageSummaryCollectionViewModel = stageSummaryVm;
-                    _alertAggregationService = alertAggregationService;
                         }
                         else
                         {
-                            _logger?.LogWarning($"일부 서비스 초기화 실패 - ValidationService: {_validationService != null}, QcErrorService: {_qcErrorService != null}, StageSummaryCollectionViewModel: {stageSummaryVm != null}, AlertAggregationService: {alertAggregationService != null}");
-                            System.Diagnostics.Debug.WriteLine($"서비스 초기화 상태 - ValidationService: {_validationService != null}, QcErrorService: {_qcErrorService != null}, StageSummaryCollectionViewModel: {stageSummaryVm != null}, AlertAggregationService: {alertAggregationService != null}");
-                            File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 서비스 초기화 실패 - ValidationService: {_validationService != null}, QcErrorService: {_qcErrorService != null}, StageSummaryCollectionViewModel: {stageSummaryVm != null}, AlertAggregationService: {alertAggregationService != null}\n");
+                            _logger?.LogWarning($"일부 서비스 초기화 실패 - ValidationService: {_validationService != null}, QcErrorService: {_qcErrorService != null}, StageSummaryCollectionViewModel: {_stageSummaryCollectionViewModel != null}, AlertAggregationService: {_alertAggregationService != null}");
+                            System.Diagnostics.Debug.WriteLine($"서비스 초기화 상태 - ValidationService: {_validationService != null}, QcErrorService: {_qcErrorService != null}, StageSummaryCollectionViewModel: {_stageSummaryCollectionViewModel != null}, AlertAggregationService: {_alertAggregationService != null}");
+                            File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 서비스 초기화 실패 - ValidationService: {_validationService != null}, QcErrorService: {_qcErrorService != null}, StageSummaryCollectionViewModel: {_stageSummaryCollectionViewModel != null}, AlertAggregationService: {_alertAggregationService != null}\n");
                         }
                     }
                     else
@@ -153,7 +157,9 @@ namespace SpatialCheckPro.GUI
                 {
                     System.Diagnostics.Debug.WriteLine($"InnerException: {ex.InnerException.Message}");
                 }
-                _stageSummaryCollectionViewModel = new StageSummaryCollectionViewModel();
+                var etaEstimator = ((App)Application.Current).ServiceProvider?.GetService(typeof(IRemainingTimeEstimator)) as IRemainingTimeEstimator
+                    ?? throw new InvalidOperationException("IRemainingTimeEstimator 서비스를 찾을 수 없습니다.");
+                _stageSummaryCollectionViewModel = new StageSummaryCollectionViewModel(etaEstimator);
                 _alertAggregationService = new AlertAggregationService(NullLogger<AlertAggregationService>.Instance);
                 _logger?.LogInformation("서비스 초기화 실패로 새 StageSummaryCollectionViewModel 인스턴스를 사용합니다.");
             }
@@ -488,7 +494,29 @@ namespace SpatialCheckPro.GUI
                     _logger?.LogInformation("  {Stage}단계: {Time:F1}초", kvp.Key, kvp.Value);
                 }
                 
-                _stageSummaryCollectionViewModel.ApplyPredictedTimes(predictedTimes);
+                var metadata = new Dictionary<string, string>
+                {
+                    { "SchemaFieldCount", schemaFieldCount.ToString() },
+                    { "GeometryCheckCount", geometryCheckCount.ToString() },
+                    { "RelationRuleCount", relationRuleCount.ToString() }
+                };
+
+                foreach (var definition in SpatialCheckPro.GUI.Constants.StageDefinitions.All)
+                {
+                    metadata[$"StageId_{definition.StageNumber}"] = definition.StageId;
+                    metadata[$"StageName_{definition.StageNumber}"] = definition.StageName;
+                }
+
+                var context = new SpatialCheckPro.Services.RemainingTime.Models.ValidationRunContext
+                {
+                    TargetFilePath = _selectedFilePath,
+                    FileSizeBytes = File.Exists(_selectedFilePath) ? new FileInfo(_selectedFilePath).Length : 0,
+                    FeatureCount = featureCount,
+                    LayerCount = tableCount,
+                    Metadata = metadata
+                };
+
+                _stageSummaryCollectionViewModel.InitializeEta(predictedTimes, context);
                 
                 _logger?.LogInformation("예측 시간 적용 완료 - 테이블: {Tables}개, 피처: {Features}개", 
                     tableCount, featureCount);

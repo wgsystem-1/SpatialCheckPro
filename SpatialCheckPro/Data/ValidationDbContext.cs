@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SpatialCheckPro.Data.Entities;
 using SpatialCheckPro.Models;
 using System.Text.Json;
 
@@ -38,6 +39,15 @@ namespace SpatialCheckPro.Data
         /// 검수 설정 테이블
         /// </summary>
         public DbSet<ValidationConfigurationEntity> ValidationConfigurations { get; set; }
+
+        /// <summary>
+        /// 단계 소요 시간 이력 테이블
+        /// </summary>
+        public DbSet<StageDurationHistoryEntity> StageDurationHistory { get; set; }
+
+        /// <summary>
+        /// 단계 소요 시간 이력 테이블
+        /// </summary>
 
         /// <summary>
         /// 기본 생성자
@@ -212,6 +222,10 @@ namespace SpatialCheckPro.Data
                 .HasIndex(e => e.FilePath)
                 .IsUnique()
                 .HasDatabaseName("IX_SpatialFiles_FilePath");
+
+            modelBuilder.Entity<StageDurationHistoryEntity>()
+                .HasIndex(e => new { e.StageId, e.CollectedAtUtc })
+                .HasDatabaseName("IX_StageDurationHistory_StageId_CollectedAt");
         }
     }
 }

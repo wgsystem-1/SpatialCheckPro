@@ -6,6 +6,7 @@ using OSGeo.GDAL;
 using OSGeo.OGR;
 using SpatialCheckPro.Models;
 using System.Linq; // Added for .Any()
+using System.IO; // Added for Directory and File operations
 
 namespace SpatialCheckPro.Services
 {
@@ -198,13 +199,8 @@ namespace SpatialCheckPro.Services
                                 else if (wktUpper.StartsWith("POLYGON") || wktUpper.StartsWith("MULTIPOLYGON")) geomTypeUpper = "POLYGON";
                             }
                         }
-                        string layerName = geomTypeUpper switch
-                        {
-                            "POINT" or "MULTIPOINT" => "QC_Errors_Point",
-                            "LINESTRING" or "MULTILINESTRING" => "QC_Errors_Line",
-                            "POLYGON" or "MULTIPOLYGON" => "QC_Errors_Polygon",
-                            _ => "QC_Errors_NoGeom"
-                        };
+                        // Point 저장 방식: 모든 오류를 Point 레이어에 저장
+                        string layerName = DetermineLayerNameForPointMode(qcError, geomTypeUpper);
 
                         // 데이터셋 내부 탐색: 루트에서 직접 못 찾으면 하위 계층에서 검색
                         Layer layer = dataSource.GetLayerByName(layerName);
@@ -235,115 +231,95 @@ namespace SpatialCheckPro.Services
                         var featureDefn = layer.GetLayerDefn();
                         var feature = new Feature(featureDefn);
 
-                        // 필드 값 설정
-                        feature.SetField("GlobalID", qcError.GlobalID);
-                        feature.SetField("ErrType", qcError.ErrType);
+                        // 필수 필드만 설정 (단순화된 스키마)
                         feature.SetField("ErrCode", qcError.ErrCode);
-                        feature.SetField("Severity", qcError.Severity);
-                        feature.SetField("Status", qcError.Status);
-                        feature.SetField("RuleId", qcError.RuleId);
                         feature.SetField("SourceClass", qcError.SourceClass);
                         feature.SetField("SourceOID", (int)qcError.SourceOID);
-                        
-                        if (!string.IsNullOrEmpty(qcError.SourceGlobalID))
-                        {
-                            feature.SetField("SourceGlobalID", qcError.SourceGlobalID);
-                        }
-
-                        feature.SetField("X", qcError.X);
-                        feature.SetField("Y", qcError.Y);
-                        
-                        if (!string.IsNullOrEmpty(qcError.GeometryWKT))
-                        {
-                            feature.SetField("GeometryWKT", qcError.GeometryWKT);
-                        }
-                        
-                        feature.SetField("GeometryType", qcError.GeometryType);
-                        feature.SetField("ErrorValue", qcError.ErrorValue);
-                        feature.SetField("ThresholdValue", qcError.ThresholdValue);
                         feature.SetField("Message", qcError.Message);
-                        feature.SetField("DetailsJSON", qcError.DetailsJSON);
-                        feature.SetField("RunID", qcError.RunID);
-                        // 검수 파일명 저장(필드가 있으면 설정)
-                        try { feature.SetField("SourceFile", qcError.SourceFile ?? string.Empty); } catch { }
-                        feature.SetField("CreatedUTC", qcError.CreatedUTC.ToString("yyyy-MM-dd HH:mm:ss"));
-                        feature.SetField("UpdatedUTC", qcError.UpdatedUTC.ToString("yyyy-MM-dd HH:mm:ss"));
 
-                        // 지오메트리 설정 (NoGeom 레이어는 지오메트리를 설정하지 않음)
-                        if (!string.Equals(layerName, "QC_Errors_NoGeom", StringComparison.OrdinalIgnoreCase))
+                        // Point 저장 방식: 모든 오류에 Point 지오메트리 설정
+                        bool geometrySet = false;
+                        
+                        // 1차 시도: 기존 지오메트리에서 Point 생성
+                        if (qcError.Geometry != null && qcError.Geometry is OSGeo.OGR.Geometry ogrGeometry)
                         {
-                            if (qcError.Geometry != null && qcError.Geometry is OSGeo.OGR.Geometry ogrGeometry)
+                            try
                             {
-                                feature.SetGeometryDirectly(ogrGeometry);
-                            }
-                            else if (!string.IsNullOrWhiteSpace(qcError.GeometryWKT))
-                            {
-                                try
+                                var pointGeometry = CreateSimplePoint(ogrGeometry);
+                                if (pointGeometry != null)
                                 {
-                                    var geomFromWkt = OSGeo.OGR.Geometry.CreateFromWkt(qcError.GeometryWKT);
-                                    if (geomFromWkt != null)
+                                    feature.SetGeometry(pointGeometry);
+                                    pointGeometry.Dispose();
+                                    geometrySet = true;
+                                    _logger.LogDebug("기존 지오메트리에서 Point 생성 성공: {ErrorCode}", qcError.ErrCode);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "기존 지오메트리 Point 생성 실패: {ErrorCode}", qcError.ErrCode);
+                            }
+                        }
+                        
+                        // 2차 시도: WKT에서 Point 생성
+                        if (!geometrySet && !string.IsNullOrWhiteSpace(qcError.GeometryWKT))
+                        {
+                            try
+                            {
+                                var geomFromWkt = OSGeo.OGR.Geometry.CreateFromWkt(qcError.GeometryWKT);
+                                if (geomFromWkt != null && !geomFromWkt.IsEmpty())
+                                {
+                                    var pointGeometry = CreateSimplePoint(geomFromWkt);
+                                    geomFromWkt.Dispose();
+                                    
+                                    if (pointGeometry != null)
                                     {
-                                        feature.SetGeometry(geomFromWkt);
-                                        geomFromWkt.Dispose();
+                                        feature.SetGeometry(pointGeometry);
+                                        pointGeometry.Dispose();
+                                        geometrySet = true;
+                                        _logger.LogDebug("WKT에서 Point 생성 성공: {ErrorCode}", qcError.ErrCode);
                                     }
                                 }
-                                catch (Exception ex)
-                                {
-                                    _logger.LogWarning(ex, "WKT로부터 지오메트리 생성 실패: {WKT}", qcError.GeometryWKT);
-                                }
                             }
-                            else if (qcError.X != 0 && qcError.Y != 0)
+                            catch (Exception ex)
                             {
-                                // 좌표가 있으면 Point 지오메트리 생성 (포인트 레이어에만 의미가 있음)
+                                _logger.LogWarning(ex, "WKT Point 생성 실패: {WKT}", qcError.GeometryWKT);
+                            }
+                        }
+                        
+                        // 3차 시도: 좌표로부터 Point 생성
+                        if (!geometrySet && qcError.X != 0 && qcError.Y != 0)
+                        {
+                            try
+                            {
                                 var point = new OSGeo.OGR.Geometry(wkbGeometryType.wkbPoint);
                                 point.AddPoint(qcError.X, qcError.Y, 0);
                                 feature.SetGeometry(point);
                                 point.Dispose();
+                                geometrySet = true;
+                                _logger.LogDebug("좌표로부터 Point 생성 성공: {ErrorCode} ({X}, {Y})", 
+                                    qcError.ErrCode, qcError.X, qcError.Y);
                             }
-                            else
+                            catch (Exception ex)
                             {
-                                // 지오메트리 정보 전혀 없을 때 NoGeom 레이어로 리다이렉트 저장
-                                _logger.LogDebug("지오메트리 정보 없음. NoGeom 레이어로 저장 리다이렉트");
-                                layer = dataSource.GetLayerByName("QC_Errors_NoGeom");
-                                if (layer == null)
-                                {
-                                    _logger.LogError("QC_Errors_NoGeom 레이어를 찾을 수 없습니다");
-                                    dataSource.Dispose();
-                                    return false;
-                                }
-                                featureDefn = layer.GetLayerDefn();
-                                var redirectFeature = new Feature(featureDefn);
-                                // 공통 필드 재설정
-                                redirectFeature.SetField("GlobalID", qcError.GlobalID);
-                                redirectFeature.SetField("ErrType", qcError.ErrType);
-                                redirectFeature.SetField("ErrCode", qcError.ErrCode);
-                                redirectFeature.SetField("Severity", qcError.Severity);
-                                redirectFeature.SetField("Status", qcError.Status);
-                                redirectFeature.SetField("RuleId", qcError.RuleId);
-                                redirectFeature.SetField("SourceClass", qcError.SourceClass);
-                                redirectFeature.SetField("SourceOID", (long)qcError.SourceOID);
-                                if (!string.IsNullOrEmpty(qcError.SourceGlobalID)) redirectFeature.SetField("SourceGlobalID", qcError.SourceGlobalID);
-                                redirectFeature.SetField("X", qcError.X);
-                                redirectFeature.SetField("Y", qcError.Y);
-                                if (!string.IsNullOrEmpty(qcError.GeometryWKT)) redirectFeature.SetField("GeometryWKT", qcError.GeometryWKT);
-                                redirectFeature.SetField("GeometryType", qcError.GeometryType);
-                                redirectFeature.SetField("ErrorValue", qcError.ErrorValue);
-                                redirectFeature.SetField("ThresholdValue", qcError.ThresholdValue);
-                                redirectFeature.SetField("Message", qcError.Message);
-                                redirectFeature.SetField("DetailsJSON", qcError.DetailsJSON);
-                                redirectFeature.SetField("RunID", qcError.RunID);
-                                redirectFeature.SetField("CreatedUTC", qcError.CreatedUTC.ToString("yyyy-MM-dd HH:mm:ss"));
-                                redirectFeature.SetField("UpdatedUTC", qcError.UpdatedUTC.ToString("yyyy-MM-dd HH:mm:ss"));
-                                var redirectResult = layer.CreateFeature(redirectFeature);
-                                redirectFeature.Dispose();
-                                dataSource.Dispose();
-                                if (redirectResult == 0)
-                                {
-                                    _logger.LogDebug("NoGeom 레이어로 저장 성공: {ErrorCode}", qcError.ErrCode);
-                                    return true;
-                                }
-                                _logger.LogError("NoGeom 레이어 저장 실패: {Result}", redirectResult);
-                                return false;
+                                _logger.LogWarning(ex, "좌표로부터 Point 생성 실패: {ErrorCode}", qcError.ErrCode);
+                            }
+                        }
+                        
+                        // 4차 시도: 기본 좌표 (0, 0)로 Point 생성
+                        if (!geometrySet)
+                        {
+                            try
+                            {
+                                var defaultPoint = new OSGeo.OGR.Geometry(wkbGeometryType.wkbPoint);
+                                defaultPoint.AddPoint(0, 0, 0);
+                                feature.SetGeometry(defaultPoint);
+                                defaultPoint.Dispose();
+                                geometrySet = true;
+                                _logger.LogDebug("기본 좌표 (0, 0)로 Point 생성: {ErrorCode}", qcError.ErrCode);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "기본 좌표 Point 생성 실패: {ErrorCode}", qcError.ErrCode);
                             }
                         }
 
@@ -524,27 +500,8 @@ namespace SpatialCheckPro.Services
 
                     foreach (var group in groupedErrors)
                     {
-                        string normalizedKey = group.Key switch
-                        {
-                            _ when string.Equals(group.Key, "POINT", StringComparison.OrdinalIgnoreCase) => "POINT",
-                            _ when string.Equals(group.Key, "MULTIPOINT", StringComparison.OrdinalIgnoreCase) => "POINT",
-                            _ when string.Equals(group.Key, "LINESTRING", StringComparison.OrdinalIgnoreCase) => "LINESTRING",
-                            _ when string.Equals(group.Key, "LINE", StringComparison.OrdinalIgnoreCase) => "LINESTRING",
-                            _ when string.Equals(group.Key, "MULTILINESTRING", StringComparison.OrdinalIgnoreCase) => "LINESTRING",
-                            _ when string.Equals(group.Key, "POLYGON", StringComparison.OrdinalIgnoreCase) => "POLYGON",
-                            _ when string.Equals(group.Key, "MULTIPOLYGON", StringComparison.OrdinalIgnoreCase) => "POLYGON",
-                            _ when group.Key.Contains("LINE", StringComparison.OrdinalIgnoreCase) => "LINESTRING",
-                            _ when group.Key.Contains("POLY", StringComparison.OrdinalIgnoreCase) => "POLYGON",
-                            _ => "NOGEOM"
-                        };
-
-                        string layerName = normalizedKey switch
-                        {
-                            "POINT" => "QC_Errors_Point",
-                            "LINESTRING" => "QC_Errors_Line",
-                            "POLYGON" => "QC_Errors_Polygon",
-                            _ => "QC_Errors_NoGeom"
-                        };
+                        // Point 저장 방식: 모든 오류를 Point 레이어에 저장
+                        string layerName = "QC_Errors_Point";
                         var layer = dataSource.GetLayerByName(layerName);
                         if (layer == null) continue;
 
@@ -552,34 +509,48 @@ namespace SpatialCheckPro.Services
                         foreach (var qcError in group)
                         {
                             using var feature = new Feature(layer.GetLayerDefn());
-                            feature.SetField("GlobalID", qcError.GlobalID);
-                            feature.SetField("ErrType", qcError.ErrType);
+                            // 필수 필드만 설정 (단순화된 스키마)
                             feature.SetField("ErrCode", qcError.ErrCode);
-                            feature.SetField("Severity", qcError.Severity);
-                            feature.SetField("Status", qcError.Status);
-                            feature.SetField("RuleId", qcError.RuleId);
                             feature.SetField("SourceClass", qcError.SourceClass);
                             feature.SetField("SourceOID", (int)qcError.SourceOID);
-                            feature.SetField("RunID", qcError.RunID);
                             feature.SetField("Message", qcError.Message);
-                            feature.SetField("CreatedUTC", qcError.CreatedUTC.ToString("o"));
-                            feature.SetField("UpdatedUTC", qcError.UpdatedUTC.ToString("o"));
                             
-                            if (layerName != "QC_Errors_NoGeom")
+                            
+                            // Point 저장 방식: 모든 오류에 Point 지오메트리 설정
+                            OSGeo.OGR.Geometry? pointGeometry = null;
+                            
+                            // 1차: 기존 지오메트리에서 Point 생성
+                            if (qcError.Geometry != null)
                             {
-                                if (qcError.Geometry != null)
+                                pointGeometry = CreateSimplePoint(qcError.Geometry);
+                            }
+                            // 2차: WKT에서 Point 생성
+                            else if (!string.IsNullOrWhiteSpace(qcError.GeometryWKT))
+                            {
+                                var geometryFromWkt = OSGeo.OGR.Geometry.CreateFromWkt(qcError.GeometryWKT);
+                                if (geometryFromWkt != null)
                                 {
-                                    feature.SetGeometry(qcError.Geometry);
+                                    pointGeometry = CreateSimplePoint(geometryFromWkt);
+                                    geometryFromWkt.Dispose();
                                 }
-                                else if (!string.IsNullOrWhiteSpace(qcError.GeometryWKT))
-                                {
-                                    var geometryFromWkt = OSGeo.OGR.Geometry.CreateFromWkt(qcError.GeometryWKT);
-                                    if (geometryFromWkt != null)
-                                    {
-                                        feature.SetGeometry(geometryFromWkt);
-                                        geometryFromWkt.Dispose();
-                                    }
-                                }
+                            }
+                            // 3차: 좌표로 Point 생성
+                            else if (qcError.X != 0 && qcError.Y != 0)
+                            {
+                                pointGeometry = new OSGeo.OGR.Geometry(wkbGeometryType.wkbPoint);
+                                pointGeometry.AddPoint(qcError.X, qcError.Y, 0);
+                            }
+                            // 4차: 기본 좌표로 Point 생성
+                            else
+                            {
+                                pointGeometry = new OSGeo.OGR.Geometry(wkbGeometryType.wkbPoint);
+                                pointGeometry.AddPoint(0, 0, 0);
+                            }
+                            
+                            if (pointGeometry != null)
+                            {
+                                feature.SetGeometry(pointGeometry);
+                                pointGeometry.Dispose();
                             }
 
                             if (layer.CreateFeature(feature) == 0)
@@ -642,7 +613,7 @@ namespace SpatialCheckPro.Services
         }
 
         /// <summary>
-        /// QC_ERRORS 레이어를 생성합니다
+        /// QC_ERRORS 레이어를 생성합니다 (기존 레이어 삭제 후 재생성)
         /// </summary>
         /// <param name="dataSource">GDAL 데이터소스</param>
         /// <param name="layerName">레이어 이름</param>
@@ -653,14 +624,28 @@ namespace SpatialCheckPro.Services
             {
                 _logger.LogDebug("QC_ERRORS 레이어 생성 시작: {LayerName}", layerName);
                 
-                // 지오메트리 타입 결정
-                var geometryType = layerName switch
+                // Point 저장 방식: 모든 레이어를 Point로 강제 생성
+                layerName = "QC_Errors_Point";
+                var geometryType = wkbGeometryType.wkbPoint;
+                
+                _logger.LogInformation("Point 저장 방식: 모든 오류를 Point 레이어에 저장");
+                
+                // 기존 레이어가 있으면 삭제 (스키마 변경을 위해)
+                var existingLayer = dataSource.GetLayerByName(layerName);
+                if (existingLayer != null)
                 {
-                    "QC_Errors_Point" => wkbGeometryType.wkbPoint,
-                    "QC_Errors_Line" => wkbGeometryType.wkbLineString,
-                    "QC_Errors_Polygon" => wkbGeometryType.wkbPolygon,
-                    _ => wkbGeometryType.wkbNone
-                };
+                    _logger.LogInformation("기존 레이어 삭제: {LayerName}", layerName);
+                    // 레이어 인덱스로 삭제
+                    for (int i = 0; i < dataSource.GetLayerCount(); i++)
+                    {
+                        var testLayer = dataSource.GetLayerByIndex(i);
+                        if (testLayer != null && testLayer.GetName() == layerName)
+                        {
+                            dataSource.DeleteLayer(i);
+                            break;
+                        }
+                    }
+                }
                 
                 // 레이어 생성
                 var layer = dataSource.CreateLayer(layerName, null, geometryType, null);
@@ -670,89 +655,23 @@ namespace SpatialCheckPro.Services
                     return null;
                 }
                 
-                // 필드 정의 생성
-                var fieldDefn = new FieldDefn("GlobalID", FieldType.OFTString);
-                fieldDefn.SetWidth(50);
+                // 필수 필드만 정의 (단순화된 스키마)
+                var fieldDefn = new FieldDefn("ErrCode", FieldType.OFTString);
+                fieldDefn.SetWidth(32);
                 layer.CreateField(fieldDefn, 1);
-                
-                fieldDefn = new FieldDefn("ErrType", FieldType.OFTString);
-                fieldDefn.SetWidth(20);
-                layer.CreateField(fieldDefn, 1);
-                
-                fieldDefn = new FieldDefn("ErrCode", FieldType.OFTString);
-                fieldDefn.SetWidth(20);
-                layer.CreateField(fieldDefn, 1);
-                
-                fieldDefn = new FieldDefn("Severity", FieldType.OFTString);
-                fieldDefn.SetWidth(10);
-                layer.CreateField(fieldDefn, 1);
-                
-                fieldDefn = new FieldDefn("Status", FieldType.OFTString);
-                fieldDefn.SetWidth(20);
-                layer.CreateField(fieldDefn, 1);
-                
-                fieldDefn = new FieldDefn("RuleId", FieldType.OFTString);
-                fieldDefn.SetWidth(50);
-                layer.CreateField(fieldDefn, 1);
-                
+                              
                 fieldDefn = new FieldDefn("SourceClass", FieldType.OFTString);
-                fieldDefn.SetWidth(50);
+                fieldDefn.SetWidth(128);
                 layer.CreateField(fieldDefn, 1);
                 
                 fieldDefn = new FieldDefn("SourceOID", FieldType.OFTInteger);
                 layer.CreateField(fieldDefn, 1);
                 
-                fieldDefn = new FieldDefn("SourceGlobalID", FieldType.OFTString);
-                fieldDefn.SetWidth(50);
-                layer.CreateField(fieldDefn, 1);
-                
-                fieldDefn = new FieldDefn("X", FieldType.OFTReal);
-                layer.CreateField(fieldDefn, 1);
-                
-                fieldDefn = new FieldDefn("Y", FieldType.OFTReal);
-                layer.CreateField(fieldDefn, 1);
-                
-                fieldDefn = new FieldDefn("GeometryWKT", FieldType.OFTString);
-                fieldDefn.SetWidth(1000);
-                layer.CreateField(fieldDefn, 1);
-                
-                fieldDefn = new FieldDefn("GeometryType", FieldType.OFTString);
-                fieldDefn.SetWidth(50);
-                layer.CreateField(fieldDefn, 1);
-                
-                fieldDefn = new FieldDefn("ErrorValue", FieldType.OFTString);
-                fieldDefn.SetWidth(100);
-                layer.CreateField(fieldDefn, 1);
-                
-                fieldDefn = new FieldDefn("ThresholdValue", FieldType.OFTString);
-                fieldDefn.SetWidth(100);
-                layer.CreateField(fieldDefn, 1);
-                
                 fieldDefn = new FieldDefn("Message", FieldType.OFTString);
-                fieldDefn.SetWidth(500);
+                fieldDefn.SetWidth(1024);
                 layer.CreateField(fieldDefn, 1);
                 
-                fieldDefn = new FieldDefn("DetailsJSON", FieldType.OFTString);
-                fieldDefn.SetWidth(2000);
-                layer.CreateField(fieldDefn, 1);
-                
-                fieldDefn = new FieldDefn("RunID", FieldType.OFTString);
-                fieldDefn.SetWidth(50);
-                layer.CreateField(fieldDefn, 1);
-                
-                fieldDefn = new FieldDefn("SourceFile", FieldType.OFTString);
-                fieldDefn.SetWidth(500);
-                layer.CreateField(fieldDefn, 1);
-                
-                fieldDefn = new FieldDefn("CreatedUTC", FieldType.OFTString);
-                fieldDefn.SetWidth(30);
-                layer.CreateField(fieldDefn, 1);
-                
-                fieldDefn = new FieldDefn("UpdatedUTC", FieldType.OFTString);
-                fieldDefn.SetWidth(30);
-                layer.CreateField(fieldDefn, 1);
-                
-                _logger.LogInformation("QC_ERRORS 레이어 생성 완료: {LayerName}", layerName);
+                _logger.LogInformation("QC_ERRORS 레이어 생성 완료 (단순화된 스키마): {LayerName}", layerName);
                 return layer;
             }
             catch (Exception ex)
@@ -862,6 +781,365 @@ namespace SpatialCheckPro.Services
             {
                 _logger.LogError(ex, "QC 오류 조회 실패: {GdbPath}", gdbPath);
                 return new List<QcError>();
+            }
+        }
+
+        /// <summary>
+        /// 모든 오류를 Point 레이어에 저장하는 방식
+        /// </summary>
+        /// <param name="qcError">QC 오류 객체</param>
+        /// <param name="geomTypeUpper">지오메트리 타입 (대문자)</param>
+        /// <returns>레이어명</returns>
+        private string DetermineLayerNameForPointMode(QcError qcError, string geomTypeUpper)
+        {
+            // 모든 오류를 Point 레이어에 저장 (작업자가 위치 확인 가능)
+            _logger.LogDebug("Point 저장 방식: 모든 오류를 Point 레이어에 저장 - {ErrCode}", qcError.ErrCode);
+            return "QC_Errors_Point";
+        }
+
+        /// <summary>
+        /// 실제 객체 좌표를 사용한 Point 생성 메서드
+        /// POINT->POINT 좌표, LINE/POLYGON->첫점 좌표
+        /// </summary>
+        /// <param name="geometry">원본 지오메트리</param>
+        /// <returns>Point 지오메트리</returns>
+        private OSGeo.OGR.Geometry? CreateSimplePoint(OSGeo.OGR.Geometry geometry)
+        {
+            try
+            {
+                if (geometry == null || geometry.IsEmpty())
+                {
+                    return null;
+                }
+
+                var geomType = geometry.GetGeometryType();
+                
+                // POINT: 그대로 사용
+                if (geomType == wkbGeometryType.wkbPoint)
+                {
+                    return geometry.Clone();
+                }
+                
+                // MultiPoint: 첫 번째 Point 사용
+                if (geomType == wkbGeometryType.wkbMultiPoint)
+                {
+                    if (geometry.GetGeometryCount() > 0)
+                    {
+                        var firstPoint = geometry.GetGeometryRef(0);
+                        return firstPoint?.Clone();
+                    }
+                }
+                
+                // LineString: 첫 번째 점 사용
+                if (geomType == wkbGeometryType.wkbLineString)
+                {
+                    if (geometry.GetPointCount() > 0)
+                    {
+                        var point = new OSGeo.OGR.Geometry(wkbGeometryType.wkbPoint);
+                        // GDAL/OGR API에서 올바른 방법 사용
+                        var pointArray = new double[3];
+                        geometry.GetPoint(0, pointArray);
+                        point.AddPoint(pointArray[0], pointArray[1], pointArray[2]);
+                        
+                        _logger.LogDebug("LineString 첫점 추출: ({X}, {Y})", pointArray[0], pointArray[1]);
+                        return point;
+                    }
+                }
+                
+                // MultiLineString: 첫 번째 LineString의 첫 점 사용
+                if (geomType == wkbGeometryType.wkbMultiLineString)
+                {
+                    if (geometry.GetGeometryCount() > 0)
+                    {
+                        var firstLine = geometry.GetGeometryRef(0);
+                        if (firstLine != null && firstLine.GetPointCount() > 0)
+                        {
+                            var point = new OSGeo.OGR.Geometry(wkbGeometryType.wkbPoint);
+                            var pointArray = new double[3];
+                            firstLine.GetPoint(0, pointArray);
+                            point.AddPoint(pointArray[0], pointArray[1], pointArray[2]);
+                            
+                            _logger.LogDebug("MultiLineString 첫점 추출: ({X}, {Y})", pointArray[0], pointArray[1]);
+                            return point;
+                        }
+                    }
+                }
+                
+                // Polygon: 외부 링의 첫 번째 점 사용
+                if (geomType == wkbGeometryType.wkbPolygon)
+                {
+                    if (geometry.GetGeometryCount() > 0)
+                    {
+                        var exteriorRing = geometry.GetGeometryRef(0); // 외부 링
+                        if (exteriorRing != null && exteriorRing.GetPointCount() > 0)
+                        {
+                            var point = new OSGeo.OGR.Geometry(wkbGeometryType.wkbPoint);
+                            var pointArray = new double[3];
+                            exteriorRing.GetPoint(0, pointArray);
+                            point.AddPoint(pointArray[0], pointArray[1], pointArray[2]);
+                            
+                            _logger.LogDebug("Polygon 첫점 추출: ({X}, {Y})", pointArray[0], pointArray[1]);
+                            return point;
+                        }
+                    }
+                }
+                
+                // MultiPolygon: 첫 번째 Polygon의 외부 링 첫 점 사용
+                if (geomType == wkbGeometryType.wkbMultiPolygon)
+                {
+                    if (geometry.GetGeometryCount() > 0)
+                    {
+                        var firstPolygon = geometry.GetGeometryRef(0);
+                        if (firstPolygon != null && firstPolygon.GetGeometryCount() > 0)
+                        {
+                            var exteriorRing = firstPolygon.GetGeometryRef(0); // 외부 링
+                            if (exteriorRing != null && exteriorRing.GetPointCount() > 0)
+                            {
+                                var point = new OSGeo.OGR.Geometry(wkbGeometryType.wkbPoint);
+                                var pointArray = new double[3];
+                                exteriorRing.GetPoint(0, pointArray);
+                                point.AddPoint(pointArray[0], pointArray[1], pointArray[2]);
+                                
+                                _logger.LogDebug("MultiPolygon 첫점 추출: ({X}, {Y})", pointArray[0], pointArray[1]);
+                                return point;
+                            }
+                        }
+                    }
+                }
+                
+                // 기타 지오메트리 타입: 중심점으로 폴백
+                var envelope = new OSGeo.OGR.Envelope();
+                geometry.GetEnvelope(envelope);
+                
+                double centerX = (envelope.MinX + envelope.MaxX) / 2.0;
+                double centerY = (envelope.MinY + envelope.MaxY) / 2.0;
+                
+                var fallbackPoint = new OSGeo.OGR.Geometry(wkbGeometryType.wkbPoint);
+                fallbackPoint.AddPoint(centerX, centerY, 0);
+                
+                _logger.LogDebug("지오메트리를 중심점으로 폴백: {GeometryType} → Point ({X}, {Y})", 
+                    geomType, centerX, centerY);
+                
+                return fallbackPoint;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "실제 좌표 Point 생성 실패");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 비공간 오류인지 판단합니다 (기존 메서드 유지)
+        /// </summary>
+        /// <param name="qcError">QC 오류 객체</param>
+        /// <returns>비공간 오류 여부</returns>
+        private bool IsNonSpatialError(QcError qcError)
+        {
+            // 1. 지오메트리 정보가 전혀 없는 경우
+            bool hasNoGeometry = string.IsNullOrEmpty(qcError.GeometryWKT) && 
+                                qcError.Geometry == null && 
+                                (qcError.X == 0 && qcError.Y == 0);
+            
+            if (hasNoGeometry)
+            {
+                return true;
+            }
+            
+            // 2. 비공간 오류 타입들
+            var nonSpatialErrorTypes = new[]
+            {
+                "SCHEMA", "ATTR", "TABLE", "FIELD", "DOMAIN", "CONSTRAINT"
+            };
+            
+            if (nonSpatialErrorTypes.Contains(qcError.ErrType, StringComparer.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+            
+            // 3. 비공간 오류 코드들
+            var nonSpatialErrorCodes = new[]
+            {
+                "SCM001", "SCM002", "SCM003", // 스키마 관련
+                "ATR001", "ATR002", "ATR003", // 속성 관련
+                "TBL001", "TBL002", "TBL003", // 테이블 관련
+                "FLD001", "FLD002", "FLD003", // 필드 관련
+                "DOM001", "DOM002", "DOM003"  // 도메인 관련
+            };
+            
+            if (nonSpatialErrorCodes.Contains(qcError.ErrCode, StringComparer.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+            
+            // 4. 메시지 내용으로 판단
+            var nonSpatialKeywords = new[]
+            {
+                "스키마", "속성", "테이블", "필드", "도메인", "제약조건",
+                "schema", "attribute", "table", "field", "domain", "constraint",
+                "누락", "타입", "길이", "정밀도", "null", "기본값"
+            };
+            
+            var messageLower = qcError.Message.ToLower();
+            if (nonSpatialKeywords.Any(keyword => messageLower.Contains(keyword.ToLower())))
+            {
+                return true;
+            }
+            
+            return false;
+        }
+
+        /// <summary>
+        /// 원본 GDB 경로를 찾는 헬퍼 메서드
+        /// </summary>
+        /// <param name="currentGdbDir">현재 GDB 디렉토리</param>
+        /// <param name="sourceClass">소스 클래스명</param>
+        /// <returns>원본 GDB 경로</returns>
+        private string? FindOriginalGdbPath(string? currentGdbDir, string sourceClass)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(currentGdbDir) || !Directory.Exists(currentGdbDir))
+                {
+                    return null;
+                }
+
+                // 현재 디렉토리에서 .gdb 파일들 검색
+                var gdbFiles = Directory.GetFiles(currentGdbDir, "*.gdb", SearchOption.TopDirectoryOnly);
+                
+                foreach (var gdbFile in gdbFiles)
+                {
+                    try
+                    {
+                        // 각 GDB 파일에서 해당 클래스가 있는지 확인
+                        using var dataSource = OSGeo.OGR.Ogr.Open(gdbFile, 0);
+                        if (dataSource != null)
+                        {
+                            for (int i = 0; i < dataSource.GetLayerCount(); i++)
+                            {
+                                var layer = dataSource.GetLayerByIndex(i);
+                                if (layer != null && 
+                                    string.Equals(layer.GetName(), sourceClass, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    _logger.LogDebug("원본 GDB 파일 발견: {GdbPath} (클래스: {SourceClass})", gdbFile, sourceClass);
+                                    return gdbFile;
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug(ex, "GDB 파일 검사 중 오류: {GdbFile}", gdbFile);
+                    }
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "원본 GDB 경로 검색 실패: {CurrentGdbDir}", currentGdbDir);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 원본 GDB에서 지오메트리 정보를 재추출하는 메서드
+        /// </summary>
+        /// <param name="originalGdbPath">원본 GDB 경로</param>
+        /// <param name="sourceClass">소스 클래스명</param>
+        /// <param name="sourceOid">소스 OID</param>
+        /// <returns>지오메트리 정보</returns>
+        private async Task<(OSGeo.OGR.Geometry? geometry, double x, double y, string geometryType)> RetrieveGeometryFromOriginalGdb(
+            string originalGdbPath, string sourceClass, string sourceOid)
+        {
+            try
+            {
+                using var dataSource = OSGeo.OGR.Ogr.Open(originalGdbPath, 0);
+                if (dataSource == null)
+                {
+                    _logger.LogWarning("원본 GDB를 열 수 없습니다: {OriginalGdbPath}", originalGdbPath);
+                    return (null, 0, 0, "Unknown");
+                }
+
+                // 레이어 찾기
+                Layer? layer = null;
+                for (int i = 0; i < dataSource.GetLayerCount(); i++)
+                {
+                    var testLayer = dataSource.GetLayerByIndex(i);
+                    if (testLayer != null && 
+                        string.Equals(testLayer.GetName(), sourceClass, StringComparison.OrdinalIgnoreCase))
+                    {
+                        layer = testLayer;
+                        break;
+                    }
+                }
+
+                if (layer == null)
+                {
+                    _logger.LogWarning("원본 GDB에서 클래스를 찾을 수 없습니다: {SourceClass}", sourceClass);
+                    return (null, 0, 0, "Unknown");
+                }
+
+                // 피처 찾기 시도
+                Feature? feature = null;
+                
+                // ObjectId 필드로 검색
+                if (long.TryParse(sourceOid, out var numericOid))
+                {
+                    layer.SetAttributeFilter($"OBJECTID = {numericOid}");
+                    layer.ResetReading();
+                    feature = layer.GetNextFeature();
+                }
+
+                // FID로 직접 검색
+                if (feature == null && long.TryParse(sourceOid, out var fid))
+                {
+                    layer.SetAttributeFilter(null);
+                    layer.ResetReading();
+                    feature = layer.GetFeature(fid);
+                }
+
+                if (feature == null)
+                {
+                    _logger.LogWarning("원본 GDB에서 피처를 찾을 수 없습니다: {SourceClass}:{SourceOid}", sourceClass, sourceOid);
+                    return (null, 0, 0, "Unknown");
+                }
+
+                var geometry = feature.GetGeometryRef();
+                if (geometry == null || geometry.IsEmpty())
+                {
+                    _logger.LogWarning("원본 GDB에서 지오메트리가 없습니다: {SourceClass}:{SourceOid}", sourceClass, sourceOid);
+                    feature.Dispose();
+                    return (null, 0, 0, "NoGeometry");
+                }
+
+                // 지오메트리 복사 및 정보 추출
+                var clonedGeometry = geometry.Clone();
+                var envelope = new OSGeo.OGR.Envelope();
+                clonedGeometry.GetEnvelope(envelope);
+                double centerX = (envelope.MinX + envelope.MaxX) / 2.0;
+                double centerY = (envelope.MinY + envelope.MaxY) / 2.0;
+
+                var geomType = clonedGeometry.GetGeometryType();
+                string geometryTypeName = geomType switch
+                {
+                    wkbGeometryType.wkbPoint or wkbGeometryType.wkbMultiPoint => "POINT",
+                    wkbGeometryType.wkbLineString or wkbGeometryType.wkbMultiLineString => "LINESTRING",
+                    wkbGeometryType.wkbPolygon or wkbGeometryType.wkbMultiPolygon => "POLYGON",
+                    _ => "UNKNOWN"
+                };
+
+                feature.Dispose();
+                
+                _logger.LogDebug("원본 GDB에서 지오메트리 재추출 성공: {SourceClass}:{SourceOid} - {GeometryType}", 
+                    sourceClass, sourceOid, geometryTypeName);
+
+                return (clonedGeometry, centerX, centerY, geometryTypeName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "원본 GDB에서 지오메트리 재추출 실패: {SourceClass}:{SourceOid}", sourceClass, sourceOid);
+                return (null, 0, 0, "Unknown");
             }
         }
     }

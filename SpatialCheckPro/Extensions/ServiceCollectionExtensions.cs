@@ -113,6 +113,13 @@ namespace SpatialCheckPro.Extensions
                 options.EnableServiceProviderCaching();
             });
 
+            services.AddDbContextFactory<ValidationDbContext>(options =>
+            {
+                var connectionString = "Data Source=ValidationResults.db;Cache=Shared";
+                options.UseSqlite(connectionString);
+                options.EnableSensitiveDataLogging(false);
+            });
+
             return services;
         }
 

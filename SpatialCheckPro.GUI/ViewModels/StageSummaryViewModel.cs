@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using SpatialCheckPro.GUI.Constants;
 using SpatialCheckPro.Models.Enums;
+using SpatialCheckPro.Services.RemainingTime.Models;
 
 namespace SpatialCheckPro.GUI.ViewModels
 {
@@ -23,6 +24,9 @@ namespace SpatialCheckPro.GUI.ViewModels
         private TimeSpan? _estimatedRemaining;
         private long _processedUnits = -1;
         private long _totalUnits = -1;
+        private TimeSpan? _predictedDuration;
+        private double _etaConfidence;
+        private string? _etaDisplayHint;
 
         /// <summary>
         /// 단계 식별자
@@ -191,6 +195,40 @@ namespace SpatialCheckPro.GUI.ViewModels
         }
 
         /// <summary>
+        /// ETA 신뢰도
+        /// </summary>
+        public double EtaConfidence
+        {
+            get => _etaConfidence;
+            private set
+            {
+                if (Math.Abs(_etaConfidence - value) < 0.0001)
+                {
+                    return;
+                }
+                _etaConfidence = value;
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
+        /// ETA 표시 문자열
+        /// </summary>
+        public string? EtaDisplayHint
+        {
+            get => _etaDisplayHint;
+            private set
+            {
+                if (_etaDisplayHint == value)
+                {
+                    return;
+                }
+                _etaDisplayHint = value;
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
         /// 처리된 단위 수
         /// </summary>
         public long ProcessedUnits
@@ -230,7 +268,6 @@ namespace SpatialCheckPro.GUI.ViewModels
         /// 단위 기반 진행률 정보 보유 여부
         /// </summary>
         public bool HasUnitInfo => _processedUnits >= 0 && _totalUnits > 0;
-        private TimeSpan? _predictedDuration;
 
         /// <summary>
         /// 단계별 알림 목록
@@ -269,6 +306,8 @@ namespace SpatialCheckPro.GUI.ViewModels
             CompletedAt = null;
             LastUpdatedAt = DateTimeOffset.MinValue;
             EstimatedRemaining = null;
+            EtaConfidence = 0;
+            EtaDisplayHint = null;
             ProcessedUnits = -1;
             TotalUnits = -1;
             Alerts.Clear();
@@ -339,6 +378,17 @@ namespace SpatialCheckPro.GUI.ViewModels
 
                 EstimatedRemaining = CalculateRemainingEstimate(now, stageProgress, processedUnits, totalUnits);
             }
+        }
+
+        /// <summary>
+        /// ETA 결과를 적용합니다
+        /// </summary>
+        /// <param name="etaResult">ETA 결과</param>
+        public void ApplyEta(StageEtaResult etaResult)
+        {
+            EstimatedRemaining = etaResult.EstimatedRemaining ?? _predictedDuration;
+            EtaConfidence = etaResult.Confidence;
+            EtaDisplayHint = etaResult.DisplayHint;
         }
 
         private TimeSpan? CalculateRemainingEstimate(DateTimeOffset now, double stageProgress, long processedUnits, long totalUnits)

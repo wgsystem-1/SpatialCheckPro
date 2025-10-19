@@ -176,15 +176,16 @@ namespace SpatialCheckPro.Services
                 _logger.LogDebug("QC_Runs 테이블 생성 중...");
                 await CreateQcRunsTableAsync(dataSource);
 
-                // QC_Errors Feature Classes 생성
-                _logger.LogDebug("QC_Errors Feature Classes 생성 중...");
+                // QC_Errors Feature Classes 생성 (Point만 생성)
+                _logger.LogDebug("QC_Errors Point Feature Class 생성 중...");
                 await CreateQcErrorsFeatureClassAsync(dataSource, QC_ERRORS_POINT, wkbGeometryType.wkbPoint, spatialRef);
-                await CreateQcErrorsFeatureClassAsync(dataSource, QC_ERRORS_LINE, wkbGeometryType.wkbLineString, spatialRef);
-                await CreateQcErrorsFeatureClassAsync(dataSource, QC_ERRORS_POLYGON, wkbGeometryType.wkbPolygon, spatialRef);
-
-                // QC_Errors_NoGeom 테이블 생성
-                _logger.LogDebug("QC_Errors_NoGeom 테이블 생성 중...");
-                await CreateQcErrorsNoGeomTableAsync(dataSource);
+                
+                // 불필요한 레이어들 강제 삭제 (기존에 생성된 경우)
+                _logger.LogDebug("불필요한 레이어들 삭제 중...");
+                await DeleteUnnecessaryLayersAsync(dataSource);
+                
+                // 불필요한 레이어들은 생성하지 않음 (단순화)
+                _logger.LogInformation("단순화된 스키마: Point 레이어만 생성, Line/Polygon/NoGeom 레이어는 생성하지 않음");
 
                 // 인덱스 생성
                 _logger.LogDebug("인덱스 생성 중...");
@@ -285,51 +286,56 @@ namespace SpatialCheckPro.Services
         }
 
         /// <summary>
-        /// QC_Errors Feature Class 생성
+        /// 불필요한 레이어들을 강제 삭제합니다
         /// </summary>
+        private async Task DeleteUnnecessaryLayersAsync(DataSource dataSource)
+        {
+            string[] unnecessaryLayers = { QC_ERRORS_LINE, QC_ERRORS_POLYGON, QC_ERRORS_NOGEOM };
+            
+            foreach (var layerName in unnecessaryLayers)
+            {
+                var existingLayer = dataSource.GetLayerByName(layerName);
+                if (existingLayer != null)
+                {
+                    _logger.LogInformation("불필요한 레이어 삭제: {LayerName}", layerName);
+                    
+                    // 레이어 인덱스로 삭제
+                    for (int i = 0; i < dataSource.GetLayerCount(); i++)
+                    {
+                        var testLayer = dataSource.GetLayerByIndex(i);
+                        if (testLayer != null && testLayer.GetName() == layerName)
+                        {
+                            dataSource.DeleteLayer(i);
+                            _logger.LogInformation("불필요한 레이어 삭제 완료: {LayerName}", layerName);
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            await Task.CompletedTask;
+        }
         private async Task CreateQcErrorsFeatureClassAsync(DataSource dataSource, string layerName, 
             wkbGeometryType geomType, SpatialReference spatialRef)
         {
             var existingLayer = dataSource.GetLayerByName(layerName);
             if (existingLayer != null)
             {
-                _logger.LogWarning("{LayerName} Feature Class가 이미 존재합니다. 기존 데이터를 삭제합니다.", layerName);
+                _logger.LogWarning("{LayerName} Feature Class가 이미 존재합니다. 기존 레이어를 삭제하고 새로 생성합니다.", layerName);
 
-                var fidsToDelete = new List<long>();
-                existingLayer.ResetReading();
-                Feature feature;
-                while ((feature = existingLayer.GetNextFeature()) != null)
+                // 기존 레이어 강제 삭제 (스키마 변경을 위해)
+                for (int i = 0; i < dataSource.GetLayerCount(); i++)
                 {
-                    using (feature)
+                    var testLayer = dataSource.GetLayerByIndex(i);
+                    if (testLayer != null && testLayer.GetName() == layerName)
                     {
-                        fidsToDelete.Add(feature.GetFID());
-                    }
-                }
-
-                if (fidsToDelete.Any())
-                {
-                    if (existingLayer.StartTransaction() != 0)
-                    {
-                        _logger.LogWarning("{LayerName}의 트랜잭션을 시작할 수 없어 데이터 삭제를 건너뜁니다.", layerName);
-                        return;
-                    }
-
-                    foreach (var fid in fidsToDelete)
-                    {
-                        existingLayer.DeleteFeature(fid);
-                    }
-
-                    if (existingLayer.CommitTransaction() != 0)
-                    {
-                        _logger.LogWarning("{LayerName}의 데이터 삭제 트랜잭션 커밋에 실패했습니다.", layerName);
-                    }
-                    else
-                    {
-                        _logger.LogInformation("{LayerName}의 기존 데이터 {Count}개 삭제 완료", layerName, fidsToDelete.Count);
+                        _logger.LogInformation("기존 레이어 삭제: {LayerName}", layerName);
+                        dataSource.DeleteLayer(i);
+                        break;
                     }
                 }
                 
-                return;
+                // 레이어 삭제 후 새로 생성하도록 계속 진행
             }
 
             _logger.LogInformation("{LayerName} Feature Class 생성 중...", layerName);
@@ -340,30 +346,13 @@ namespace SpatialCheckPro.Services
                 throw new InvalidOperationException($"{layerName} Feature Class 생성 실패");
             }
 
-            // 공통 필드 정의 (누락된 필드 추가)
+            // 단순화된 필드 정의 (필수 필드만)
             var fields = new[]
             {
-                new { Name = "GlobalID", Type = FieldType.OFTString, Width = 38 }, // GUID
-                new { Name = "ErrType", Type = FieldType.OFTString, Width = 16 },
                 new { Name = "ErrCode", Type = FieldType.OFTString, Width = 32 },
-                new { Name = "Severity", Type = FieldType.OFTString, Width = 16 },
-                new { Name = "Status", Type = FieldType.OFTString, Width = 16 },
-                new { Name = "RuleId", Type = FieldType.OFTString, Width = 64 },
                 new { Name = "SourceClass", Type = FieldType.OFTString, Width = 128 },
-                new { Name = "SourceOID", Type = FieldType.OFTInteger64, Width = 0 },
-                new { Name = "SourceGlobalID", Type = FieldType.OFTString, Width = 38 }, // GUID
-                new { Name = "X", Type = FieldType.OFTReal, Width = 0 }, // 오류 위치 X 좌표
-                new { Name = "Y", Type = FieldType.OFTReal, Width = 0 }, // 오류 위치 Y 좌표
-                new { Name = "GeometryWKT", Type = FieldType.OFTString, Width = 8192 }, // WKT 지오메트리
-                new { Name = "GeometryType", Type = FieldType.OFTString, Width = 32 }, // 지오메트리 타입
-                new { Name = "ErrorValue", Type = FieldType.OFTString, Width = 256 }, // 측정된 오류값
-                new { Name = "ThresholdValue", Type = FieldType.OFTString, Width = 256 }, // 기준값
-                new { Name = "Message", Type = FieldType.OFTString, Width = 1024 },
-                new { Name = "DetailsJSON", Type = FieldType.OFTString, Width = 4096 },
-                new { Name = "RunID", Type = FieldType.OFTString, Width = 38 }, // GUID
-                new { Name = "CreatedUTC", Type = FieldType.OFTDateTime, Width = 0 },
-                new { Name = "UpdatedUTC", Type = FieldType.OFTDateTime, Width = 0 },
-                new { Name = "Assignee", Type = FieldType.OFTString, Width = 64 }
+                new { Name = "SourceOID", Type = FieldType.OFTInteger, Width = 0 },
+                new { Name = "Message", Type = FieldType.OFTString, Width = 1024 }
             };
 
             foreach (var field in fields)
@@ -381,97 +370,12 @@ namespace SpatialCheckPro.Services
         }
 
         /// <summary>
-        /// QC_Errors_NoGeom 테이블 생성
+        /// QC_Errors_NoGeom 테이블 생성 (비활성화 - 단순화된 스키마에서는 사용하지 않음)
         /// </summary>
         private async Task CreateQcErrorsNoGeomTableAsync(DataSource dataSource)
         {
-            var existingLayer = dataSource.GetLayerByName(QC_ERRORS_NOGEOM);
-            if (existingLayer != null)
-            {
-                _logger.LogWarning("QC_Errors_NoGeom 테이블이 이미 존재합니다. 기존 데이터를 삭제합니다.");
-
-                var fidsToDelete = new List<long>();
-                existingLayer.ResetReading();
-                Feature feature;
-                while ((feature = existingLayer.GetNextFeature()) != null)
-                {
-                    using (feature)
-                    {
-                        fidsToDelete.Add(feature.GetFID());
-                    }
-                }
-
-                if (fidsToDelete.Any())
-                {
-                    if (existingLayer.StartTransaction() != 0)
-                    {
-                        _logger.LogWarning("QC_Errors_NoGeom의 트랜잭션을 시작할 수 없어 데이터 삭제를 건너뜁니다.");
-                        return;
-                    }
-
-                    foreach (var fid in fidsToDelete)
-                    {
-                        existingLayer.DeleteFeature(fid);
-                    }
-
-                    if (existingLayer.CommitTransaction() != 0)
-                    {
-                        _logger.LogWarning("QC_Errors_NoGeom의 데이터 삭제 트랜잭션 커밋에 실패했습니다.");
-                    }
-                    else
-                    {
-                        _logger.LogInformation("QC_Errors_NoGeom의 기존 데이터 {Count}개 삭제 완료", fidsToDelete.Count);
-                    }
-                }
-
-                return;
-            }
-
-            _logger.LogInformation("QC_Errors_NoGeom 테이블 생성 중...");
-
-            var layer = dataSource.CreateLayer(QC_ERRORS_NOGEOM, null, wkbGeometryType.wkbNone, null);
-            if (layer == null)
-            {
-                throw new InvalidOperationException("QC_Errors_NoGeom 테이블 생성 실패");
-            }
-
-            // QC_Errors와 동일한 필드 구조 (지오메트리 제외, 누락된 필드 추가)
-            var fields = new[]
-            {
-                new { Name = "GlobalID", Type = FieldType.OFTString, Width = 38 },
-                new { Name = "ErrType", Type = FieldType.OFTString, Width = 16 },
-                new { Name = "ErrCode", Type = FieldType.OFTString, Width = 32 },
-                new { Name = "Severity", Type = FieldType.OFTString, Width = 16 },
-                new { Name = "Status", Type = FieldType.OFTString, Width = 16 },
-                new { Name = "RuleId", Type = FieldType.OFTString, Width = 64 },
-                new { Name = "SourceClass", Type = FieldType.OFTString, Width = 128 },
-                new { Name = "SourceOID", Type = FieldType.OFTInteger64, Width = 0 },
-                new { Name = "SourceGlobalID", Type = FieldType.OFTString, Width = 38 },
-                new { Name = "X", Type = FieldType.OFTReal, Width = 0 }, // 오류 위치 X 좌표
-                new { Name = "Y", Type = FieldType.OFTReal, Width = 0 }, // 오류 위치 Y 좌표
-                new { Name = "GeometryWKT", Type = FieldType.OFTString, Width = 8192 }, // WKT 지오메트리
-                new { Name = "GeometryType", Type = FieldType.OFTString, Width = 32 }, // 지오메트리 타입
-                new { Name = "ErrorValue", Type = FieldType.OFTString, Width = 256 }, // 측정된 오류값
-                new { Name = "ThresholdValue", Type = FieldType.OFTString, Width = 256 }, // 기준값
-                new { Name = "Message", Type = FieldType.OFTString, Width = 1024 },
-                new { Name = "DetailsJSON", Type = FieldType.OFTString, Width = 4096 },
-                new { Name = "RunID", Type = FieldType.OFTString, Width = 38 },
-                new { Name = "CreatedUTC", Type = FieldType.OFTDateTime, Width = 0 },
-                new { Name = "UpdatedUTC", Type = FieldType.OFTDateTime, Width = 0 },
-                new { Name = "Assignee", Type = FieldType.OFTString, Width = 64 }
-            };
-
-            foreach (var field in fields)
-            {
-                var fieldDefn = new FieldDefn(field.Name, field.Type);
-                if (field.Width > 0)
-                {
-                    fieldDefn.SetWidth(field.Width);
-                }
-                layer.CreateField(fieldDefn, 1);
-                fieldDefn.Dispose();
-            }
-
+            // 단순화된 스키마에서는 NoGeom 테이블을 사용하지 않음
+            _logger.LogInformation("단순화된 스키마: QC_Errors_NoGeom 테이블은 생성하지 않음");
             await Task.CompletedTask;
         }
 

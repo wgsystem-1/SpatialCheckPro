@@ -2,23 +2,29 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using Microsoft.Extensions.Logging.Abstractions;
 using SpatialCheckPro.GUI.Constants;
 using SpatialCheckPro.GUI.Services;
 using SpatialCheckPro.Models.Enums;
+using SpatialCheckPro.Services.RemainingTime;
+using SpatialCheckPro.Services.RemainingTime.Models;
 
 namespace SpatialCheckPro.GUI.ViewModels
 {
     /// <summary>
     /// 전체 검수 단계 요약을 관리하는 뷰모델
     /// </summary>
-    public class StageSummaryCollectionViewModel
+    public class StageSummaryCollectionViewModel : INotifyPropertyChanged
     {
         private readonly Dictionary<string, StageSummaryViewModel> _stageLookup;
         private readonly ObservableCollection<StageSummaryViewModel> _stages;
         private readonly ObservableCollection<AlertViewModel> _alerts = new();
         private readonly AlertAggregationService _alertAggregationService;
+        private readonly IRemainingTimeEstimator _etaEstimator;
+        private ValidationRunContext _currentContext = new();
+        private OverallEtaResult _cachedOverallEta = new(null, 0, Array.Empty<StageEtaResult>());
 
         /// <summary>
         /// 단계 요약 목록
@@ -48,33 +54,25 @@ namespace SpatialCheckPro.GUI.ViewModels
         {
             get
             {
-                var remaining = _stages
-                    .Select(stage => stage.EstimatedRemaining)
-                    .Where(span => span.HasValue)
-                    .Select(span => span!.Value)
-                    .Where(span => span > TimeSpan.Zero)
-                    .ToList();
-
-                if (remaining.Count == 0)
-                {
-                    return null;
-                }
-
-                return TimeSpan.FromSeconds(remaining.Sum(span => span.TotalSeconds));
+                return _cachedOverallEta.EstimatedRemaining;
             }
         }
+
+        public double RemainingEtaConfidence => _cachedOverallEta.Confidence;
 
         /// <summary>
         /// 수집 뷰모델 생성자
         /// </summary>
-        public StageSummaryCollectionViewModel(AlertAggregationService? alertAggregationService = null)
+        public StageSummaryCollectionViewModel(IRemainingTimeEstimator etaEstimator, AlertAggregationService? alertAggregationService = null)
         {
+            _etaEstimator = etaEstimator ?? throw new ArgumentNullException(nameof(etaEstimator));
             _stageLookup = StageDefinitions.All.ToDictionary(def => def.StageId, def => new StageSummaryViewModel(def));
             _stages = new ObservableCollection<StageSummaryViewModel>(_stageLookup.Values.OrderBy(stage => stage.StageNumber));
             Stages = new ReadOnlyObservableCollection<StageSummaryViewModel>(_stages);
             Alerts = new ReadOnlyObservableCollection<AlertViewModel>(_alerts);
             _alertAggregationService = alertAggregationService ?? new AlertAggregationService(NullLogger<AlertAggregationService>.Instance);
             _alertAggregationService.AlertsAggregated += OnAlertsAggregated;
+            _cachedOverallEta = new OverallEtaResult(null, 0, Array.Empty<StageEtaResult>());
         }
 
         /// <summary>
@@ -82,24 +80,48 @@ namespace SpatialCheckPro.GUI.ViewModels
         /// </summary>
         public void Reset()
         {
+            _etaEstimator.SeedPredictions(new Dictionary<int, double>(), _currentContext);
             foreach (var stage in _stages)
             {
                 stage.Reset();
             }
             _alerts.Clear();
+            _cachedOverallEta = new OverallEtaResult(null, 0, Array.Empty<StageEtaResult>());
+            OnPropertyChanged(nameof(RemainingTotalEta));
+            OnPropertyChanged(nameof(RemainingEtaConfidence));
         }
 
         /// <summary>
-        /// 예측된 단계 소요 시간을 적용합니다
+        /// ETA 초기값을 설정합니다
         /// </summary>
         /// <param name="predictedTimes">단계별 예측 시간(초)</param>
-        public void ApplyPredictedTimes(IDictionary<int, double> predictedTimes)
+        /// <param name="context">현재 검수 컨텍스트</param>
+        public void InitializeEta(IDictionary<int, double> predictedTimes, ValidationRunContext context)
         {
-            foreach (var kvp in predictedTimes)
+            _currentContext = context;
+            _etaEstimator.SeedPredictions(predictedTimes, context);
+
+            foreach (var definition in StageDefinitions.All)
             {
-                var stage = GetOrCreateStage(kvp.Key);
-                stage.SetPredictedDuration(TimeSpan.FromSeconds(kvp.Value));
+                var stage = GetOrCreateStage(definition.StageNumber);
+                if (predictedTimes.TryGetValue(definition.StageNumber, out var seconds))
+                {
+                    stage.SetPredictedDuration(TimeSpan.FromSeconds(seconds));
+                }
+                else
+                {
+                    var eta = _etaEstimator.GetStageEta(stage.StageId);
+                    stage.SetPredictedDuration(eta?.EstimatedRemaining ?? TimeSpan.Zero);
+                    if (eta != null)
+                    {
+                        stage.ApplyEta(eta);
+                    }
+                }
             }
+
+            _cachedOverallEta = _etaEstimator.GetOverallEta();
+            OnPropertyChanged(nameof(RemainingTotalEta));
+            OnPropertyChanged(nameof(RemainingEtaConfidence));
         }
 
         /// <summary>
@@ -117,6 +139,26 @@ namespace SpatialCheckPro.GUI.ViewModels
             }
 
             stage.ApplyProgress(args.StageProgress, args.StatusMessage, args.IsStageCompleted, args.IsStageSuccessful, args.IsStageSkipped, args.ProcessedUnits, args.TotalUnits);
+
+            var etaResult = _etaEstimator.UpdateProgress(new StageProgressSample
+            {
+                StageId = stage.StageId,
+                StageNumber = stage.StageNumber,
+                StageName = stage.StageName,
+                ObservedAt = stage.LastUpdatedAt,
+                ProgressPercent = args.StageProgress,
+                ProcessedUnits = args.ProcessedUnits,
+                TotalUnits = args.TotalUnits,
+                StartedAt = stage.StartedAt,
+                IsCompleted = args.IsStageCompleted,
+                IsSuccessful = args.IsStageSuccessful,
+                IsSkipped = args.IsStageSkipped
+            });
+
+            stage.ApplyEta(etaResult);
+            _cachedOverallEta = _etaEstimator.GetOverallEta();
+            OnPropertyChanged(nameof(RemainingTotalEta));
+            OnPropertyChanged(nameof(RemainingEtaConfidence));
 
             if (!string.IsNullOrWhiteSpace(args.StageName) && stage.StageName != args.StageName)
             {
@@ -160,7 +202,26 @@ namespace SpatialCheckPro.GUI.ViewModels
             stage.ForceStatus(status);
             if (!string.IsNullOrWhiteSpace(message))
             {
-                stage.ApplyProgress(stage.Progress, message, status is StageStatus.Completed or StageStatus.CompletedWithWarnings, status == StageStatus.Completed, status == StageStatus.Skipped, stage.ProcessedUnits, stage.TotalUnits);
+                var isCompleted = status is StageStatus.Completed or StageStatus.CompletedWithWarnings;
+                stage.ApplyProgress(stage.Progress, message, isCompleted, status == StageStatus.Completed, status == StageStatus.Skipped, stage.ProcessedUnits, stage.TotalUnits);
+                var etaResult = _etaEstimator.UpdateProgress(new StageProgressSample
+                {
+                    StageId = stage.StageId,
+                    StageNumber = stage.StageNumber,
+                    StageName = stage.StageName,
+                    ObservedAt = stage.LastUpdatedAt,
+                    ProgressPercent = stage.Progress,
+                    ProcessedUnits = stage.ProcessedUnits,
+                    TotalUnits = stage.TotalUnits,
+                    StartedAt = stage.StartedAt,
+                    IsCompleted = isCompleted,
+                    IsSuccessful = status == StageStatus.Completed,
+                    IsSkipped = status == StageStatus.Skipped
+                });
+                stage.ApplyEta(etaResult);
+                _cachedOverallEta = _etaEstimator.GetOverallEta();
+                OnPropertyChanged(nameof(RemainingTotalEta));
+                OnPropertyChanged(nameof(RemainingEtaConfidence));
             }
         }
 
@@ -243,6 +304,13 @@ namespace SpatialCheckPro.GUI.ViewModels
             {
                 _alerts.Add(alert);
             }
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        private void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 

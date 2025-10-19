@@ -2,17 +2,21 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 // using 중복 제거됨
 using System.Windows.Media;
+using SpatialCheckPro.Models.Enums;
 using System.Windows.Threading;
 using Microsoft.Win32;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using System.ComponentModel;
 using System.Windows.Data;
 using SpatialCheckPro.Models;
+using SpatialCheckPro.Services;
 using System.IO;
 using iTextSharp.text;
 using iTextSharp.text.pdf;
@@ -344,6 +348,225 @@ namespace SpatialCheckPro.GUI.Views
         }
 
         /// <summary>
+        /// 실제 지오메트리 검수 규칙 수를 계산합니다 (검수 항목 종류 수 기반)
+        /// </summary>
+        /// <returns>검수 항목 종류 수</returns>
+        private int CalculateActualGeometryRules()
+        {
+            try
+            {
+                // 설정 파일 경로 찾기
+                var configDirectory = GetDefaultConfigDirectory();
+                var geometryConfigPath = Path.Combine(configDirectory, "3_geometry_check.csv");
+                
+                if (!File.Exists(geometryConfigPath))
+                {
+                    System.Diagnostics.Debug.WriteLine($"[규칙 수 계산] 설정 파일을 찾을 수 없습니다: {geometryConfigPath}");
+                    return 0;
+                }
+
+                // 설정 파일 직접 분석
+                var lines = File.ReadAllLines(geometryConfigPath, System.Text.Encoding.UTF8);
+                if (lines.Length < 2)
+                {
+                    System.Diagnostics.Debug.WriteLine("[규칙 수 계산] 설정 파일이 비어있습니다.");
+                    return 0;
+                }
+
+                // 헤더 라인에서 규칙 컬럼 수 계산 (4번째 컬럼부터)
+                var headerLine = lines[0];
+                var headerColumns = headerLine.Split(',');
+                
+                // 규칙 컬럼 수 계산 (테이블ID, 테이블명칭, 지오메트리타입 제외)
+                int ruleColumnCount = headerColumns.Length - 3; // 처음 3개 컬럼 제외
+                
+                System.Diagnostics.Debug.WriteLine($"[규칙 수 계산] 검수 항목 종류 수: {ruleColumnCount}개");
+                
+                return ruleColumnCount;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[규칙 수 계산 오류] {ex.Message}");
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// 기본 설정 디렉토리를 가져옵니다
+        /// </summary>
+        /// <returns>설정 디렉토리 경로</returns>
+        private string GetDefaultConfigDirectory()
+        {
+            // 여러 경로를 시도해서 설정 파일 찾기
+            var possiblePaths = new[]
+            {
+                // 1. 현재 실행 파일 기준 Config 폴더
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config"),
+                // 2. 상위 폴더의 Config (GUI 프로젝트에서 라이브러리 프로젝트의 Config 참조)
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "SpatialCheckPro", "Config"),
+                // 3. 솔루션 루트의 Config
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "Config"),
+                // 4. 절대 경로 (개발 환경)
+                Path.Combine(@"G:\SpatialCheckPro\SpatialCheckPro\Config")
+            };
+
+            foreach (var path in possiblePaths)
+            {
+                var fullPath = Path.GetFullPath(path);
+                var testFile = Path.Combine(fullPath, "3_geometry_check.csv");
+                if (File.Exists(testFile))
+                {
+                    System.Diagnostics.Debug.WriteLine($"[설정 디렉토리] 찾음: {fullPath}");
+                    return fullPath;
+                }
+            }
+
+            // 기본값 반환
+            var defaultPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config");
+            System.Diagnostics.Debug.WriteLine($"[설정 디렉토리] 기본값 사용: {defaultPath}");
+            return defaultPath;
+        }
+
+        /// <summary>
+        /// 검수 진행 버튼 클릭 이벤트 핸들러
+        /// </summary>
+        private async void StartValidationButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                _logger?.LogInformation("검수 진행 버튼 클릭됨");
+                
+                // 파일 선택 다이얼로그 표시
+                var openFileDialog = new Microsoft.Win32.OpenFileDialog
+                {
+                    Title = "검수할 GDB 파일 선택",
+                    Filter = "File Geodatabase (*.gdb)|*.gdb|모든 파일 (*.*)|*.*",
+                    Multiselect = false
+                };
+
+                if (openFileDialog.ShowDialog() == true)
+                {
+                    var selectedFile = openFileDialog.FileName;
+                    _logger?.LogInformation("선택된 파일: {FilePath}", selectedFile);
+
+                    // 검수 진행 상태 표시
+                    StartValidationButton.IsEnabled = false;
+                    StartValidationButton.Content = "검수 진행 중...";
+
+                    // 검수 실행
+                    await ExecuteValidationAsync(selectedFile);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "검수 진행 중 오류 발생");
+                MessageBox.Show($"검수 진행 중 오류가 발생했습니다.\n\n오류: {ex.Message}", 
+                    "검수 오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                // 버튼 상태 복원
+                StartValidationButton.IsEnabled = true;
+                StartValidationButton.Content = "검수 진행";
+            }
+        }
+
+        /// <summary>
+        /// 검수를 실행합니다
+        /// </summary>
+        private async Task ExecuteValidationAsync(string gdbPath)
+        {
+            try
+            {
+                _logger?.LogInformation("검수 실행 시작: {GdbPath}", gdbPath);
+
+                // ValidationService 가져오기
+                var serviceProvider = Application.Current.Resources["ServiceProvider"] as IServiceProvider;
+                if (serviceProvider == null)
+                {
+                    throw new InvalidOperationException("ServiceProvider를 찾을 수 없습니다.");
+                }
+
+                var validationService = serviceProvider.GetService(typeof(IValidationService)) as IValidationService;
+                if (validationService == null)
+                {
+                    throw new InvalidOperationException("ValidationService를 찾을 수 없습니다.");
+                }
+
+                // 설정 디렉토리 경로
+                var configDirectory = GetDefaultConfigDirectory();
+                _logger?.LogInformation("설정 디렉토리: {ConfigDirectory}", configDirectory);
+
+                // SpatialFileInfo 생성
+                var spatialFile = new SpatialFileInfo
+                {
+                    FilePath = gdbPath,
+                    FileName = Path.GetFileName(gdbPath),
+                    FileSize = new FileInfo(gdbPath).Length,
+                    CreatedAt = File.GetCreationTime(gdbPath),
+                    ModifiedAt = File.GetLastWriteTime(gdbPath)
+                };
+
+                // 진행률 보고를 위한 Progress 객체
+                var progress = new Progress<ValidationProgress>(progressInfo =>
+                {
+                    // UI 스레드에서 진행률 업데이트
+                    Dispatcher.Invoke(() =>
+                    {
+                        UpdateProgressUI(progressInfo);
+                    });
+                });
+
+                // 검수 실행
+                var result = await validationService.ExecuteValidationAsync(
+                    spatialFile, 
+                    configDirectory, 
+                    progress, 
+                    CancellationToken.None);
+
+                _logger?.LogInformation("검수 실행 완료: {Status}", result.Status);
+
+                // 결과 업데이트
+                _validationResult = result;
+                UpdateUI();
+
+                // 완료 메시지 표시
+                MessageBox.Show($"검수가 완료되었습니다.\n\n상태: {result.Status}\n오류: {result.TotalErrors}개\n경고: {result.TotalWarnings}개", 
+                    "검수 완료", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "검수 실행 중 오류 발생");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 진행률 UI를 업데이트합니다
+        /// </summary>
+        private void UpdateProgressUI(ValidationProgress progress)
+        {
+            try
+            {
+                // 진행률 정보를 UI에 표시
+                var progressText = $"{progress.CurrentStageName} - {progress.CurrentTask} ({progress.OverallPercentage}%)";
+                
+                // 상태 표시 (임시로 창 제목에 표시)
+                var parentWindow = Window.GetWindow(this);
+                if (parentWindow != null)
+                {
+                    parentWindow.Title = $"Spatial Check Pro - {progressText}";
+                }
+
+                _logger?.LogDebug("검수 진행률: {Progress}", progressText);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "진행률 UI 업데이트 중 오류 발생");
+            }
+        }
+
+        /// <summary>
         /// UI를 업데이트합니다
         /// </summary>
         private void UpdateUI()
@@ -516,6 +739,28 @@ namespace SpatialCheckPro.GUI.Views
 
             try
             {
+                // 0단계: FileGDB 검증 요약
+                if (_validationResult.FileGdbCheckResult != null)
+                {
+                    var fgdbResult = _validationResult.FileGdbCheckResult;
+                    DashStage0StatusText.Text = fgdbResult.Status == CheckStatus.Passed ? "성공" : 
+                                              fgdbResult.Status == CheckStatus.Failed ? "실패" : "경고";
+                    DashStage0ErrorCountText.Text = fgdbResult.ErrorCount.ToString();
+                    DashStage0WarningCountText.Text = fgdbResult.WarningCount.ToString();
+                    
+                    // 상태에 따른 색상 변경
+                    DashStage0StatusText.Foreground = fgdbResult.Status == CheckStatus.Passed ? 
+                        new SolidColorBrush(System.Windows.Media.Color.FromRgb(34, 197, 94)) : // 초록색
+                        new SolidColorBrush(System.Windows.Media.Color.FromRgb(220, 38, 38)); // 빨간색
+                }
+                else
+                {
+                    DashStage0StatusText.Text = "미실행";
+                    DashStage0ErrorCountText.Text = "0";
+                    DashStage0WarningCountText.Text = "0";
+                    DashStage0StatusText.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(107, 114, 128)); // 회색
+                }
+
                 // 1단계 요약
                 if (_validationResult.TableCheckResult != null)
                 {
@@ -589,6 +834,7 @@ namespace SpatialCheckPro.GUI.Views
                 if (_validationResult.GeometryCheckResult?.GeometryResults != null)
                 {
                     var results = _validationResult.GeometryCheckResult.GeometryResults;
+                    // 개별 오류 수 업데이트
                     DashStage3DuplicateText.Text = results.Sum(r => r.DuplicateCount).ToString();
                     DashStage3OverlapText.Text = results.Sum(r => r.OverlapCount).ToString();
                     DashStage3SelfIntersectionText.Text = results.Sum(r => r.SelfIntersectionCount).ToString();
@@ -601,6 +847,16 @@ namespace SpatialCheckPro.GUI.Views
                     DashStage3MinPointText.Text = results.Sum(r => r.MinPointCount).ToString();
                     DashStage3UndershootText.Text = results.Sum(r => r.UndershootCount).ToString();
                     DashStage3OvershootText.Text = results.Sum(r => r.OvershootCount).ToString();
+                    
+                    // 실제 검수 규칙 수 계산 (설정 파일 기반)
+                    int actualTotalRules = CalculateActualGeometryRules();
+                    int totalErrors = results.Sum(r => r.DuplicateCount + r.OverlapCount + r.SelfIntersectionCount + 
+                                                   r.SelfOverlapCount + r.SliverCount + r.SpikeCount + 
+                                                   r.ShortObjectCount + r.SmallAreaCount + r.PolygonInPolygonCount + 
+                                                   r.MinPointCount + r.UndershootCount + r.SpikeCount);
+                    
+                    DashStage3RuleCountText.Text = actualTotalRules.ToString();
+                    DashStage3TotalErrorText.Text = totalErrors.ToString();
                 }
                 else
                 {
@@ -616,6 +872,10 @@ namespace SpatialCheckPro.GUI.Views
                     DashStage3MinPointText.Text = "0";
                     DashStage3UndershootText.Text = "0";
                     DashStage3OvershootText.Text = "0";
+                    
+                    // 검사한 규칙 수와 총 오류 수 초기화
+                    DashStage3RuleCountText.Text = "0";
+                    DashStage3TotalErrorText.Text = "0";
                 }
 
                 // 4단계 (속성 관계) 

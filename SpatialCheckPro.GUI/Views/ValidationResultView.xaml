@@ -130,6 +130,13 @@
                 <ComboBox x:Name="BatchResultSelector" Width="360" Margin="0,0,8,0"
                           Visibility="Collapsed"
                           SelectionChanged="BatchResultSelector_SelectionChanged"/>
+                <!-- 검수 진행 버튼 -->
+                <Button x:Name="StartValidationButton" Style="{StaticResource PrimaryButton}" Click="StartValidationButton_Click" Padding="20,12" Margin="0,0,8,0">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource PlayIcon}" Fill="White" Width="16" Height="16" Stretch="Uniform" Margin="0,0,8,0"/>
+                        <TextBlock Text="검수 진행" Foreground="White"/>
+                    </StackPanel>
+                </Button>
                 <!-- 판정설명 버튼 -->
                 <Button x:Name="ExplainButton" Style="{StaticResource SecondaryButton}" Click="ExplainButton_Click" Padding="20,12" Margin="12,0,0,0">
                     <StackPanel Orientation="Horizontal">
@@ -222,6 +229,7 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
                             <!-- 검수 요약 카드 (대시보드로 편입) : 바깥 카드 제거로 평면화 -->
@@ -283,8 +291,40 @@
                                 </Grid>
                             </Border>
 
-                            <!-- 1단계 카드 : 바깥 카드 제거로 평면화 -->
+                            <!-- 0단계 카드 : FileGDB 검증 -->
                             <Border Grid.Row="2" Background="Transparent" BorderThickness="0" Margin="0,0,0,12" Padding="0" HorizontalAlignment="Stretch">
+                                <StackPanel>
+                                    <TextBlock Text="0단계: FileGDB 검증" Style="{StaticResource SectionHeader}" Margin="0,0,0,8"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Column="0" Style="{StaticResource KpiCard}" Background="#F0F9FF" BorderBrush="Transparent" BorderThickness="0" Margin="0,0,8,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="검증 상태" Style="{StaticResource KpiCaption}" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="DashStage0StatusText" Text="미실행" Style="{StaticResource KpiValue}" Foreground="#2563EB" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Grid.Column="1" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="8,0,8,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="오류 수" Style="{StaticResource KpiCaption}" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="DashStage0ErrorCountText" Text="0" Style="{StaticResource KpiValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <Border Grid.Column="2" Style="{StaticResource KpiCard}" Background="#FFFBEB" BorderBrush="Transparent" BorderThickness="0" Margin="8,0,0,0">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="경고 수" Style="{StaticResource KpiCaption}" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="DashStage0WarningCountText" Text="0" Style="{StaticResource KpiValue}" Foreground="#D97706" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- 1단계 카드 : 바깥 카드 제거로 평면화 -->
+                            <Border Grid.Row="3" Background="Transparent" BorderThickness="0" Margin="0,0,0,12" Padding="0" HorizontalAlignment="Stretch">
                                 <StackPanel>
                                     <TextBlock Text="1단계: 테이블 검수" Style="{StaticResource SectionHeader}" Margin="0,0,0,8"/>
                                     <Grid>
@@ -323,7 +363,7 @@
                             </Border>
 
                             <!-- 2단계 카드 : 바깥 카드 제거로 평면화 -->
-                            <Border Grid.Row="3" Background="Transparent" BorderThickness="0" Margin="0,0,0,12" Padding="0" HorizontalAlignment="Stretch">
+                            <Border Grid.Row="4" Background="Transparent" BorderThickness="0" Margin="0,0,0,12" Padding="0" HorizontalAlignment="Stretch">
                                 <StackPanel>
                                     <TextBlock Text="2단계: 스키마 검수" Style="{StaticResource SectionHeader}" Margin="0,0,0,8"/>
                                     <Grid>
@@ -334,7 +374,7 @@
                                         </Grid.ColumnDefinitions>
                                         <Border Grid.Column="0" Style="{StaticResource KpiCard}" Background="#F0F9FF" BorderBrush="Transparent" BorderThickness="0" Margin="0,0,8,0">
                                             <StackPanel HorizontalAlignment="Center">
-                                                <TextBlock Text="총 컬럼 검사 규칙" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="검사된 규칙" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
                                                 <TextBlock x:Name="DashStage2TotalColumnsText" Text="0" Style="{StaticResource CompactValue}" Foreground="#2563EB" HorizontalAlignment="Center"/>
                                             </StackPanel>
                                         </Border>
@@ -355,7 +395,7 @@
                             </Border>
 
                             <!-- 3단계 카드 : 바깥 카드 제거로 평면화 -->
-                            <Border Grid.Row="4" Background="Transparent" BorderThickness="0" Margin="0,0,0,12" Padding="0" HorizontalAlignment="Stretch">
+                            <Border Grid.Row="5" Background="Transparent" BorderThickness="0" Margin="0,0,0,12" Padding="0" HorizontalAlignment="Stretch">
                                 <StackPanel>
                                     <TextBlock Text="3단계: 지오메트리 검수" Style="{StaticResource SectionHeader}" Margin="0,0,0,8"/>
                                     <Grid>
@@ -365,46 +405,61 @@
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
-                                        <UniformGrid Grid.Row="0" Columns="6" Margin="0,0,0,0">
-                                            <Border Grid.Column="0" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="0,0,4,4">
+                                        
+                                        <!-- 검사한 규칙과 총 오류 수 정보 -->
+                                        <UniformGrid Grid.Row="1" Columns="7" Margin="0,0,0,0">
+                                            <Border Grid.Column="0" Style="{StaticResource KpiCard}" Background="#F0F9FF" BorderBrush="Transparent" BorderThickness="0" Margin="0,0,8,0">
+                                                <StackPanel HorizontalAlignment="Center">
+                                                    <TextBlock Text="검사된 규칙" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
+                                                    <TextBlock x:Name="DashStage3RuleCountText" Text="0" Style="{StaticResource CompactValue}" Foreground="#2563EB" HorizontalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
+                                            <Border Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="0,0,4,4">
                                                 <StackPanel HorizontalAlignment="Center">
                                                     <TextBlock Text="중복" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
                                                     <TextBlock x:Name="DashStage3DuplicateText" Text="0" Style="{StaticResource CompactValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
                                                 </StackPanel>
                                             </Border>
-                                            <Border Grid.Column="1" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="4,0,4,4">
+                                            <Border Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="4,0,4,4">
                                                 <StackPanel HorizontalAlignment="Center">
                                                     <TextBlock Text="겹침" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
                                                     <TextBlock x:Name="DashStage3OverlapText" Text="0" Style="{StaticResource CompactValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
                                                 </StackPanel>
                                             </Border>
-                                            <Border Grid.Column="2" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="4,0,4,4">
+                                            <Border Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="4,0,4,4">
                                                 <StackPanel HorizontalAlignment="Center">
                                                     <TextBlock Text="자체꼬임" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
                                                     <TextBlock x:Name="DashStage3SelfIntersectionText" Text="0" Style="{StaticResource CompactValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
                                                 </StackPanel>
                                             </Border>
-                                            <Border Grid.Column="3" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="4,0,4,4">
+                                            <Border Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="4,0,4,4">
                                                 <StackPanel HorizontalAlignment="Center">
                                                     <TextBlock Text="자기중첩" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
                                                     <TextBlock x:Name="DashStage3SelfOverlapText" Text="0" Style="{StaticResource CompactValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
                                                 </StackPanel>
                                             </Border>
-                                            <Border Grid.Column="5" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="4,0,4,4">
+                                            <Border Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="4,0,4,4">
                                                 <StackPanel HorizontalAlignment="Center">
                                                     <TextBlock Text="슬리버" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
                                                     <TextBlock x:Name="DashStage3SliverText" Text="0" Style="{StaticResource CompactValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
                                                 </StackPanel>
                                             </Border>
-                                            <Border Grid.Column="5" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="4,0,0,4">
+                                            <Border Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="4,0,0,4">
                                                 <StackPanel HorizontalAlignment="Center">
                                                     <TextBlock Text="스파이크" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
                                                     <TextBlock x:Name="DashStage3SpikeText" Text="0" Style="{StaticResource CompactValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
                                                 </StackPanel>
                                             </Border>
                                         </UniformGrid>
-                                        <UniformGrid Grid.Row="1" Columns="6">
+                                        <UniformGrid Grid.Row="2" Columns="7">
+                                            <Border Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="0,4,4,0">
+                                                <StackPanel HorizontalAlignment="Center">
+                                                    <TextBlock Text="총 오류 수" Style="{StaticResource CompactCaption}" VerticalAlignment="Center"/>
+                                                    <TextBlock x:Name="DashStage3TotalErrorText" Text="0" Style="{StaticResource CompactValue}" Foreground="#DC2626" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
                                             <Border Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="0,4,4,0">
                                                 <StackPanel HorizontalAlignment="Center">
                                                     <TextBlock Text="짧은객체" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center"/>
@@ -447,7 +502,7 @@
                             </Border>
 
                             <!-- 4단계 카드: 속성 관계 검수 -->
-                            <Border Grid.Row="5" Background="Transparent" BorderThickness="0" Margin="0,0,0,0" Padding="0" HorizontalAlignment="Stretch">
+                            <Border Grid.Row="6" Background="Transparent" BorderThickness="0" Margin="0,0,0,12" Padding="0" HorizontalAlignment="Stretch">
                                 <StackPanel>
                                     <TextBlock Text="4단계: 속성 관계 검수" Style="{StaticResource SectionHeader}" Margin="0,0,0,8"/>
                                     <Grid>
@@ -482,7 +537,7 @@
                             </Border>
 
                             <!-- 5단계 카드: 공간 관계 검수 : 바깥 카드 제거로 평면화 -->
-                            <Border Grid.Row="6" Background="Transparent" BorderThickness="0" Margin="0,0,0,12" Padding="0" HorizontalAlignment="Stretch">
+                            <Border Grid.Row="7" Background="Transparent" BorderThickness="0" Margin="0,0,0,12" Padding="0" HorizontalAlignment="Stretch">
                                 <StackPanel>
                                     <TextBlock Text="5단계: 공간 관계 검수" Style="{StaticResource SectionHeader}" Margin="0,0,0,8"/>
                                     <Grid>

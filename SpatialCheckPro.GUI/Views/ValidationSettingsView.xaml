@@ -1,0 +1,275 @@
+<UserControl x:Class="SpatialCheckPro.GUI.Views.ValidationSettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="White">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="20">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <Path Data="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.22,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.22,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z" 
+                          Fill="#3B82F6" Width="24" Height="24" Margin="0,0,10,0"/>
+                    <TextBlock Text="검수 설정 파일 관리" FontSize="20" FontWeight="Bold" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock Text="각 검수 단계에서 사용할 설정 파일을 지정하세요" Foreground="Gray" Margin="34,0,0,20"/>
+            </StackPanel>
+
+            <!-- 검수 대상 경로 설정 -->
+            <GroupBox Header="검수 대상 파일/폴더" Margin="0,0,0,15" Padding="15">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="TargetPathTextBox" Grid.Column="0" IsReadOnly="True" Margin="0,0,10,0" Padding="8" BorderBrush="LightGray"/>
+                    <Button Grid.Column="1" Content="경로 선택" Padding="15,8" Background="#2563EB" Foreground="White" BorderThickness="0" Click="BrowseTargetPath_Click"/>
+                </Grid>
+            </GroupBox>
+
+            <!-- 단계 사용 여부 스위치 -->
+            <GroupBox Header="검수 단계 사용 여부" Margin="0,0,0,15" Padding="15">
+                <UniformGrid Columns="5" Rows="1">
+                    <CheckBox x:Name="Stage1EnabledCheck" Content="1단계 사용" IsChecked="True"/>
+                    <CheckBox x:Name="Stage2EnabledCheck" Content="2단계 사용" IsChecked="True"/>
+                    <CheckBox x:Name="Stage3EnabledCheck" Content="3단계 사용" IsChecked="True"/>
+                    <CheckBox x:Name="Stage4EnabledCheck" Content="4단계 사용" IsChecked="True"/>
+                    <CheckBox x:Name="Stage5EnabledCheck" Content="5단계 사용" IsChecked="True"/>
+                </UniformGrid>
+            </GroupBox>
+
+            <!-- 성능 모드 -->
+            <GroupBox Header="성능 모드" Grid.Row="3" Margin="0 10 0 0" Padding="10">
+                <StackPanel>
+                    <CheckBox x:Name="HighPerformanceModeCheckBox" 
+                              Content="고성능 모드 활성화 (SQLite 사용, 대용량 파일에 권장)"
+                              IsChecked="{Binding EnableHighPerformanceMode, Mode=TwoWay}"
+                              ToolTip="검수 대상 FileGDB를 임시 고속 데이터베이스로 변환하여 검수 속도를 향상시킵니다. 초기 변환 시간이 소요될 수 있습니다."/>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- 설정 미리보기 탭 (디자인 스타일 적용) -->
+            <GroupBox Header="설정 미리보기 (체크 해제 시 해당 행 스킵)" Margin="0,0,0,15" Padding="10">
+                <TabControl Style="{StaticResource ModernTabControl}">
+                    <TabItem Header="1단계: 테이블" Style="{StaticResource ModernTabItem}">
+                        <DockPanel>
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,5">
+                                <TextBox x:Name="Stage1SearchBox" Width="200" Margin="0,0,8,0"/>
+                                <Button Content="검색" Width="60" Click="Stage1Search_Click"/>
+                            </StackPanel>
+                            <DataGrid x:Name="Stage1Grid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="False" Margin="0,5,0,0">
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn Width="60">
+                                        <DataGridTemplateColumn.Header>
+                                            <CheckBox Content="사용" Click="Stage1ToggleAll_Click"/>
+                                        </DataGridTemplateColumn.Header>
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <CheckBox IsChecked="{Binding Use, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center"/>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Binding="{Binding Item.TableId}" Header="테이블ID" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.TableName}" Header="테이블명칭" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.GeometryType}" Header="지오메트리타입" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.CoordinateSystem}" Header="좌표계" Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </TabItem>
+                    <TabItem Header="2단계: 스키마" Style="{StaticResource ModernTabItem}">
+                        <DockPanel>
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,5">
+                                <TextBox x:Name="Stage2SearchBox" Width="200" Margin="0,0,8,0"/>
+                                <Button Content="검색" Width="60" Click="Stage2Search_Click"/>
+                            </StackPanel>
+                            <DataGrid x:Name="Stage2Grid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="False" Margin="0,5,0,0">
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn Width="60">
+                                        <DataGridTemplateColumn.Header>
+                                            <CheckBox Content="사용" Click="Stage2ToggleAll_Click"/>
+                                        </DataGridTemplateColumn.Header>
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <CheckBox IsChecked="{Binding Use, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center"/>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Binding="{Binding Item.TableId}" Header="테이블ID" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.ColumnName}" Header="컬럼명칭" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.ColumnKoreanName}" Header="컬럼한글명" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.DataType}" Header="타입" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.Length}" Header="길이" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.IsNotNull}" Header="NN" Width="80"/>
+                                    <DataGridTextColumn Binding="{Binding Item.UniqueKey}" Header="UK" Width="80"/>
+                                    <DataGridTextColumn Binding="{Binding Item.ForeignKey}" Header="FK" Width="80"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </TabItem>
+                    <TabItem Header="3단계: 지오메트리" Style="{StaticResource ModernTabItem}">
+                        <DockPanel>
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,5">
+                                <TextBox x:Name="Stage3SearchBox" Width="200" Margin="0,0,8,0"/>
+                                <Button Content="검색" Width="60" Click="Stage3Search_Click"/>
+                            </StackPanel>
+                            <DataGrid x:Name="Stage3Grid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="False" Margin="0,5,0,0" Sorting="Stage3Grid_Sorting">
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn Width="60">
+                                        <DataGridTemplateColumn.Header>
+                                            <CheckBox Content="사용" Click="Stage3ToggleAll_Click"/>
+                                        </DataGridTemplateColumn.Header>
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <CheckBox IsChecked="{Binding Use, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center"/>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Binding="{Binding Item.TableId}" Header="테이블ID" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.TableName}" Header="테이블명칭" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.GeometryType}" Header="지오메트리타입" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.CheckDuplicate}" Header="객체중복" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.CheckOverlap}" Header="객체간겹침" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.CheckSelfIntersection}" Header="자체꼬임" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.CheckSliver}" Header="슬리버" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.CheckShortObject}" Header="짧은객체" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.CheckSmallArea}" Header="작은면적객체" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.CheckPolygonInPolygon}" Header="홀 폴리곤 오류" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.CheckMinPoints}" Header="최소정점개수" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.CheckSpikes}" Header="스파이크" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.CheckSelfOverlap}" Header="자기중첩" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.CheckUndershoot}" Header="언더슛" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.CheckOvershoot}" Header="오버슛" Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </TabItem>
+                    <TabItem Header="4단계: 속성 관계" Style="{StaticResource ModernTabItem}">
+                        <DockPanel>
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,5">
+                                <TextBox x:Name="Stage4SearchBox" Width="200" Margin="0,0,8,0"/>
+                                <Button Content="검색" Width="60" Click="Stage4Search_Click"/>
+                            </StackPanel>
+                            <DataGrid x:Name="Stage4Grid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="False" Margin="0,5,0,0">
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn Width="60">
+                                        <DataGridTemplateColumn.Header>
+                                            <CheckBox Content="사용" Click="Stage4ToggleAll_Click"/>
+                                        </DataGridTemplateColumn.Header>
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <CheckBox IsChecked="{Binding Use, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center"/>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Binding="{Binding Item.RuleId}" Header="규칙ID" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.TableId}" Header="테이블ID" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.TableName}" Header="테이블명" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.FieldName}" Header="필드명" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.CheckType}" Header="검수유형" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.Parameters}" Header="매개변수" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.Severity}" Header="심각도" Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </TabItem>
+                    <TabItem Header="5단계: 공간 관계" Style="{StaticResource ModernTabItem}">
+                        <DockPanel>
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,5">
+                                <TextBox x:Name="Stage5SearchBox" Width="200" Margin="0,0,8,0"/>
+                                <Button Content="검색" Width="60" Click="Stage5Search_Click"/>
+                            </StackPanel>
+                            <DataGrid x:Name="Stage5Grid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="False" Margin="0,5,0,0" Sorting="Stage5Grid_Sorting">
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn Width="60">
+                                        <DataGridTemplateColumn.Header>
+                                            <CheckBox Content="사용" Click="Stage5ToggleAll_Click"/>
+                                        </DataGridTemplateColumn.Header>
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <CheckBox IsChecked="{Binding Use, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center"/>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Binding="{Binding Item.RuleId}" Header="규칙ID" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.CaseType}" Header="케이스" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.MainTableId}" Header="메인테이블" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.RelatedTableId}" Header="관련테이블" Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </TabItem>
+                </TabControl>
+            </GroupBox>
+
+            <!-- 코드리스트 설정 -->
+            <GroupBox Header="코드리스트 설정" Margin="0,20,0,0" Padding="10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="CodelistPathTextBox" Grid.Column="1" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                    <Button Content="코드리스트 파일 선택" Grid.Column="2" Click="BrowseCodelist_Click" Width="140" Height="30"/>
+                </Grid>
+            </GroupBox>
+
+            <!-- 파일 경로 묶음 -->
+            <GroupBox Header="설정 파일 경로" Padding="15">
+                <StackPanel>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="TableConfigPathTextBox" Grid.Column="0" IsReadOnly="True" Margin="0,0,10,0" Padding="8" BorderBrush="LightGray"/>
+                        <Button Grid.Column="1" Content="1단계 파일 선택" Padding="15,8" Background="DodgerBlue" Foreground="White" BorderThickness="0" Click="BrowseTableConfig_Click" FontFamily="HYGothic-Extra"/>
+                    </Grid>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="SchemaConfigPathTextBox" Grid.Column="0" IsReadOnly="True" Margin="0,0,10,0" Padding="8" BorderBrush="LightGray"/>
+                        <Button Grid.Column="1" Content="2단계 파일 선택" Padding="15,8" Background="DodgerBlue" Foreground="White" BorderThickness="0" Click="BrowseSchemaConfig_Click" FontFamily="HYGothic-Extra"/>
+                    </Grid>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="GeometryConfigPathTextBox" Grid.Column="0" IsReadOnly="True" Margin="0,0,10,0" Padding="8" BorderBrush="LightGray"/>
+                        <Button Grid.Column="1" Content="3단계 파일 선택" Padding="15,8" Background="DodgerBlue" Foreground="White" BorderThickness="0" Click="BrowseGeometryConfig_Click" FontFamily="HYGothic-Extra"/>
+                    </Grid>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="AttributeConfigPathTextBox" Grid.Column="0" IsReadOnly="True" Margin="0,0,10,0" Padding="8" BorderBrush="LightGray"/>
+                        <Button Grid.Column="1" Content="4단계 파일 선택" Padding="15,8" Background="DodgerBlue" Foreground="White" BorderThickness="0" Click="BrowseAttributeConfig_Click" FontFamily="HYGothic-Extra"/>
+                    </Grid>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="RelationConfigPathTextBox" Grid.Column="0" IsReadOnly="True" Margin="0,0,10,0" Padding="8" BorderBrush="LightGray"/>
+                        <Button Grid.Column="1" Content="5단계 파일 선택" Padding="15,8" Background="DodgerBlue" Foreground="White" BorderThickness="0" Click="BrowseRelationConfig_Click" FontFamily="HYGothic-Extra"/>
+                    </Grid>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="GeometryCriteriaPathTextBox" Grid.Column="0" IsReadOnly="True" Margin="0,0,10,0" Padding="8" BorderBrush="LightGray" />
+                        <Button Grid.Column="1" Content="지오메트리 기준 선택" Padding="15,8" Background="Orange" Foreground="White" BorderThickness="0" Click="BrowseGeometryCriteria_Click" FontFamily="HYGothic-Extra" />
+                    </Grid>
+                </StackPanel>
+            </GroupBox>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+                <Button x:Name="ApplyButton" Content="적용" Padding="18,8" Background="Green" Foreground="White" BorderThickness="0" Margin="0,0,8,0" FontFamily="HYGothic-Extra"/>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
+

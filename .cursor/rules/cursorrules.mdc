@@ -1,0 +1,266 @@
+---
+alwaysApply: true
+---
+
+# Spatial Check Pro Project Rules for Cursor AI
+
+## 프로젝트 개요
+이 프로젝트는 File Geodatabase (.gdb) 파일을 검수하는 WPF 데스크톱 애플리케이션입니다.
+ISO 19157 데이터 품질 표준을 준수하며, 공간정보 데이터의 완전성, 논리적 일관성, 정확도를 검증합니다.
+
+## 기술 스택
+- .NET 8.0
+- WPF (Windows Presentation Foundation)
+- GDAL/OGR (공간 데이터 처리)
+- Entity Framework Core (SQLite)
+- MVVM 패턴
+
+## 주요 구조
+```
+SpatialCheckPro/
+├── SpatialCheckPro/              # 핵심 비즈니스 로직 라이브러리
+│   ├── Config/                   # CSV 설정 파일
+│   ├── Constants/                # 상수 정의
+│   ├── Data/                     # 데이터베이스 컨텍스트
+│   ├── Exceptions/               # 커스텀 예외
+│   ├── Extensions/               # 확장 메서드
+│   ├── Models/                   # 도메인 모델
+│   │   ├── Config/              # 설정 모델
+│   │   ├── Entities/            # 데이터베이스 엔티티
+│   │   └── Enums/               # 열거형
+│   ├── Processors/               # 검수 프로세서
+│   └── Services/                 # 비즈니스 서비스
+│
+└── SpatialCheckPro.GUI/          # WPF GUI 애플리케이션
+    ├── Views/                    # XAML 뷰
+    ├── ViewModels/               # MVVM 뷰모델
+    ├── Services/                 # UI 서비스
+    ├── Converters/               # 값 변환기
+    └── Styles/                   # UI 스타일
+```
+
+## 언어 원칙
+- 모든 AI 응답은 반드시 한국어로만 작성해야 합니다.
+- 모든 코드 주석은 반드시 한국어로 작성해야 합니다.
+- 클래스, 메서드, 변수 설명은 모두 한국어로 작성해야 합니다.
+- 영어 및 다른 언어 사용은 최대한 배제합니다.
+- 기술 용어는 한국어화가 어려운 경우 원문(괄호) 병기 허용
+- 필요시 프로젝트 표준 용어집 파일 참조: #[[file:terms.md]]
+
+## 코딩 규칙
+
+### 기본 원칙
+1. C# 10+ 기능 적극 활용 (record types, pattern matching, nullable reference types 등)
+2. async/await 패턴 사용 (I/O 바운드 작업)
+3. Nullable Reference Types 활성화 및 null 안전성 보장
+4. MVVM 패턴 준수 (ViewModel과 View 분리)
+5. 의존성 주입(DI) 사용 및 IoC 컨테이너 활용
+6. 빌드 오류 및 경고 모두 해결 (TreatWarningsAsErrors=true)
+7. 설정 값은 하드코딩 금지 (설정 파일 또는 DI로 주입)
+8. 빌드는 항상 릴리스(Release) 모드로 진행
+
+### 네이밍 컨벤션
+9. PascalCase: 클래스, 메서드, 속성, 이벤트
+10. camelCase: 매개변수, 지역 변수
+11. _camelCase: private 필드 (언더스코어 prefix)
+12. UPPER_CASE: 상수
+13. 인터페이스는 I로 시작 (IGeometryValidator, ICheckProcessor)
+14. 변수명/메서드명은 영어, 주석은 한국어
+
+### 문서화
+15. XML 문서 주석 (`/// <summary>`) 필수 작성 (한국어)
+16. 복잡한 로직에는 인라인 주석 (`//`) 추가 (한국어)
+17. 공개 API는 모두 XML 주석 필수
+18. 검수 규칙 및 알고리즘은 상세 주석 작성
+19. 주석에 이모지(Emoji) 사용 금지
+
+### 에러 처리 및 로깅
+20. 사용자 정의 예외 클래스 정의 및 활용 (GeometryValidationException 등)
+21. 예외 메시지는 한국어로 작성 (상세 컨텍스트 포함)
+22. 로그 메시지는 한국어 + 구조화된 로깅
+23. 로깅 레벨 명확히 구분 (Debug/Info/Warning/Error/Critical)
+24. 검수 실패 시 피처 ID, 피처클래스명, 레이어명, 좌표 등 상세 정보 제공
+25. 에러 스택 트레이스는 로그에 포함
+
+### 리소스 및 메모리 관리
+26. IDisposable 패턴 준수 (using 문 또는 using 선언 활용)
+27. GDAL/OGR 객체는 명시적으로 Dispose 호출
+28. 대용량 피처 데이터는 스트리밍 및 청크 처리
+29. LINQ 쿼리 시 지연 실행 고려 (ToList() 호출 시점 최적화)
+30. 메모리 누수 방지 (이벤트 구독 해제, WeakReference 활용)
+31. 데이터베이스 연결은 반드시 using 블록 내에서 처리
+
+### 공간정보 특화 - ISO 19157 품질 표준
+32. ISO 19157 데이터 품질 표준 준수
+    - 완전성(Completeness): 누락/과잉 데이터 검사
+    - 논리적 일관성(Logical Consistency): 개념/도메인/포맷/위상 일관성 검사
+    - 위치 정확도(Positional Accuracy): 절대/상대 위치 정확도 검사
+    - 시간 정확도(Temporal Accuracy): 시간 측정 정확도 검사
+    - 주제 정확도(Thematic Accuracy): 속성 분류 정확도 검사
+33. 품질 요소별 검수 결과는 ISO 19157 품질 측정 방법 준수
+34. 검수 결과 메타데이터는 ISO 19115 표준 형식으로 기록
+35. 품질 평가 결과는 정량적 측정값으로 표현 (오류 개수, 백분율 등)
+
+### 공간정보 특화 - 좌표계 검증
+36. 좌표계 변환(coordinate transformation)은 수행하지 않음
+37. 피처클래스의 좌표계 메타데이터와 실제 사용 좌표계 일치 여부 검증
+38. 좌표값이 지정 좌표계의 유효 범위(valid extent) 내에 있는지 검증
+39. EPSG 코드 또는 PROJ 문자열로 좌표계 식별
+40. 좌표계 미지정 또는 불명확한 경우 오류로 처리
+41. 국내 주요 좌표계 지원
+    - EPSG:5179 — UTM‑K = Korea 2000 / Unified CS
+    - EPSG:5185 — Korea 2000 / West Belt 2010 (서부원점)
+    - EPSG:5186 — Korea 2000 / Central Belt 2010 (중부원점)
+    - EPSG:5187 — Korea 2000 / East Belt 2010 (동부원점)
+    - EPSG:5188 — Korea 2000 / East Sea Belt 2010 (동해(울릉)원점)
+    - EPSG:4326 — WGS 84 경위도
+    - EPSG:3857 — Web Mercator (공식명: WGS 84 / Pseudo‑Mercator).
+
+### 공간정보 특화 - 지오메트리 검증
+42. 위상 관계 검증은 OGC Simple Features 표준 준수
+43. 지오메트리 유효성은 ISO 19107/OGC 표준 기반 검증
+    - Simple Geometry: 자기 교차(self-intersection) 검사
+    - Polygon: 링 방향성, 구멍 포함 관계 검사
+    - MultiGeometry: 구성 요소 간 관계 검사
+44. 공간 인덱스 활용 (R-tree, Quad-tree 등) - GDAL/OGR 내장 기능 사용
+45. 검수 규칙은 국토지리정보원 표준 또는 자체 표준 문서화
+46. 공간 관계 검사 시 Tolerance 값 명시 및 설정 파일로 관리
+
+### 테스트 및 품질
+47. 단위 테스트 커버리지 70% 이상 유지
+48. 검수 규칙별 테스트 케이스 작성 (정상/오류 시나리오)
+49. 실제 공간 데이터(.gdb 파일)로 통합 테스트 수행
+50. 다양한 좌표계 테스트 데이터 준비 (EPSG:5179, 5186, 4326 등)
+51. 성능 테스트: 대용량 피처(10만 건 이상) 처리 시간 측정
+
+### 보안
+52. 외부 입력 데이터 검증 필수 (파일 경로, 피처클래스명 등)
+53. 파라미터화 쿼리 사용 (SQL Injection 방지)
+54. 파일 경로 검증 (Path Traversal 방지)
+55. GDAL/OGR 파일 읽기 시 예외 처리 철저
+
+### 기타
+56. 매직 넘버/문자열 사용 금지 (상수화 또는 설정 파일화)
+57. 코드 중복 최소화 (DRY 원칙)
+58. 긴 메서드는 분리 (Single Responsibility Principle)
+59. 순환 참조 방지
+
+## 검수 단계 및 프로세서
+검수는 다음 순서로 진행되며, 각 단계는 독립적인 프로세서로 구현됩니다.
+
+### 1. 테이블 검수 (TableCheckProcessor)
+- 피처클래스 존재 여부 검증
+- 피처 개수 검증
+- 필수 피처클래스 누락 검사 (ISO 19157 - 완전성)
+
+### 2. 스키마 검수 (SchemaCheckProcessor)
+- 필드 존재 여부 검증
+- 필드 타입 일치 검증
+- 필드 길이/정밀도 검증
+- 도메인 코드 값 검증 (ISO 19157 - 주제 정확도)
+
+### 3. 지오메트리 검수 (GeometryCheckProcessor)
+- 지오메트리 타입 검증
+- 지오메트리 유효성 검증 (ISO 19107 기반)
+- 좌표계 메타데이터 일치성 검증
+- 좌표값 유효 범위 검증
+- NULL 지오메트리 검사
+- 자기 교차(self-intersection) 검사
+- 중복 정점 검사
+
+### 4. 공간관계 검수 (RelationCheckProcessor)
+- 피처 간 위상 관계 검증 (Contains, Within, Intersects 등)
+- 중첩(Overlap) 검사
+- 간격(Gap) 검사
+- 공간 인덱스 활용 성능 최적화
+- OGC Simple Features 표준 준수
+
+### 5. 속성관계 검수 (AttributeCheckProcessor)
+- 속성값 범위 검증
+- 속성 간 논리적 일관성 검증
+- 필수 속성 NULL 검사
+- 코드 값 유효성 검증
+- 속성 간 종속 관계 검증
+
+## 응답 형식
+- 구현 설명은 한국어로만 제공
+- 기술적 설명도 한국어 우선, 필요시 영어 용어 병기
+- 사용자와의 모든 대화는 한국어로만 진행
+
+## 핵심 개발 원칙
+- **시뮬레이션 모드 사용 금지**: 항상 실제 코드 작성
+- **일부 테스트 모드 금지**: 전체 기능 구현
+- **항시 메인 풀 소스 모드로 진행**: 완전한 구현 제공
+- **실제 설정 파일 사용**: Config/ 디렉토리의 CSV 파일 활용
+- **실제 데이터 사용**: 테스트용 .gdb 파일로 검증
+- **빌드 오류 및 경고 완전 제거**: 모든 경고를 오류로 처리
+- **플레이스홀더 코드 금지**: 실제 동작하는 코드만 작성
+
+## AI 도움 요청 시 유의사항
+- UI 작업 시 WPF XAML 사용 (Material Design 스타일 권장)
+- 공간 데이터 처리 시 GDAL/OGR API 활용
+- 데이터베이스 작업 시 Entity Framework Core 사용
+- 비동기 작업 시 IProgress<T> 인터페이스로 진행률 보고
+- 검수 프로세서는 CancellationToken 지원 필수
+- MVVM 패턴 준수: View는 ViewModel만 참조, 비즈니스 로직은 Service에 위치
+
+## 자주 사용하는 명령어
+```bash
+# 빌드
+dotnet build
+
+# 실행
+dotnet run --project SpatialCheckPro.GUI
+
+# 테스트
+dotnet test
+
+# 솔루션 정리
+dotnet clean
+
+# 패키지 복원
+dotnet restore
+
+# 릴리스 빌드
+dotnet build -c Release
+```
+
+## GDAL/OGR 사용 가이드
+```csharp
+// 올바른 GDAL 객체 사용 패턴
+using (var dataset = Gdal.OpenEx(gdbPath, 0, null, null, null))
+{
+    if (dataset == null)
+    {
+        throw new GdalException($"GDB 파일을 열 수 없습니다: {gdbPath}");
+    }
+    
+    using (var layer = dataset.GetLayerByName(layerName))
+    {
+        if (layer == null)
+        {
+            throw new LayerNotFoundException($"레이어를 찾을 수 없습니다: {layerName}");
+        }
+        
+        // 피처 처리
+        layer.ResetReading();
+        Feature? feature;
+        while ((feature = layer.GetNextFeature()) != null)
+        {
+            using (feature)
+            {
+                // 피처 검수 로직
+            }
+        }
+    }
+}
+```
+
+## 프로젝트별 참조 파일
+- 용어집: #[[file:terms.md]]
+- 검수 규칙 정의: SpatialCheckPro/Config/
+- 데이터베이스 스키마: SpatialCheckPro/Data/AppDbContext.cs
+- 예외 정의: SpatialCheckPro/Exceptions/
+
+---
+**마지막 업데이트**: 2025-10-16

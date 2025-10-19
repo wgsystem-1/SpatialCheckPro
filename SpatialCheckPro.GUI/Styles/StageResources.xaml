@@ -1,0 +1,71 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:converters="clr-namespace:SpatialCheckPro.GUI.Converters"
+                    >
+
+    <!-- 공용 컨버터 -->
+    <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+
+    <!-- 단계 타임라인 카드 스타일 -->
+    <Style x:Key="StageTimelineCard" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource CardColor}"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Padding" Value="16"/>
+        <Setter Property="Margin" Value="0,8,0,8"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Effect" Value="{x:Null}"/>
+    </Style>
+
+    <!-- 단계 배지 스타일 -->
+    <Style x:Key="StageStatusBadge" TargetType="Border" BasedOn="{StaticResource StatusChip}">
+        <Setter Property="CornerRadius" Value="14"/>
+        <Setter Property="Padding" Value="12,4"/>
+        <Setter Property="Margin" Value="4,0,0,0"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+
+    <!-- 타임라인 진행 연결선 스타일 -->
+    <Style x:Key="TimelineConnector" TargetType="Rectangle">
+        <Setter Property="Width" Value="3"/>
+        <Setter Property="RadiusX" Value="1.5"/>
+        <Setter Property="RadiusY" Value="1.5"/>
+        <Setter Property="Fill" Value="{StaticResource BorderColor}"/>
+        <Setter Property="Opacity" Value="0.75"/>
+    </Style>
+
+    <!-- 알림 패널 스타일 -->
+    <Style x:Key="StageAlertPanel" TargetType="Border">
+        <Setter Property="Background" Value="#FFFDF2"/>
+        <Setter Property="BorderBrush" Value="{StaticResource WarningColor}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Padding" Value="12"/>
+        <Setter Property="Margin" Value="0,6,0,0"/>
+    </Style>
+
+    <!-- ETA 배지 텍스트 스타일 -->
+    <Style x:Key="EtaBadgeText" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource PrimaryFont}"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="#1E3A8A"/>
+    </Style>
+
+    <!-- 단계 번호 원형 배경 브러시 -->
+    <SolidColorBrush x:Key="StageNumberBackground" Color="#1E40AF"/>
+    <SolidColorBrush x:Key="StageNumberForeground" Color="#FFFFFF"/>
+
+    <!-- 타임라인 카드 헤더 텍스트 -->
+    <Style x:Key="StageCardHeader" TargetType="TextBlock" BasedOn="{StaticResource HeadingSmall}">
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Margin" Value="0,0,0,4"/>
+    </Style>
+
+    <!-- 타임라인 카드 설명 텍스트 -->
+    <Style x:Key="StageCardDescription" TargetType="TextBlock" BasedOn="{StaticResource CaptionText}">
+        <Setter Property="Foreground" Value="{StaticResource TextSecondaryColor}"/>
+    </Style>
+
+</ResourceDictionary>
+

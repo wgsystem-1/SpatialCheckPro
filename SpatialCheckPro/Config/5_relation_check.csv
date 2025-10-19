@@ -1,0 +1,20 @@
+﻿RuleId,Enabled,CaseType,MainTableId,MainTableName,RelatedTableId,RelatedTableName,FieldFilter,Tolerance,Note
+건물중심점_관계,Y,PointInsidePolygon,TN_BULD,건물,TN_BULD_CTPT,건물중심점,,,건물중심점은 건물을 벗어나면 안 됨
+도로경계면_관계,Y,LineWithinPolygon,TN_RODWAY_BNDRY,도로경계면,TN_RODWAY_CTLN,도로중심선,road_se IN (RDS001|RDS002|RDS003|RDS004|RDS005|RDS006|RDS007|RDS008|RDS009|RDS011|RDS012|RDS013|RDS015|RDS016|RDS017|RDS019|RDS020),0.001,중심선은 경계면을 벗어나면 안 됨
+도로시설_관계,Y,PolygonNotWithinPolygon,TN_ARRFC,면형도로시설,TN_RODWAY_BNDRY,도로경계면,pg_rdfc_se IN (PRC002|PRC003|PRC004|PRC005),0.001,면형도로시설의 버텍스는 도로경계면의 버텍스와 일치해야 함
+도로중심선_연결성,Y,LineConnectivity,TN_RODWAY_CTLN,도로중심선,TN_RODWAY_CTLN,도로중심선,,1,끝점 1m 이내 연결 확인(엔더숏/댕글 검출)
+경계면_중심선누락,Y,PolygonMissingLine,TN_RODWAY_BNDRY,도로경계면,TN_RODWAY_CTLN,도로중심선,,0.1,경계면 내부에 중심선이 전혀 없는 경우 오류
+건물_도로경계면_침범,Y,PolygonNotOverlap,TN_BULD,건물,TN_RODWAY_BNDRY,도로경계면,,0,겹침 면적 허용 0
+건물_보도경계면_침범,Y,PolygonNotOverlap,TN_BULD,건물,TN_FTPTH_BNDRY,보도경계면,,0,겹침 금지
+건물_경지경계_침범,Y,PolygonNotOverlap,TN_BULD,건물,TN_FMLND_BNDRY,경지경계,,0,겹침 금지
+건물_등고선_침범,Y,PolygonNotIntersectLine,TN_BULD,건물,TN_CTRLN,등고선,,,선과 교차 금지
+건물_표고점_침범,Y,PolygonNotContainPoint,TN_BULD,건물,TN_ALPT,표고점,,,건물 내부에 표고점이 포함되면 오류
+건물_선형수로시설_침범,Y,PolygonNotIntersectLine,TN_BULD,건물,TN_LNWTcors_FCLTY,선형수로시설,,,건물과 선형수로시설 교차 금지
+건물_면형수로시설_침범,Y,PolygonNotOverlap,TN_BULD,건물,TN_ARWTcors_FCLTY,면형수로시설,,0,겹침 금지
+건물_점형수로시설_침범,Y,PolygonNotContainPoint,TN_BULD,건물,TN_PTWTCors_FCLTY,점형수로시설,,,건물 내부에 점형수로시설 포함 금지
+건물_면형구조시설_침범,Y,PolygonNotOverlap,TN_BULD,건물,TN_ARSFC,면형구조시설,,0,겹침 금지
+건물_건물부속시설_침범,Y,PolygonNotOverlap,TN_BULD,건물,TN_BULD_ADCLS,건물부속시설,,0,겹침 금지
+경지경계_도로경계면_침범,Y,PolygonNotOverlap,TN_FMLND_BNDRY,경지경계,TN_RODWAY_BNDRY,도로경계면,,0,경지경계는 도로경계면을 침범하면 안됨
+경지경계_도로경계선_침범,Y,PolygonNotIntersectLine,TN_FMLND_BNDRY,경지경계,TN_RODWAY_BNDRYLN,도로경계선,,,경지경계는 도로경계선과 교차하면 안됨
+경지경계_철도경계면_침범,Y,PolygonNotOverlap,TN_FMLND_BNDRY,경지경계,TN_RLROAD_BNDRY,철도경계면,,0,경지경계는 철도경계면을 침범하면 안됨
+경지경계_하천중심선_침범,Y,PolygonNotIntersectLine,TN_FMLND_BNDRY,경지경계,TN_RIVER_CTLN,하천중심선,,,경지경계는 하천중심선과 교차하면 안됨

@@ -1,0 +1,54 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <Nullable>disable</Nullable>
+    <NoWarn>CS8632;CS1998</NoWarn>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- 라이브러리로 변경: WPF 관련 설정 제거 -->
+    <!-- 지침서 준수: 빌드 경고 완전 제거 -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <WarningsNotAsErrors />
+    
+    <!-- NuGet 패키지 메타데이터 -->
+    <PackageId>SpatialCheckPro</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Title>Spatial Check Pro</Title>
+    <Authors>GeoSpatial Development Team</Authors>
+    <Description>File Geodatabase 공간데이터 검수를 위한 전문 라이브러리입니다. 테이블, 스키마, 지오메트리, 관계 검수 기능을 제공합니다.</Description>
+    <PackageTags>gis;geodatabase;validation;spatial;gdal;netstandard</PackageTags>
+    <PackageProjectUrl>https://github.com/your-org/spatial-check-pro</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/your-org/spatial-check-pro</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageReleaseNotes>
+      v1.0.0: 초기 릴리스
+      - File Geodatabase 4단계 검수 시스템
+      - GDAL 기반 공간데이터 분석
+      - QC_ERRORS 시스템 지원
+      - 확장 가능한 아키텍처
+    </PackageReleaseNotes>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 핵심 비즈니스 로직 패키지 -->
+    <PackageReference Include="CsvHelper" Version="33.1.0" />
+    <PackageReference Include="GDAL" Version="3.10.3" />
+    <PackageReference Include="GDAL.Native" Version="3.10.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.NetTopologySuite" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.9" />
+    <PackageReference Include="NetTopologySuite" Version="2.6.0" />
+    <PackageReference Include="Serilog" Version="4.2.0" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
+    <PackageReference Include="iTextSharp.LGPLv2.Core" Version="3.4.21" />
+  </ItemGroup>
+
+</Project>

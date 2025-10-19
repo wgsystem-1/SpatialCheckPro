@@ -1,0 +1,215 @@
+<UserControl x:Class="SpatialCheckPro.GUI.Views.ReportView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+            <!-- 헤더 -->
+            <Grid Margin="0,0,0,32">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <StackPanel Grid.Column="0">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <Path Data="{StaticResource ReportIcon}" 
+                              Fill="#8B5CF6" 
+                              Width="28" Height="28" 
+                              Stretch="Uniform" 
+                              Margin="0,0,12,0"/>
+                        <TextBlock Text="검수 보고서" Style="{StaticResource HeadingLarge}"/>
+                    </StackPanel>
+                    <TextBlock Text="검수 결과를 다양한 형식의 보고서로 생성하고 내보낼 수 있습니다" 
+                              Style="{StaticResource CaptionText}" Margin="40,0,0,0"/>
+                </StackPanel>
+                
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button x:Name="GenerateReportButton" Style="{StaticResource PrimaryButton}" Padding="20,12" Click="GenerateReportButton_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Data="M3 6h18M3 12h18M3 18h18" Fill="{StaticResource PrimaryColor}" Width="0" Height="0"/>
+                            <TextBlock Text="보고서 생성"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+            
+            <!-- 보고서 옵션 카드 -->
+            <Border Style="{StaticResource ModernCard}" Margin="0,0,0,24">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- 카드 헤더 -->
+                    <StackPanel Grid.Row="0" Margin="0,0,0,20">
+                        <TextBlock Text="보고서 설정" Style="{StaticResource HeadingMedium}"/>
+                        <TextBlock Text="생성할 보고서의 형식과 내용을 선택하세요" 
+                                  Style="{StaticResource CaptionText}" Margin="0,4,0,0"/>
+                    </StackPanel>
+                    
+                    <!-- 설정 옵션들 -->
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <!-- 보고서 형식 -->
+                        <StackPanel Grid.Column="0" Margin="0,0,20,0">
+                            <TextBlock Text="보고서 형식" Style="{StaticResource HeadingSmall}" Margin="0,0,0,12"/>
+                            
+                            <RadioButton x:Name="HtmlFormatRadio" 
+                                        Content="HTML 보고서" 
+                                        IsChecked="True" 
+                                        Margin="0,0,0,8"
+                                        FontSize="14"/>
+                            <TextBlock Text="웹 브라우저에서 볼 수 있는 인터랙티브 보고서" 
+                                      Style="{StaticResource CaptionText}" 
+                                      Margin="20,0,0,12"/>
+                            
+                            <RadioButton x:Name="PdfFormatRadio" 
+                                        Content="PDF 보고서" 
+                                        Margin="0,0,0,8"
+                                        FontSize="14"/>
+                            <TextBlock Text="인쇄 및 공유에 적합한 PDF 형식 보고서" 
+                                      Style="{StaticResource CaptionText}" 
+                                      Margin="20,0,0,12"/>
+                            
+                            <!-- Excel 보고서 옵션 제거 -->
+                        </StackPanel>
+                        
+                        <!-- 포함할 내용 -->
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="포함할 내용" Style="{StaticResource HeadingSmall}" Margin="0,0,0,12"/>
+                            
+                            <CheckBox x:Name="IncludeSummaryCheck" 
+                                     Content="검수 요약" 
+                                     IsChecked="True" 
+                                     Margin="0,0,0,8"
+                                     FontSize="14"/>
+                            
+                            <CheckBox x:Name="IncludeDetailsCheck" 
+                                     Content="상세 검수 결과" 
+                                     IsChecked="True" 
+                                     Margin="0,0,0,8"
+                                     FontSize="14"/>
+                            
+                            <CheckBox x:Name="IncludeErrorsCheck" 
+                                     Content="오류 목록" 
+                                     IsChecked="True" 
+                                     Margin="0,0,0,8"
+                                     FontSize="14"/>
+                            
+                            <CheckBox x:Name="IncludeWarningsCheck" 
+                                     Content="경고 목록" 
+                                     IsChecked="True" 
+                                     Margin="0,0,0,8"
+                                     FontSize="14"/>
+                            
+                            <CheckBox x:Name="IncludeChartsCheck" 
+                                     Content="통계 차트" 
+                                     IsChecked="True" 
+                                     Margin="0,0,0,8"
+                                     FontSize="14"/>
+                            
+                            <CheckBox x:Name="IncludeMetadataCheck" 
+                                     Content="파일 메타데이터" 
+                                     IsChecked="False" 
+                                     Margin="0,0,0,0"
+                                     FontSize="14"/>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+            
+            <!-- 최근 보고서 목록 -->
+            <Border Style="{StaticResource ModernCard}" Margin="0,0,0,24">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- 카드 헤더 -->
+                    <StackPanel Grid.Row="0" Margin="0,0,0,20">
+                        <TextBlock Text="최근 생성된 보고서" Style="{StaticResource HeadingMedium}"/>
+                        <TextBlock Text="이전에 생성한 보고서 목록입니다" 
+                                  Style="{StaticResource CaptionText}" Margin="0,4,0,0"/>
+                    </StackPanel>
+                    
+                    <!-- 보고서 목록 -->
+                    <ScrollViewer Grid.Row="1" MaxHeight="300" VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="ReportListPanel">
+                            <!-- 보고서 항목들이 동적으로 추가됩니다 -->
+                            <Border Background="#F8FAFC" 
+                                   CornerRadius="8" 
+                                   Padding="16" 
+                                   Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <Path Grid.Column="0" 
+                                          Data="{StaticResource FileIcon}" 
+                                          Fill="#6B7280" 
+                                          Width="20" Height="20" 
+                                          Stretch="Uniform" 
+                                          Margin="0,0,12,0"/>
+                                    
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="아직 생성된 보고서가 없습니다" 
+                                                  Style="{StaticResource BodyText}"/>
+                                        <TextBlock Text="위의 '보고서 생성' 버튼을 클릭하여 첫 번째 보고서를 만들어보세요" 
+                                                  Style="{StaticResource CaptionText}" 
+                                                  Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+            
+            <!-- 보고서 미리보기 -->
+            <Border x:Name="PreviewCard" 
+                   Style="{StaticResource ModernCard}" 
+                   Visibility="Collapsed">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="400"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- 카드 헤더 -->
+                    <StackPanel Grid.Row="0" Margin="0,0,0,20">
+                        <TextBlock Text="보고서 미리보기" Style="{StaticResource HeadingMedium}"/>
+                        <TextBlock Text="생성된 보고서의 미리보기입니다" 
+                                  Style="{StaticResource CaptionText}" Margin="0,4,0,0"/>
+                    </StackPanel>
+                    
+                    <!-- 미리보기 영역 -->
+                    <Border Grid.Row="1" 
+                           Background="White" 
+                           BorderBrush="{StaticResource BorderColor}" 
+                           BorderThickness="1" 
+                           CornerRadius="8">
+                        <ScrollViewer x:Name="PreviewScrollViewer" 
+                                     VerticalScrollBarVisibility="Auto"
+                                     HorizontalScrollBarVisibility="Auto"
+                                     Padding="16">
+                            <StackPanel x:Name="PreviewContent">
+                                <!-- 미리보기 내용이 여기에 동적으로 추가됩니다 -->
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

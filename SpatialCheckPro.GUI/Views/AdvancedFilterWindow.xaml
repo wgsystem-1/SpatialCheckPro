@@ -1,0 +1,330 @@
+<Window x:Class="SpatialCheckPro.GUI.Views.AdvancedFilterWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="고급 필터 및 검색" Height="600" Width="500"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize">
+    
+    <Window.Resources>
+        <!-- 체크박스 스타일 -->
+        <Style x:Key="FilterCheckBoxStyle" TargetType="CheckBox">
+            <Setter Property="Margin" Value="5,2"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        
+        <!-- 그룹박스 스타일 -->
+        <Style x:Key="FilterGroupBoxStyle" TargetType="GroupBox">
+            <Setter Property="Margin" Value="0,0,0,15"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 제목 -->
+        <TextBlock Grid.Row="0" Text="고급 필터 및 검색 설정" 
+                   FontSize="16" FontWeight="Bold" 
+                   Margin="0,0,0,20" HorizontalAlignment="Center"/>
+
+        <!-- 필터 설정 -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                
+                <!-- 텍스트 검색 -->
+                <GroupBox Header="🔍 텍스트 검색" Style="{StaticResource FilterGroupBoxStyle}">
+                    <StackPanel>
+                        <TextBox x:Name="SearchTextBox" 
+                                FontSize="12" Padding="8" Margin="0,0,0,10"
+                                TextChanged="SearchTextBox_TextChanged">
+                            <TextBox.Style>
+                                <Style TargetType="TextBox">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="TextBox">
+                                                <Grid>
+                                                    <Border Background="White" BorderBrush="#CCC" BorderThickness="1" CornerRadius="3"/>
+                                                    <ScrollViewer x:Name="PART_ContentHost" Margin="8,5"/>
+                                                    <TextBlock Text="오류 메시지, 코드, 클래스명 등으로 검색..." 
+                                                              Foreground="#999" Margin="8,5" 
+                                                              IsHitTestVisible="False">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Text, RelativeSource={RelativeSource TemplatedParent}}" Value="">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Grid>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
+                        
+                        <CheckBox x:Name="CaseSensitiveCheckBox" 
+                                 Content="대소문자 구분" 
+                                 Style="{StaticResource FilterCheckBoxStyle}"/>
+                        
+                        <CheckBox x:Name="RegexSearchCheckBox" 
+                                 Content="정규식 사용" 
+                                 Style="{StaticResource FilterCheckBoxStyle}"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- 오류 유형 필터 -->
+                <GroupBox Header="📋 오류 유형" Style="{StaticResource FilterGroupBoxStyle}">
+                    <StackPanel>
+                        <CheckBox x:Name="SelectAllErrorTypesCheckBox" 
+                                 Content="전체 선택/해제" 
+                                 FontWeight="Bold" Margin="0,0,0,5"
+                                 Checked="SelectAllErrorTypes_Checked" 
+                                 Unchecked="SelectAllErrorTypes_Unchecked"/>
+                        
+                        <Separator Margin="0,5"/>
+                        
+                        <CheckBox x:Name="GeomErrorTypeCheckBox" 
+                                 Content="🔺 지오메트리 오류 (GEOM)" 
+                                 Style="{StaticResource FilterCheckBoxStyle}" 
+                                 IsChecked="True"/>
+                        
+                        <CheckBox x:Name="SchemaErrorTypeCheckBox" 
+                                 Content="📊 스키마 오류 (SCHEMA)" 
+                                 Style="{StaticResource FilterCheckBoxStyle}" 
+                                 IsChecked="True"/>
+                        
+                        <CheckBox x:Name="RelErrorTypeCheckBox" 
+                                 Content="🔗 관계 오류 (REL)" 
+                                 Style="{StaticResource FilterCheckBoxStyle}" 
+                                 IsChecked="True"/>
+                        
+                        <CheckBox x:Name="AttrErrorTypeCheckBox" 
+                                 Content="📝 속성 오류 (ATTR)" 
+                                 Style="{StaticResource FilterCheckBoxStyle}" 
+                                 IsChecked="True"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- 심각도 필터 -->
+                <GroupBox Header="⚠️ 심각도" Style="{StaticResource FilterGroupBoxStyle}">
+                    <StackPanel>
+                        <CheckBox x:Name="SelectAllSeveritiesCheckBox" 
+                                 Content="전체 선택/해제" 
+                                 FontWeight="Bold" Margin="0,0,0,5"
+                                 Checked="SelectAllSeverities_Checked" 
+                                 Unchecked="SelectAllSeverities_Unchecked"/>
+                        
+                        <Separator Margin="0,5"/>
+                        
+                        <CheckBox x:Name="CritSeverityCheckBox" 
+                                 Content="🔴 치명적 (CRIT)" 
+                                 Style="{StaticResource FilterCheckBoxStyle}" 
+                                 IsChecked="True"/>
+                        
+                        <CheckBox x:Name="MajorSeverityCheckBox" 
+                                 Content="🟠 주요 (MAJOR)" 
+                                 Style="{StaticResource FilterCheckBoxStyle}" 
+                                 IsChecked="True"/>
+                        
+                        <CheckBox x:Name="MinorSeverityCheckBox" 
+                                 Content="🟡 경미 (MINOR)" 
+                                 Style="{StaticResource FilterCheckBoxStyle}" 
+                                 IsChecked="True"/>
+                        
+                        <CheckBox x:Name="InfoSeverityCheckBox" 
+                                 Content="🔵 정보 (INFO)" 
+                                 Style="{StaticResource FilterCheckBoxStyle}" 
+                                 IsChecked="True"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- 상태 필터 -->
+                <GroupBox Header="📌 상태" Style="{StaticResource FilterGroupBoxStyle}">
+                    <StackPanel>
+                        <CheckBox x:Name="SelectAllStatusesCheckBox" 
+                                 Content="전체 선택/해제" 
+                                 FontWeight="Bold" Margin="0,0,0,5"
+                                 Checked="SelectAllStatuses_Checked" 
+                                 Unchecked="SelectAllStatuses_Unchecked"/>
+                        
+                        <Separator Margin="0,5"/>
+                        
+                        <CheckBox x:Name="OpenStatusCheckBox" 
+                                 Content="🔴 열림 (OPEN)" 
+                                 Style="{StaticResource FilterCheckBoxStyle}" 
+                                 IsChecked="True"/>
+                        
+                        <CheckBox x:Name="FixedStatusCheckBox" 
+                                 Content="✅ 수정됨 (FIXED)" 
+                                 Style="{StaticResource FilterCheckBoxStyle}" 
+                                 IsChecked="True"/>
+                        
+                        <CheckBox x:Name="IgnoredStatusCheckBox" 
+                                 Content="⚫ 무시됨 (IGNORED)" 
+                                 Style="{StaticResource FilterCheckBoxStyle}" 
+                                 IsChecked="True"/>
+                        
+                        <CheckBox x:Name="FalsePosStatusCheckBox" 
+                                 Content="⚠️ 오탐 (FALSE_POS)" 
+                                 Style="{StaticResource FilterCheckBoxStyle}" 
+                                 IsChecked="True"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- 날짜 범위 필터 -->
+                <GroupBox Header="📅 생성 날짜" Style="{StaticResource FilterGroupBoxStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <CheckBox x:Name="EnableDateFilterCheckBox" 
+                                 Grid.Row="0" Grid.ColumnSpan="2"
+                                 Content="날짜 범위 필터 사용" 
+                                 FontWeight="Bold" Margin="0,0,0,10"
+                                 Checked="EnableDateFilter_Checked" 
+                                 Unchecked="EnableDateFilter_Unchecked"/>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="시작일:" 
+                                  VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <DatePicker x:Name="StartDatePicker" 
+                                   Grid.Row="1" Grid.Column="1" 
+                                   IsEnabled="False" Margin="0,0,0,5"/>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="종료일:" 
+                                  VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <DatePicker x:Name="EndDatePicker" 
+                                   Grid.Row="2" Grid.Column="1" 
+                                   IsEnabled="False"/>
+                    </Grid>
+                </GroupBox>
+
+                <!-- 위치 기반 필터 -->
+                <GroupBox Header="🗺️ 위치 기반 필터" Style="{StaticResource FilterGroupBoxStyle}">
+                    <StackPanel>
+                        <CheckBox x:Name="EnableLocationFilterCheckBox" 
+                                 Content="위치 기반 필터 사용" 
+                                 FontWeight="Bold" Margin="0,0,0,10"
+                                 Checked="EnableLocationFilter_Checked" 
+                                 Unchecked="EnableLocationFilter_Unchecked"/>
+
+                        <Grid IsEnabled="False" x:Name="LocationFilterGrid">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="최소 X:" 
+                                      VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <TextBox x:Name="MinXTextBox" Grid.Row="0" Grid.Column="1" 
+                                    Margin="0,0,10,5" Padding="5"/>
+
+                            <TextBlock Grid.Row="0" Grid.Column="2" Text="최대 X:" 
+                                      VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <TextBox x:Name="MaxXTextBox" Grid.Row="0" Grid.Column="3" 
+                                    Margin="0,0,0,5" Padding="5"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="최소 Y:" 
+                                      VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <TextBox x:Name="MinYTextBox" Grid.Row="1" Grid.Column="1" 
+                                    Margin="0,0,10,5" Padding="5"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="2" Text="최대 Y:" 
+                                      VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <TextBox x:Name="MaxYTextBox" Grid.Row="1" Grid.Column="3" 
+                                    Margin="0,0,0,5" Padding="5"/>
+
+                            <Button Grid.Row="2" Grid.ColumnSpan="4" 
+                                   Content="📍 현재 지도 범위 사용" 
+                                   Margin="0,5,0,0" Padding="5"
+                                   Click="UseCurrentMapExtent_Click"/>
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- 필터 요약 -->
+        <Border Grid.Row="2" Background="#F5F5F5" Padding="10" 
+                BorderBrush="#E0E0E0" BorderThickness="1" 
+                CornerRadius="5" Margin="0,10,0,15">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                
+                <TextBlock Grid.Column="0" Text="필터 결과:" FontWeight="Bold" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" x:Name="FilterSummaryText" 
+                          Text="모든 오류 표시" 
+                          FontSize="12" Foreground="#666" 
+                          VerticalAlignment="Center" Margin="10,0"/>
+            </Grid>
+        </Border>
+
+        <!-- 버튼 영역 -->
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 초기화 버튼 -->
+            <Button Grid.Column="1" x:Name="ResetButton" Content="🔄 초기화" 
+                    Width="80" Height="35" Margin="5"
+                    Background="#FFF3E0" BorderBrush="#FF9800" BorderThickness="2"
+                    FontWeight="Bold" Click="ResetButton_Click"/>
+
+            <!-- 취소 버튼 -->
+            <Button Grid.Column="2" x:Name="CancelButton" Content="❌ 취소" 
+                    Width="80" Height="35" Margin="5"
+                    Background="#FFCDD2" BorderBrush="#F44336" BorderThickness="2"
+                    FontWeight="Bold" Click="CancelButton_Click"/>
+
+            <!-- 적용 버튼 -->
+            <Button Grid.Column="3" x:Name="ApplyButton" Content="✅ 적용" 
+                    Width="80" Height="35" Margin="5"
+                    Background="#C8E6C9" BorderBrush="#4CAF50" BorderThickness="2"
+                    FontWeight="Bold" Click="ApplyButton_Click"/>
+
+            <!-- 저장 버튼 -->
+            <Button Grid.Column="4" x:Name="SaveButton" Content="💾 저장" 
+                    Width="80" Height="35" Margin="5"
+                    Background="#E3F2FD" BorderBrush="#2196F3" BorderThickness="2"
+                    FontWeight="Bold" Click="SaveButton_Click"
+                    ToolTip="현재 필터 설정을 저장합니다"/>
+        </Grid>
+    </Grid>
+</Window>

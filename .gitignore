@@ -245,6 +245,7 @@ _pkginfo.txt
 # Others
 ClientBin/
 ~$*
+*~
 *.dbmdl
 *.dbproj.schemaview
 *.jfm
@@ -387,9 +388,3 @@ startup_debug.log
 # Config files that might contain sensitive data
 appsettings.Development.json
 appsettings.Production.json
-
-# Large backup files
-*.tar.gz
-*.zip
-*.7z
-*.rar

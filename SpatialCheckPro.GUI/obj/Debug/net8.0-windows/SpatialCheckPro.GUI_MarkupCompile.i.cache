@@ -16,5 +16,5 @@ G:\SpatialCheckPro\SpatialCheckPro.GUI\App.xaml
 282-1484119394
 MainWindow.xaml;Styles\ModernStyles.xaml;Styles\StageResources.xaml;Styles\Theme.Dashboard.xaml;ValidationSettingsWindow.xaml;Views\AdvancedFilterWindow.xaml;Views\BulkStatusChangeWindow.xaml;Views\ModernMessageDialog.xaml;Views\ReportView.xaml;Views\StageTimelineSandboxView.xaml;Views\UserSettingsWindow.xaml;Views\ValidationProgressView.xaml;Views\ValidationResultView.xaml;Views\ValidationSettingsView.xaml;
 
-True
+False
 

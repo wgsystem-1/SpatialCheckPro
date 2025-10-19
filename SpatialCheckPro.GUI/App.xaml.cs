@@ -138,6 +138,9 @@ namespace SpatialCheckPro.GUI
                     }
                 });
                 
+                // IRemainingTimeEstimator 등록 (IDbContextFactory 등록 직후)
+                services.AddSingleton<IRemainingTimeEstimator, AdaptiveRemainingTimeEstimator>();
+                
             // 성능 및 병렬 처리 관련 서비스들 먼저 등록
             services.AddSingleton<SystemResourceAnalyzer>();
             services.AddSingleton<SpatialCheckPro.Models.Config.PerformanceSettings>();
@@ -237,7 +240,6 @@ namespace SpatialCheckPro.GUI
                 services.AddSingleton<QcStoragePathService>();
 
                 // 뷰모델 등록
-                services.AddSingleton<IRemainingTimeEstimator, AdaptiveRemainingTimeEstimator>();
                 services.AddSingleton<StageSummaryCollectionViewModel>();
                 services.AddSingleton<AlertAggregationService>();
 

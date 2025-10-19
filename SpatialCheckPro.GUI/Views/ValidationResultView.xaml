@@ -272,7 +272,7 @@
                                         <Border Grid.Column="2" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="8,0,8,0">
                                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                                 <TextBlock Text="총 오류" Style="{StaticResource KpiCaption}" HorizontalAlignment="Center" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                                <TextBlock x:Name="ErrorCountText" Text="0" Style="{StaticResource KpiValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="ErrorCountText" Text="0" Style="{StaticResource KpiValue}" Foreground="#DC2626" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Border>
 
@@ -280,7 +280,7 @@
                                         <Border Grid.Column="3" Style="{StaticResource KpiCard}" Background="#FFFBEB" BorderBrush="Transparent" BorderThickness="0" Margin="8,0,0,0">
                                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                                 <TextBlock Text="총 경고" Style="{StaticResource KpiCaption}" HorizontalAlignment="Center" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                                <TextBlock x:Name="WarningCountText" Text="0" Style="{StaticResource KpiValue}" Foreground="#D97706" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="WarningCountText" Text="0" Style="{StaticResource KpiValue}" Foreground="#D97706" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Border>
                                     </Grid>
@@ -344,7 +344,7 @@
                                         </Border>
                                         <Border Grid.Column="2" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="8,0,8,0">
                                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                <TextBlock Text="미테이블 수" Style="{StaticResource KpiCaption}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,0,8,0"/>
+                                                <TextBlock Text="미정의 테이블 수" Style="{StaticResource KpiCaption}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,0,8,0"/>
                                                 <TextBlock x:Name="DashStage1UndefinedTablesText" Text="0" Style="{StaticResource KpiValue}" Foreground="#DC2626" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Border>
@@ -524,7 +524,7 @@
                                         <!-- 속성 관계 경고: 세 번째 -->
                                         <Border Grid.Column="2" Style="{StaticResource KpiCard}" Background="#FFFBEB" BorderBrush="Transparent" BorderThickness="0" Margin="8,0,0,0">
                                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                                <TextBlock Text="속성 관계 경고" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                                <TextBlock Text="경고" Style="{StaticResource CompactCaption}" HorizontalAlignment="Center" Margin="0,0,8,0" VerticalAlignment="Center"/>
                                                 <TextBlock x:Name="DashStage4AttrWarnText" Text="0" Style="{StaticResource CompactValue}" Foreground="#D97706" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Border>

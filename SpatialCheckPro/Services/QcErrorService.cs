@@ -956,14 +956,103 @@ namespace SpatialCheckPro.Services
                 // 지오메트리 복사 (원본 보호)
                 var clonedGeometry = geometry.Clone();
                 
-                // 중심점 좌표 계산
-                var envelope = new OSGeo.OGR.Envelope();
-                clonedGeometry.GetEnvelope(envelope);
-                double centerX = (envelope.MinX + envelope.MaxX) / 2.0;
-                double centerY = (envelope.MinY + envelope.MaxY) / 2.0;
+                // 첫 점 좌표 추출 (요구사항에 따라)
+                double firstX = 0, firstY = 0;
+                var geomType = clonedGeometry.GetGeometryType();
+                
+                if (geomType == wkbGeometryType.wkbPoint)
+                {
+                    // Point: 그대로 사용
+                    var pointArray = new double[3];
+                    clonedGeometry.GetPoint(0, pointArray);
+                    firstX = pointArray[0];
+                    firstY = pointArray[1];
+                }
+                else if (geomType == wkbGeometryType.wkbMultiPoint)
+                {
+                    // MultiPoint: 첫 번째 Point 사용
+                    if (clonedGeometry.GetGeometryCount() > 0)
+                    {
+                        var firstPoint = clonedGeometry.GetGeometryRef(0);
+                        if (firstPoint != null)
+                        {
+                            var pointArray = new double[3];
+                            firstPoint.GetPoint(0, pointArray);
+                            firstX = pointArray[0];
+                            firstY = pointArray[1];
+                        }
+                    }
+                }
+                else if (geomType == wkbGeometryType.wkbLineString)
+                {
+                    // LineString: 첫 번째 점 사용
+                    if (clonedGeometry.GetPointCount() > 0)
+                    {
+                        var pointArray = new double[3];
+                        clonedGeometry.GetPoint(0, pointArray);
+                        firstX = pointArray[0];
+                        firstY = pointArray[1];
+                    }
+                }
+                else if (geomType == wkbGeometryType.wkbMultiLineString)
+                {
+                    // MultiLineString: 첫 번째 LineString의 첫 점 사용
+                    if (clonedGeometry.GetGeometryCount() > 0)
+                    {
+                        var firstLine = clonedGeometry.GetGeometryRef(0);
+                        if (firstLine != null && firstLine.GetPointCount() > 0)
+                        {
+                            var pointArray = new double[3];
+                            firstLine.GetPoint(0, pointArray);
+                            firstX = pointArray[0];
+                            firstY = pointArray[1];
+                        }
+                    }
+                }
+                else if (geomType == wkbGeometryType.wkbPolygon)
+                {
+                    // Polygon: 외부 링의 첫 번째 점 사용
+                    if (clonedGeometry.GetGeometryCount() > 0)
+                    {
+                        var exteriorRing = clonedGeometry.GetGeometryRef(0);
+                        if (exteriorRing != null && exteriorRing.GetPointCount() > 0)
+                        {
+                            var pointArray = new double[3];
+                            exteriorRing.GetPoint(0, pointArray);
+                            firstX = pointArray[0];
+                            firstY = pointArray[1];
+                        }
+                    }
+                }
+                else if (geomType == wkbGeometryType.wkbMultiPolygon)
+                {
+                    // MultiPolygon: 첫 번째 Polygon의 외부 링 첫 점 사용
+                    if (clonedGeometry.GetGeometryCount() > 0)
+                    {
+                        var firstPolygon = clonedGeometry.GetGeometryRef(0);
+                        if (firstPolygon != null && firstPolygon.GetGeometryCount() > 0)
+                        {
+                            var exteriorRing = firstPolygon.GetGeometryRef(0);
+                            if (exteriorRing != null && exteriorRing.GetPointCount() > 0)
+                            {
+                                var pointArray = new double[3];
+                                exteriorRing.GetPoint(0, pointArray);
+                                firstX = pointArray[0];
+                                firstY = pointArray[1];
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // 기타 지오메트리 타입: 중심점으로 폴백
+                    var envelope = new OSGeo.OGR.Envelope();
+                    clonedGeometry.GetEnvelope(envelope);
+                    firstX = (envelope.MinX + envelope.MaxX) / 2.0;
+                    firstY = (envelope.MinY + envelope.MaxY) / 2.0;
+                }
 
                 // 지오메트리 타입 결정 (대문자로 통일)
-                var geomType = clonedGeometry.GetGeometryType();
                 string geometryTypeName = geomType switch
                 {
                     wkbGeometryType.wkbPoint or wkbGeometryType.wkbMultiPoint => "POINT",
@@ -976,9 +1065,9 @@ namespace SpatialCheckPro.Services
                 dataSource.Dispose();
 
                 _logger.LogInformation("지오메트리 정보 추출 완료: {TableId}:{ObjectId} - {GeometryType} ({X}, {Y})", 
-                    tableId, objectId, geometryTypeName, centerX, centerY);
+                    tableId, objectId, geometryTypeName, firstX, firstY);
 
-                return (clonedGeometry, centerX, centerY, geometryTypeName);
+                return (clonedGeometry, firstX, firstY, geometryTypeName);
             }
             catch (Exception ex)
             {

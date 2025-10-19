@@ -1,0 +1,15 @@
+[2025-10-13 01:27:11] SpatialCheckPro 시작
+[2025-10-13 01:27:11] ConfigureServices 시작
+[2025-10-13 01:27:11] ConfigureServices 내부 시작
+[2025-10-13 01:27:11] ServiceProvider 빌드 시작
+[2025-10-13 01:27:11] ServiceProvider 빌드 완료
+[2025-10-13 01:27:11] ConfigureServices 완료
+[2025-10-13 01:27:11] MainWindow 생성 시작
+[2025-10-13 01:27:11] MainWindow 생성자 시작
+[2025-10-13 01:27:11] App 인스턴스: True
+[2025-10-13 01:27:11] SimpleValidationService 가져오기 시작
+[2025-10-13 01:27:11] SimpleValidationService: True
+[2025-10-13 01:27:11] QcErrorService 가져오기 시작
+[2025-10-13 01:27:11] QcErrorService: True
+[2025-10-13 01:27:11] 모든 서비스 초기화 성공
+[2025-10-13 01:27:11] MainWindow 표시 완료

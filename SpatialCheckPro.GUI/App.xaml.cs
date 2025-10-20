@@ -1,4 +1,6 @@
 using System.Windows;
+using System.Text;
+using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +26,14 @@ namespace SpatialCheckPro.GUI
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            // 콘솔 출력 인코딩을 UTF-8로 고정 (한글 깨짐 방지)
+            try
+            {
+                System.Console.OutputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+                System.Console.InputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+            }
+            catch { }
+
             var serviceCollection = new ServiceCollection();
             ConfigureServices(serviceCollection);
             _serviceProvider = serviceCollection.BuildServiceProvider();

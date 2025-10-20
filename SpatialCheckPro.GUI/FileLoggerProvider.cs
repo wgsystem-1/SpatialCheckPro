@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace SpatialCheckPro.GUI
 {
@@ -206,7 +207,11 @@ namespace SpatialCheckPro.GUI
                     {
                         Directory.CreateDirectory(dir);
                     }
-                    File.AppendAllText(path, logEntry + Environment.NewLine);
+                    // UTF-8(BOM)로 기록하고, 다른 프로세스/스레드에서 읽을 수 있도록 공유 모드 허용
+                    using var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+                    using var writer = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+                    writer.WriteLine(logEntry);
+                    writer.Flush();
                 }
                 catch
                 {

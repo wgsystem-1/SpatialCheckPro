@@ -55,6 +55,8 @@ namespace SpatialCheckPro.GUI.Services
             services.AddLogging(builder =>
             {
                 builder.AddConsole();
+                // 파일 로거(UTF-8) 추가
+                builder.AddProvider(new FileLoggerProvider());
                 builder.SetMinimumLevel(LogLevel.Information);
             });
         }

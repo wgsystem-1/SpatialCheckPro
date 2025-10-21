@@ -1411,8 +1411,8 @@ namespace SpatialCheckPro.Processors
                             using var inter = ga.Intersection(gb);
                             if (inter != null && !inter.IsEmpty())
                             {
-                                // 겹침 면적이 tolerance 초과면 오류
-                                var area = Math.Abs(inter.Area());
+                                // 겹침 면적이 tolerance 초과면 오류 (면 지오메트리인 경우에만 계산)
+                                var area = GetSurfaceArea(inter);
                                 if (area > tolerance)
                                 {
                                     overlapped = true;
@@ -1522,6 +1522,25 @@ namespace SpatialCheckPro.Processors
         private static double Distance(double x1, double y1, double x2, double y2)
         {
             var dx = x1 - x2; var dy = y1 - y2; return Math.Sqrt(dx * dx + dy * dy);
+        }
+
+        /// <summary>
+        /// 면적 계산 시 타입 가드: 폴리곤/멀티폴리곤에서만 면적 반환, 그 외 0
+        /// </summary>
+        private static double GetSurfaceArea(Geometry geometry)
+        {
+            try
+            {
+                if (geometry == null || geometry.IsEmpty()) return 0.0;
+                var t = geometry.GetGeometryType();
+                return t == wkbGeometryType.wkbPolygon || t == wkbGeometryType.wkbMultiPolygon
+                    ? geometry.GetArea()
+                    : 0.0;
+            }
+            catch
+            {
+                return 0.0;
+            }
         }
 
         private sealed class ActionOnDispose : IDisposable

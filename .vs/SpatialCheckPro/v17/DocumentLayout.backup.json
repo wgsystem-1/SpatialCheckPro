@@ -1,12 +1,36 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "G:\\SpatialCheckPro\\",
-  "Documents": [],
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}|SpatialCheckPro.GUI\\SpatialCheckPro.GUI.csproj|g:\\spatialcheckpro\\spatialcheckpro.gui\\views\\validationresultview.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}|SpatialCheckPro.GUI\\SpatialCheckPro.GUI.csproj|solutionrelative:spatialcheckpro.gui\\views\\validationresultview.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
       "VerticalTabListWidth": 256,
-      "DocumentGroups": []
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "ValidationResultView.xaml",
+              "DocumentMoniker": "G:\\SpatialCheckPro\\SpatialCheckPro.GUI\\Views\\ValidationResultView.xaml",
+              "RelativeDocumentMoniker": "SpatialCheckPro.GUI\\Views\\ValidationResultView.xaml",
+              "ToolTip": "G:\\SpatialCheckPro\\SpatialCheckPro.GUI\\Views\\ValidationResultView.xaml",
+              "RelativeToolTip": "SpatialCheckPro.GUI\\Views\\ValidationResultView.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2025-10-19T13:48:14.79Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
     }
   ]
 }

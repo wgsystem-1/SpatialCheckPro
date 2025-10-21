@@ -5,7 +5,8 @@
         Title="Spatial Check Pro" Height="1000" Width="1800"
         MinHeight="720" MinWidth="1280"
         WindowStartupLocation="CenterScreen"
-        Background="White">
+        Background="White"
+        Closing="MainWindow_Closing">
 
     <Window.Resources>
         <!-- 아이콘 리소스 정의 -->

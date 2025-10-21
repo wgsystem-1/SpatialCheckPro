@@ -16,7 +16,8 @@ using Microsoft.Extensions.DependencyInjection;
 using System.ComponentModel;
 using System.Windows.Data;
 using SpatialCheckPro.Models;
-using SpatialCheckPro.Services;
+using SpatialCheckPro.Services.Interfaces;
+using SpatialCheckPro.GUI.Services;
 using System.IO;
 using iTextSharp.text;
 using iTextSharp.text.pdf;
@@ -86,6 +87,7 @@ namespace SpatialCheckPro.GUI.Views
         private readonly ILogger<ValidationResultView> _logger;
         private ICollectionView? _resultsView;
         private System.Timers.Timer? _filterDebounceTimer;
+        private ErrorCountAnalysisResult? _analysisResult;
 
         // 보고서 생성 요청 이벤트 사용처가 없어 제거하여 경고 방지
 
@@ -262,6 +264,110 @@ namespace SpatialCheckPro.GUI.Views
         {
             _validationResult = result;
             UpdateUI();
+        }
+
+        /// <summary>
+        /// 오류 개수 분석 실행 버튼 클릭 이벤트
+        /// </summary>
+        private async void RunAnalysisButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (_validationResult == null)
+                {
+                    MessageBox.Show("분석할 검수 결과가 없습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // 분석 버튼 비활성화
+                RunAnalysisButton.IsEnabled = false;
+                RunAnalysisButton.Content = "분석 중...";
+
+                // FileGDB 경로 확인
+                var gdbPath = _validationResult.TargetFile;
+                if (string.IsNullOrEmpty(gdbPath) || !Directory.Exists(gdbPath))
+                {
+                    MessageBox.Show("FileGDB 경로를 찾을 수 없습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // 분석 서비스 가져오기
+                var app = Application.Current as App;
+                var analysisService = app?.GetService<IErrorCountAnalysisService>();
+                if (analysisService == null)
+                {
+                    MessageBox.Show("분석 서비스를 찾을 수 없습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // 분석 실행
+                _analysisResult = await analysisService.AnalyzeErrorCountsAsync(_validationResult, gdbPath);
+
+                // 결과 업데이트
+                UpdateAnalysisResults();
+
+                MessageBox.Show($"분석이 완료되었습니다.\n\n{_analysisResult.Summary}", "분석 완료", 
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "오류 개수 분석 실패");
+                MessageBox.Show($"분석 중 오류가 발생했습니다:\n{ex.Message}", "오류", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                // 분석 버튼 활성화
+                RunAnalysisButton.IsEnabled = true;
+                RunAnalysisButton.Content = "오류 개수 분석 실행";
+            }
+        }
+
+        /// <summary>
+        /// 분석 결과를 UI에 업데이트합니다
+        /// </summary>
+        private void UpdateAnalysisResults()
+        {
+            if (_analysisResult == null) return;
+
+            try
+            {
+                // 요약 정보 업데이트
+                ValidationErrorCountText.Text = _analysisResult.ValidationResultErrorCount.ToString();
+                SavedErrorCountText.Text = _analysisResult.SavedPointErrorCount.ToString();
+                MissingErrorCountText.Text = _analysisResult.MissingErrorCount.ToString();
+                SaveSuccessRateText.Text = $"{_analysisResult.SaveSuccessRate:F1}%";
+                AnalysisSummaryText.Text = _analysisResult.Summary;
+
+                // 단계별 분석 결과 업데이트
+                StageAnalysisDataGrid.ItemsSource = _analysisResult.StageAnalyses;
+
+                // 오류 타입별 분석 결과 업데이트 (모든 단계의 오류 타입을 평면화)
+                var allErrorTypeAnalyses = _analysisResult.StageAnalyses
+                    .SelectMany(stage => stage.ErrorTypeAnalyses.Select(errorType => new
+                    {
+                        StageNumber = stage.StageNumber,
+                        ErrorType = errorType.ErrorType,
+                        ErrorTypeName = errorType.ErrorTypeName,
+                        ValidationErrorCount = errorType.ValidationErrorCount,
+                        SavedErrorCount = errorType.SavedErrorCount,
+                        MissingErrorCount = errorType.MissingErrorCount,
+                        SaveSuccessRate = errorType.SaveSuccessRate
+                    }))
+                    .ToList();
+
+                ErrorTypeAnalysisDataGrid.ItemsSource = allErrorTypeAnalyses;
+
+                // 저장되지 않은 오류 상세 업데이트
+                MissingErrorDataGrid.ItemsSource = _analysisResult.MissingErrorDetails;
+
+                _logger?.LogInformation("분석 결과 UI 업데이트 완료: 검수결과 {ValidationCount}개, 저장된 {SavedCount}개, 누락 {MissingCount}개", 
+                    _analysisResult.ValidationResultErrorCount, _analysisResult.SavedPointErrorCount, _analysisResult.MissingErrorCount);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "분석 결과 UI 업데이트 실패");
+            }
         }
 
         /// <summary>
@@ -487,10 +593,10 @@ namespace SpatialCheckPro.GUI.Views
                     throw new InvalidOperationException("ServiceProvider를 찾을 수 없습니다.");
                 }
 
-                var validationService = serviceProvider.GetService(typeof(IValidationService)) as IValidationService;
+                var validationService = serviceProvider.GetService(typeof(SimpleValidationService)) as SimpleValidationService;
                 if (validationService == null)
                 {
-                    throw new InvalidOperationException("ValidationService를 찾을 수 없습니다.");
+                    throw new InvalidOperationException("SimpleValidationService를 찾을 수 없습니다.");
                 }
 
                 // 설정 디렉토리 경로
@@ -507,21 +613,16 @@ namespace SpatialCheckPro.GUI.Views
                     ModifiedAt = File.GetLastWriteTime(gdbPath)
                 };
 
-                // 진행률 보고를 위한 Progress 객체
-                var progress = new Progress<ValidationProgress>(progressInfo =>
-                {
-                    // UI 스레드에서 진행률 업데이트
-                    Dispatcher.Invoke(() =>
-                    {
-                        UpdateProgressUI(progressInfo);
-                    });
-                });
-
-                // 검수 실행
-                var result = await validationService.ExecuteValidationAsync(
-                    spatialFile, 
-                    configDirectory, 
-                    progress, 
+                // 검수 실행 (SimpleValidationService 사용)
+                var result = await validationService.ValidateAsync(
+                    gdbPath,
+                    Path.Combine(configDirectory, "1_table_check.csv"),
+                    Path.Combine(configDirectory, "2_schema_check.csv"),
+                    Path.Combine(configDirectory, "3_geometry_check.csv"),
+                    Path.Combine(configDirectory, "5_relation_check.csv"),
+                    Path.Combine(configDirectory, "4_attribute_check.csv"),
+                    Path.Combine(configDirectory, "codelist.csv"),
+                    false, // useHighPerformanceMode
                     CancellationToken.None);
 
                 _logger?.LogInformation("검수 실행 완료: {Status}", result.Status);
@@ -544,12 +645,12 @@ namespace SpatialCheckPro.GUI.Views
         /// <summary>
         /// 진행률 UI를 업데이트합니다
         /// </summary>
-        private void UpdateProgressUI(ValidationProgress progress)
+        private void UpdateProgressUI(ProcessProgress progress)
         {
             try
             {
                 // 진행률 정보를 UI에 표시
-                var progressText = $"{progress.CurrentStageName} - {progress.CurrentTask} ({progress.OverallPercentage}%)";
+                var progressText = $"{progress.StatusMessage} ({progress.Percentage}%)";
                 
                 // 상태 표시 (임시로 창 제목에 표시)
                 var parentWindow = Window.GetWindow(this);
@@ -620,7 +721,7 @@ namespace SpatialCheckPro.GUI.Views
             }
         }
 
-        private void BatchResultSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void BatchResultSelector_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             try
             {

@@ -70,12 +70,26 @@ namespace SpatialCheckPro.GUI
         
         private ValidationSettingsViewModel _validationSettingsViewModel;
 
-        public MainWindow()
+        public MainWindow(
+            ILogger<MainWindow> logger,
+            SimpleValidationService validationService,
+            QcErrorService qcErrorService,
+            StageSummaryCollectionViewModel stageSummaryCollectionViewModel,
+            AlertAggregationService alertAggregationService)
         {
             string debugLog = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "startup_debug.log");
             File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] MainWindow 생성자 시작\n");
             
             InitializeComponent();
+            
+            // DI를 통해 주입받은 서비스들 설정
+            _logger = logger;
+            _validationService = validationService;
+            _qcErrorService = qcErrorService;
+            _stageSummaryCollectionViewModel = stageSummaryCollectionViewModel;
+            _alertAggregationService = alertAggregationService;
+            
+            File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] DI 서비스 주입 완료 - ValidationService: {_validationService != null}, QcErrorService: {_qcErrorService != null}, StageSummaryCollectionViewModel: {_stageSummaryCollectionViewModel != null}, AlertAggregationService: {_alertAggregationService != null}\n");
             
             try
             {
@@ -96,73 +110,8 @@ namespace SpatialCheckPro.GUI
                 }
                 catch { /* 빌드 정보가 없을 경우 무시 */ }
 
-                // 간단한 로거 생성
-                var loggerFactory = Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
-                {
-                    // 콘솔 로거 제거 (백그라운드 동작)
-                    builder.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Information);
-                });
-                _logger = loggerFactory.CreateLogger<MainWindow>();
-                
-                // 의존성 주입을 통해 검수 서비스 가져오기 (안전하게 처리)
-                try
-                {
-                    var app = Application.Current as App;
-                    File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] App 인스턴스: {app != null}\n");
-                    
-                    if (app != null)
-                    {
-                        File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] SimpleValidationService 가져오기 시작\n");
-                        _validationService = app.GetService<SimpleValidationService>();
-                        File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] SimpleValidationService: {_validationService != null}\n");
-                        
-                        File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] QcErrorService 가져오기 시작\n");
-                        _qcErrorService = app.GetService<QcErrorService>();
-                        File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] QcErrorService: {_qcErrorService != null}\n");
-
-                        var etaEstimator = app.ServiceProvider?.GetService(typeof(IRemainingTimeEstimator)) as IRemainingTimeEstimator;
-                        if (etaEstimator != null)
-                        {
-                            _stageSummaryCollectionViewModel = app.GetService<StageSummaryCollectionViewModel>() ?? new StageSummaryCollectionViewModel(etaEstimator);
-                        }
-
-                        _alertAggregationService = app.GetService<AlertAggregationService>();
-                        File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] StageSummaryCollectionViewModel: {_stageSummaryCollectionViewModel != null}\n");
-                        File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] AlertAggregationService: {_alertAggregationService != null}\n");
-
-                        if (_validationService != null && _qcErrorService != null && _stageSummaryCollectionViewModel != null && _alertAggregationService != null)
-                        {
-                            _logger?.LogInformation("서비스 초기화 완료");
-                            File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 모든 서비스 초기화 성공\n");
-                        }
-                        else
-                        {
-                            _logger?.LogWarning($"일부 서비스 초기화 실패 - ValidationService: {_validationService != null}, QcErrorService: {_qcErrorService != null}, StageSummaryCollectionViewModel: {_stageSummaryCollectionViewModel != null}, AlertAggregationService: {_alertAggregationService != null}");
-                            System.Diagnostics.Debug.WriteLine($"서비스 초기화 상태 - ValidationService: {_validationService != null}, QcErrorService: {_qcErrorService != null}, StageSummaryCollectionViewModel: {_stageSummaryCollectionViewModel != null}, AlertAggregationService: {_alertAggregationService != null}");
-                            File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 서비스 초기화 실패 - ValidationService: {_validationService != null}, QcErrorService: {_qcErrorService != null}, StageSummaryCollectionViewModel: {_stageSummaryCollectionViewModel != null}, AlertAggregationService: {_alertAggregationService != null}\n");
-                        }
-                    }
-                    else
-                    {
-                        _logger?.LogWarning("App 인스턴스를 찾을 수 없습니다 - 제한된 기능으로 실행");
-                        System.Diagnostics.Debug.WriteLine("App 인스턴스를 찾을 수 없습니다");
-                    }
-                }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "서비스 초기화 실패 - 제한된 기능으로 실행");
-                System.Diagnostics.Debug.WriteLine($"서비스 초기화 예외: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"StackTrace: {ex.StackTrace}");
-                if (ex.InnerException != null)
-                {
-                    System.Diagnostics.Debug.WriteLine($"InnerException: {ex.InnerException.Message}");
-                }
-                var etaEstimator = ((App)Application.Current).ServiceProvider?.GetService(typeof(IRemainingTimeEstimator)) as IRemainingTimeEstimator
-                    ?? throw new InvalidOperationException("IRemainingTimeEstimator 서비스를 찾을 수 없습니다.");
-                _stageSummaryCollectionViewModel = new StageSummaryCollectionViewModel(etaEstimator);
-                _alertAggregationService = new AlertAggregationService(NullLogger<AlertAggregationService>.Instance);
-                _logger?.LogInformation("서비스 초기화 실패로 새 StageSummaryCollectionViewModel 인스턴스를 사용합니다.");
-            }
+                _logger?.LogInformation("DI를 통한 서비스 초기화 완료");
+                File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] DI 서비스 초기화 성공\n");
                 
                 _timer = new DispatcherTimer();
                 _timer.Interval = TimeSpan.FromSeconds(1);
@@ -1561,5 +1510,35 @@ namespace SpatialCheckPro.GUI
         }
 
         #endregion
+
+        /// <summary>
+        /// 메인 윈도우 종료 이벤트 핸들러
+        /// </summary>
+        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            try
+            {
+                _logger?.LogInformation("애플리케이션 종료 중...");
+
+                // 타이머 정지
+                _timer?.Stop();
+
+                // 검수 진행 중이면 취소
+                if (_isValidationRunning)
+                {
+                    _validationCancellationTokenSource?.Cancel();
+                    _logger?.LogInformation("진행 중인 검수를 취소했습니다.");
+                }
+
+                // 리소스 정리
+                _validationCancellationTokenSource?.Dispose();
+
+                _logger?.LogInformation("애플리케이션 종료 완료");
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "애플리케이션 종료 중 오류 발생");
+            }
+        }
     }
 }

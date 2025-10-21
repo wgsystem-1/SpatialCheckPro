@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("File Geodatabase 공간데이터 검수를 위한 전문 라이브러리입니다. 테이블, 스키마, 지오메트리, 관계 검수 기능을 제공합니다.")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5a63a258138256f0cd6c8a29627df26bfcfa4940")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cc8c56bcfd94d49d7e3ef1a5a679846723e62048")]
 [assembly: System.Reflection.AssemblyProductAttribute("SpatialCheckPro")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SpatialCheckPro")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

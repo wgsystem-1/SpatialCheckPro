@@ -15,6 +15,83 @@ namespace SpatialCheckPro.Services
     /// </summary>
     public class ValidationResultConverter
     {
+        /// <summary>
+        /// 검수 결과에서 오류를 지오메트리/비지오메트리로 분류합니다
+        /// </summary>
+        public ErrorClassificationSummary ClassifyErrors(ValidationResult validationResult)
+        {
+            var summary = new ErrorClassificationSummary();
+
+            // 0단계
+            if (validationResult.FileGdbCheckResult != null)
+            {
+                AccumulateNonGeometry(summary, "FILEGDB", validationResult.FileGdbCheckResult.ErrorCount);
+            }
+
+            // 1단계
+            if (validationResult.TableCheckResult != null)
+            {
+                var t = validationResult.TableCheckResult;
+                AccumulateNonGeometry(summary, "TABLE_MISSING", t.TableResults?.Count(x => string.Equals(x.TableExistsCheck, "N", StringComparison.OrdinalIgnoreCase)) ?? 0);
+                AccumulateNonGeometry(summary, "TABLE_ZERO_FEATURES", t.TableResults?.Count(x => string.Equals(x.TableExistsCheck, "Y", StringComparison.OrdinalIgnoreCase) && (x.FeatureCount ?? 0) == 0) ?? 0);
+            }
+
+            // 2단계
+            if (validationResult.SchemaCheckResult != null)
+            {
+                AccumulateNonGeometry(summary, "SCHEMA", validationResult.SchemaCheckResult.ErrorCount);
+            }
+
+            // 3단계 (지오메트리)
+            if (validationResult.GeometryCheckResult?.GeometryResults != null)
+            {
+                foreach (var r in validationResult.GeometryCheckResult.GeometryResults)
+                {
+                    AccumulateGeometry(summary, "GEOM_DUPLICATE", r.DuplicateCount);
+                    AccumulateGeometry(summary, "GEOM_OVERLAP", r.OverlapCount);
+                    AccumulateGeometry(summary, "GEOM_SELF_INTERSECTION", r.SelfIntersectionCount);
+                    AccumulateGeometry(summary, "GEOM_SELF_OVERLAP", r.SelfOverlapCount);
+                    AccumulateGeometry(summary, "GEOM_SLIVER", r.SliverCount);
+                    AccumulateGeometry(summary, "GEOM_SPIKE", r.SpikeCount);
+                    AccumulateGeometry(summary, "GEOM_SHORT_OBJECT", r.ShortObjectCount);
+                    AccumulateGeometry(summary, "GEOM_SMALL_AREA", r.SmallAreaCount);
+                    AccumulateGeometry(summary, "GEOM_POLYGON_IN_POLYGON", r.PolygonInPolygonCount);
+                    AccumulateGeometry(summary, "GEOM_MIN_POINT", r.MinPointCount);
+                    AccumulateGeometry(summary, "GEOM_UNDERSHOOT", r.UndershootCount);
+                    AccumulateGeometry(summary, "GEOM_OVERSHOOT", r.OvershootCount);
+                }
+            }
+
+            // 4단계 (관계 – 공간관계지만 결과 표현은 비지오메트리 카테고리로 분리 유지)
+            if (validationResult.RelationCheckResult != null)
+            {
+                AccumulateNonGeometry(summary, "REL", validationResult.RelationCheckResult.ErrorCount);
+            }
+
+            // 5단계 (속성관계)
+            if (validationResult.AttributeRelationCheckResult != null)
+            {
+                AccumulateNonGeometry(summary, "ATTR_REL", validationResult.AttributeRelationCheckResult.ErrorCount);
+            }
+
+            return summary;
+        }
+
+        private static void AccumulateGeometry(ErrorClassificationSummary s, string code, int count)
+        {
+            if (count <= 0) return;
+            s.GeometryErrorCount += count;
+            if (!s.GeometryByType.ContainsKey(code)) s.GeometryByType[code] = 0;
+            s.GeometryByType[code] += count;
+        }
+
+        private static void AccumulateNonGeometry(ErrorClassificationSummary s, string code, int count)
+        {
+            if (count <= 0) return;
+            s.NonGeometryErrorCount += count;
+            if (!s.NonGeometryByType.ContainsKey(code)) s.NonGeometryByType[code] = 0;
+            s.NonGeometryByType[code] += count;
+        }
         private readonly ILogger<ValidationResultConverter> _logger;
 
         public ValidationResultConverter(ILogger<ValidationResultConverter> logger)
@@ -398,6 +475,90 @@ namespace SpatialCheckPro.Services
                 ValidationStatus.Cancelled => QcRunStatus.CANCELLED,
                 _ => QcRunStatus.COMPLETED
             };
+        }
+
+        /// <summary>
+        /// CheckResult의 ValidationError들을 QcError로 변환합니다 (비지오메트리 일반용)
+        /// </summary>
+        public List<QcError> ToQcErrorsFromCheckResult(CheckResult? checkResult, string errType, string runId)
+        {
+            var list = new List<QcError>();
+            if (checkResult == null || checkResult.Errors == null || checkResult.Errors.Count == 0)
+            {
+                return list;
+            }
+
+            foreach (var e in checkResult.Errors)
+            {
+                var sourceClass = !string.IsNullOrWhiteSpace(e.TableName)
+                    ? e.TableName
+                    : (!string.IsNullOrWhiteSpace(e.SourceTable) ? e.SourceTable! : (e.TargetTable ?? ""));
+
+                long sourceOid = 0;
+                if (e.SourceObjectId.HasValue) sourceOid = e.SourceObjectId.Value;
+                else if (!string.IsNullOrWhiteSpace(e.FeatureId) && long.TryParse(e.FeatureId, out var parsed)) sourceOid = parsed;
+
+                var details = new Dictionary<string, object?>
+                {
+                    ["FieldName"] = e.FieldName,
+                    ["ActualValue"] = e.ActualValue,
+                    ["ExpectedValue"] = e.ExpectedValue,
+                    ["TargetTable"] = e.TargetTable,
+                    ["TargetObjectId"] = e.TargetObjectId,
+                    ["ErrorCode"] = e.ErrorCode,
+                    ["Severity"] = e.Severity.ToString(),
+                    ["ErrorTypeEnum"] = e.ErrorType.ToString(),
+                    ["OccurredAt"] = e.OccurredAt,
+                    ["Metadata"] = e.Metadata,
+                    ["Details"] = e.Details
+                };
+
+                var qc = new QcError
+                {
+                    GlobalID = Guid.NewGuid().ToString(),
+                    ErrType = errType,
+                    ErrCode = string.IsNullOrWhiteSpace(e.ErrorCode) ? errType : e.ErrorCode,
+                    Severity = DetermineSeverity(e.Severity).ToString(),
+                    Status = QcStatus.OPEN.ToString(),
+                    RuleId = $"{errType}_{e.ErrorCode ?? e.ErrorType.ToString()}",
+                    SourceClass = sourceClass,
+                    SourceOID = sourceOid,
+                    SourceGlobalID = null,
+                    X = e.X ?? 0,
+                    Y = e.Y ?? 0,
+                    GeometryWKT = e.GeometryWKT,
+                    GeometryType = QcError.DetermineGeometryType(e.GeometryWKT),
+                    Geometry = null,
+                    ErrorValue = e.ActualValue ?? string.Empty,
+                    ThresholdValue = e.ExpectedValue ?? string.Empty,
+                    Message = e.Message,
+                    DetailsJSON = JsonSerializer.Serialize(details),
+                    RunID = runId,
+                    CreatedUTC = DateTime.UtcNow,
+                    UpdatedUTC = DateTime.UtcNow
+                };
+
+                list.Add(qc);
+            }
+
+            return list;
+        }
+
+        /// <summary>
+        /// 전체 ValidationResult에서 비지오메트리 QcError 목록 생성
+        /// (FileGDB/테이블/스키마/관계/속성관계)
+        /// </summary>
+        public List<QcError> ToQcErrorsFromNonGeometryStages(ValidationResult validationResult, string runId)
+        {
+            var all = new List<QcError>();
+
+            all.AddRange(ToQcErrorsFromCheckResult(validationResult.FileGdbCheckResult, "FILEGDB", runId));
+            all.AddRange(ToQcErrorsFromCheckResult(validationResult.TableCheckResult, "TABLE", runId));
+            all.AddRange(ToQcErrorsFromCheckResult(validationResult.SchemaCheckResult, "SCHEMA", runId));
+            all.AddRange(ToQcErrorsFromCheckResult(validationResult.RelationCheckResult, "REL", runId));
+            all.AddRange(ToQcErrorsFromCheckResult(validationResult.AttributeRelationCheckResult, "ATTR_REL", runId));
+
+            return all;
         }
     }
 }

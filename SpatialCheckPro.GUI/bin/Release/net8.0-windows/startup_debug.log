@@ -1,14 +1,41 @@
-[2025-10-19 22:53:03] SpatialCheckPro 시작
-[2025-10-19 22:53:03] ConfigureServices 시작
-[2025-10-19 22:53:03] ConfigureServices 내부 시작
-[2025-10-19 22:53:03] ServiceProvider 빌드 시작
-[2025-10-19 22:53:03] ServiceProvider 빌드 완료
-[2025-10-19 22:53:03] ConfigureServices 완료
-[2025-10-19 22:53:03] MainWindow 생성 시작
-[2025-10-19 22:53:03] MainWindow 생성자 시작
-[2025-10-19 22:53:03] App 인스턴스: True
-[2025-10-19 22:53:03] SimpleValidationService 가져오기 시작
-[2025-10-19 22:53:03] SimpleValidationService: True
-[2025-10-19 22:53:03] QcErrorService 가져오기 시작
-[2025-10-19 22:53:03] QcErrorService: True
-[2025-10-19 22:57:13] MainWindow 표시 완료
+[2025-10-19 22:58:51] SpatialCheckPro 시작
+[2025-10-19 22:58:51] ConfigureServices 시작
+[2025-10-19 22:58:52] ConfigureServices 내부 시작
+[2025-10-19 22:58:52] ServiceProvider 빌드 시작
+[2025-10-19 22:58:52] ServiceProvider 빌드 완료
+[2025-10-19 22:58:52] ConfigureServices 완료
+[2025-10-19 22:58:52] MainWindow 생성 시작
+[2025-10-19 22:58:52] MainWindow 생성자 시작
+[2025-10-19 22:58:52] App 인스턴스: True
+[2025-10-19 22:58:52] SimpleValidationService 가져오기 시작
+[2025-10-19 22:58:53] SimpleValidationService: True
+[2025-10-19 22:58:53] QcErrorService 가져오기 시작
+[2025-10-19 22:58:53] QcErrorService: True
+[2025-10-19 22:58:53] StageSummaryCollectionViewModel: True
+[2025-10-19 22:58:53] AlertAggregationService: True
+[2025-10-19 22:58:53] 모든 서비스 초기화 성공
+[2025-10-19 22:58:53] MainWindow 표시 완료
+[2025-10-20 09:30:05] MainWindow 생성자 시작
+[2025-10-20 09:30:05] App 인스턴스: True
+[2025-10-20 09:30:05] SimpleValidationService 가져오기 시작
+[2025-10-20 09:30:19] MainWindow 생성자 시작
+[2025-10-20 09:30:19] App 인스턴스: True
+[2025-10-20 09:30:19] SimpleValidationService 가져오기 시작
+[2025-10-20 09:32:38] MainWindow 생성자 시작
+[2025-10-20 09:32:38] App 인스턴스: True
+[2025-10-20 09:32:38] SimpleValidationService 가져오기 시작
+[2025-10-20 11:39:04] MainWindow 생성자 시작
+[2025-10-20 11:39:04] App 인스턴스: True
+[2025-10-20 11:39:04] SimpleValidationService 가져오기 시작
+[2025-10-20 11:55:42] MainWindow 생성자 시작
+[2025-10-20 11:55:42] App 인스턴스: True
+[2025-10-20 11:55:42] SimpleValidationService 가져오기 시작
+[2025-10-21 03:30:13] MainWindow 생성자 시작
+[2025-10-21 03:30:14] DI 서비스 주입 완료 - ValidationService: True, QcErrorService: True, StageSummaryCollectionViewModel: True, AlertAggregationService: True
+[2025-10-21 03:30:14] DI 서비스 초기화 성공
+[2025-10-21 05:41:21] MainWindow 생성자 시작
+[2025-10-21 05:41:21] DI 서비스 주입 완료 - ValidationService: True, QcErrorService: True, StageSummaryCollectionViewModel: True, AlertAggregationService: True
+[2025-10-21 05:41:21] DI 서비스 초기화 성공
+[2025-10-21 11:30:22] MainWindow 생성자 시작
+[2025-10-21 11:30:23] DI 서비스 주입 완료 - ValidationService: True, QcErrorService: True, StageSummaryCollectionViewModel: True, AlertAggregationService: True
+[2025-10-21 11:30:23] DI 서비스 초기화 성공

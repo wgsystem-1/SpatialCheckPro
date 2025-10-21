@@ -459,7 +459,7 @@ namespace SpatialCheckPro.Processors
 
             try
             {
-                var area = geometry.GetArea();
+                        var area = GetSurfaceArea(geometry);
                 
                 // 면적이 0 또는 음수면 스킵
                 if (area <= 0) return false;
@@ -879,5 +879,24 @@ namespace SpatialCheckPro.Processors
         }
 
         #endregion
+        
+        /// <summary>
+        /// 면적 계산 시 타입 가드: 폴리곤/멀티폴리곤에서만 면적 반환, 그 외 0
+        /// </summary>
+        private static double GetSurfaceArea(Geometry geometry)
+        {
+            try
+            {
+                if (geometry == null || geometry.IsEmpty()) return 0.0;
+                var t = geometry.GetGeometryType();
+                return t == wkbGeometryType.wkbPolygon || t == wkbGeometryType.wkbMultiPolygon
+                    ? geometry.GetArea()
+                    : 0.0;
+            }
+            catch
+            {
+                return 0.0;
+            }
+        }
     }
 }

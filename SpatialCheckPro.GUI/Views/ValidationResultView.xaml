@@ -617,7 +617,7 @@
                                     <Border Grid.Column="1" Style="{StaticResource KpiCard}" 
                                            Background="#FEF2F2" BorderBrush="#DC2626" Margin="8,0,8,0">
                                         <StackPanel HorizontalAlignment="Center">
-                                            <TextBlock Text="정의된 테이블 없음" Style="{StaticResource CaptionText}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                            <TextBlock Text="테이블 누락 수" Style="{StaticResource CaptionText}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
                                             <TextBlock x:Name="Stage1MissingDefinedTablesText" Text="0" Style="{StaticResource HeadingMedium}" Foreground="#DC2626" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </Border>
@@ -626,7 +626,7 @@
                                     <Border Grid.Column="2" Style="{StaticResource KpiCard}" 
                                            Background="#FEF2F2" BorderBrush="#DC2626" Margin="8,0,8,0">
                                         <StackPanel HorizontalAlignment="Center">
-                                            <TextBlock Text="미정의된 테이블" Style="{StaticResource CaptionText}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                            <TextBlock Text="미정의 테이블 수" Style="{StaticResource CaptionText}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
                                             <TextBlock x:Name="Stage1UndefinedTablesText" Text="0" Style="{StaticResource HeadingMedium}" Foreground="#DC2626" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </Border>
@@ -635,7 +635,7 @@
                                     <Border Grid.Column="3" Style="{StaticResource KpiCard}" 
                                            Background="#FFFBEB" BorderBrush="#D97706" Margin="8,0,0,0">
                                         <StackPanel HorizontalAlignment="Center">
-                                            <TextBlock Text="객체 미존재 테이블" Style="{StaticResource CaptionText}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                            <TextBlock Text="빈 테이블 수" Style="{StaticResource CaptionText}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
                                             <TextBlock x:Name="Stage1ZeroFeatureTablesText" Text="0" Style="{StaticResource HeadingMedium}" Foreground="#D97706" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </Border>
@@ -847,10 +847,6 @@
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="테이블ID" Binding="{Binding TableId}" Width="*" 
                                                            CanUserSort="True" SortMemberPath="TableId"/>
-                                        <DataGridTextColumn Header="검수항목" Binding="{Binding CheckType}" Width="*" 
-                                                           CanUserSort="True" SortMemberPath="CheckType"/>
-                                        <DataGridTextColumn Header="기준값" Binding="{Binding Threshold}" Width="*" 
-                                                           CanUserSort="True" SortMemberPath="Threshold"/>
                                         <DataGridTemplateColumn Header="종류" Width="*" 
                                                                CanUserSort="True" SortMemberPath="ErrorTypesSummary">
                                             <DataGridTemplateColumn.CellTemplate>
@@ -950,8 +946,8 @@
                                 </Grid.RowDefinitions>
                                 
                                 <StackPanel Grid.Row="0" Margin="0,0,0,16">
-                                    <TextBlock Text="속성 검수 요약" Style="{StaticResource HeadingMedium}"/>
-                                    <TextBlock Text="속성 값 기반 규칙 검수 결과 요약" Style="{StaticResource CaptionText}" Margin="0,4,0,0"/>
+                                    <TextBlock Text="4단계:속성 관계 검수" Style="{StaticResource HeadingMedium}"/>
+                                    <TextBlock Text="속성 값 기반 규칙 검수 결과" Style="{StaticResource CaptionText}" Margin="0,4,0,0"/>
                                 </StackPanel>
                                 
                                 <Grid Grid.Row="1">
@@ -980,7 +976,7 @@
                                     <!-- 속성 관계 경고: 세 번째 -->
                                         <Border Grid.Column="2" Style="{StaticResource KpiCard}" Background="#FFFBEB" BorderBrush="#D97706" Margin="8,0,0,0">
                                         <StackPanel HorizontalAlignment="Center">
-                                            <TextBlock Text="속성 관계 경고" Style="{StaticResource CaptionText}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="경고" Style="{StaticResource CaptionText}" HorizontalAlignment="Center"/>
                                             <TextBlock x:Name="AttributeWarnCountText" Text="0" Style="{StaticResource HeadingMedium}" Foreground="#D97706" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </Border>
@@ -996,12 +992,8 @@
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
                                 
-                                <StackPanel Grid.Row="0" Margin="0,0,0,16">
-                                    <TextBlock Text="속성 관계 결과" Style="{StaticResource HeadingMedium}"/>
-                                    <TextBlock Text="규칙 기반 속성·교차관계 검수 결과" 
-                                              Style="{StaticResource CaptionText}" Margin="0,4,0,0"/>
-                                </StackPanel>
-                                
+                                <StackPanel Grid.Row="0" Margin="0,0,0,16"/>
+
                                 <DataGrid Grid.Row="1" x:Name="AttributeRelationErrorsGrid" 
                                          AutoGenerateColumns="False" 
                                          IsReadOnly="True"
@@ -1105,12 +1097,8 @@
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
                                 
-                                <StackPanel Grid.Row="0" Margin="0,0,0,16">
-                                    <TextBlock Text="공간 관계 결과" Style="{StaticResource HeadingMedium}"/>
-                                    <TextBlock Text="점-폴리곤, 선-폴리곤, 폴리곤-폴리곤 관계 검수 결과" 
-                                              Style="{StaticResource CaptionText}" Margin="0,4,0,0"/>
-                                </StackPanel>
-                                
+                                <StackPanel Grid.Row="0" Margin="0,0,0,16"/>
+
                                 <DataGrid Grid.Row="1" x:Name="SpatialRelationErrorsGrid" 
                                          AutoGenerateColumns="False" 
                                          IsReadOnly="True"
@@ -1245,6 +1233,172 @@
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Grid>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- 오류 개수 분석 탭 -->
+            <TabItem Header="오류 개수 분석">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                    <StackPanel Margin="20">
+                        <!-- 분석 요약 -->
+                        <Border Style="{StaticResource KpiCard}" Background="#F0F9FF" BorderBrush="#0EA5E9" BorderThickness="1" Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="오류 개수 분석 요약" Style="{StaticResource KpiCaption}" Foreground="#0EA5E9" Margin="0,0,0,8"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <Border Grid.Column="0" Style="{StaticResource KpiCard}" Background="#F0FDF4" BorderBrush="Transparent" BorderThickness="0" Margin="0,0,8,0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="검수 결과 오류 수" Style="{StaticResource KpiCaption}" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="ValidationErrorCountText" Text="0" Style="{StaticResource KpiValue}" Foreground="#16A34A" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    
+                                    <Border Grid.Column="1" Style="{StaticResource KpiCard}" Background="#F0FDF4" BorderBrush="Transparent" BorderThickness="0" Margin="0,0,8,0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="저장된 오류 수" Style="{StaticResource KpiCaption}" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="SavedErrorCountText" Text="0" Style="{StaticResource KpiValue}" Foreground="#16A34A" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    
+                                    <Border Grid.Column="2" Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="Transparent" BorderThickness="0" Margin="0,0,8,0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="누락된 오류 수" Style="{StaticResource KpiCaption}" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="MissingErrorCountText" Text="0" Style="{StaticResource KpiValue}" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    
+                                    <Border Grid.Column="3" Style="{StaticResource KpiCard}" Background="#F0F9FF" BorderBrush="Transparent" BorderThickness="0">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="저장 성공률" Style="{StaticResource KpiCaption}" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="SaveSuccessRateText" Text="0%" Style="{StaticResource KpiValue}" Foreground="#0EA5E9" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                                
+                                <!-- 분석 요약 메시지 -->
+                                <TextBlock x:Name="AnalysisSummaryText" Text="분석을 실행하세요" 
+                                          Style="{StaticResource KpiCaption}" 
+                                          Foreground="#6B7280" 
+                                          HorizontalAlignment="Center" 
+                                          Margin="0,8,0,0"
+                                          TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 분석 실행 버튼 -->
+                        <Button x:Name="RunAnalysisButton" 
+                               Content="오류 개수 분석 실행" 
+                               Click="RunAnalysisButton_Click"
+                               Style="{StaticResource PrimaryButton}"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,16"/>
+
+                        <!-- 단계별 분석 결과 -->
+                        <Border Style="{StaticResource KpiCard}" Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="단계별 오류 분석" Style="{StaticResource KpiCaption}" Foreground="#374151" Margin="0,0,0,12"/>
+                                
+                                <DataGrid x:Name="StageAnalysisDataGrid" 
+                                         AutoGenerateColumns="False" 
+                                         IsReadOnly="True"
+                                         GridLinesVisibility="Horizontal"
+                                         HeadersVisibility="Column"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         RowBackground="Transparent"
+                                         AlternatingRowBackground="#F8FAFC"
+                                         MinHeight="300"
+                                         ScrollViewer.CanContentScroll="True"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                         VerticalScrollBarVisibility="Auto"
+                                         HorizontalScrollBarVisibility="Auto"
+                                         CanUserResizeColumns="True">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="단계" Binding="{Binding StageNumber}" Width="60" SortMemberPath="StageNumber"/>
+                                        <DataGridTextColumn Header="단계명" Binding="{Binding StageName}" Width="120" SortMemberPath="StageName"/>
+                                        <DataGridTextColumn Header="검수 결과 오류 수" Binding="{Binding ValidationErrorCount}" Width="120" SortMemberPath="ValidationErrorCount"/>
+                                        <DataGridTextColumn Header="저장된 오류 수" Binding="{Binding SavedErrorCount}" Width="120" SortMemberPath="SavedErrorCount"/>
+                                        <DataGridTextColumn Header="누락된 오류 수" Binding="{Binding MissingErrorCount}" Width="120" SortMemberPath="MissingErrorCount"/>
+                                        <DataGridTextColumn Header="저장 성공률" Binding="{Binding SaveSuccessRate, StringFormat={}{0:F1}%}" Width="100" SortMemberPath="SaveSuccessRate"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 오류 타입별 분석 결과 -->
+                        <Border Style="{StaticResource KpiCard}" Background="#FFFFFF" BorderBrush="#E5E7EB" BorderThickness="1" Margin="0,16,0,0">
+                            <StackPanel>
+                                <TextBlock Text="오류 타입별 분석" Style="{StaticResource KpiCaption}" Foreground="#374151" Margin="0,0,0,12"/>
+                                
+                                <DataGrid x:Name="ErrorTypeAnalysisDataGrid" 
+                                         AutoGenerateColumns="False" 
+                                         IsReadOnly="True"
+                                         GridLinesVisibility="Horizontal"
+                                         HeadersVisibility="Column"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         RowBackground="Transparent"
+                                         AlternatingRowBackground="#F8FAFC"
+                                         MinHeight="300"
+                                         ScrollViewer.CanContentScroll="True"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                         VerticalScrollBarVisibility="Auto"
+                                         HorizontalScrollBarVisibility="Auto"
+                                         CanUserResizeColumns="True">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="단계" Binding="{Binding StageNumber}" Width="60" SortMemberPath="StageNumber"/>
+                                        <DataGridTextColumn Header="오류 타입" Binding="{Binding ErrorType}" Width="120" SortMemberPath="ErrorType"/>
+                                        <DataGridTextColumn Header="오류 타입명" Binding="{Binding ErrorTypeName}" Width="140" SortMemberPath="ErrorTypeName"/>
+                                        <DataGridTextColumn Header="검수 결과 오류 수" Binding="{Binding ValidationErrorCount}" Width="120" SortMemberPath="ValidationErrorCount"/>
+                                        <DataGridTextColumn Header="저장된 오류 수" Binding="{Binding SavedErrorCount}" Width="120" SortMemberPath="SavedErrorCount"/>
+                                        <DataGridTextColumn Header="누락된 오류 수" Binding="{Binding MissingErrorCount}" Width="120" SortMemberPath="MissingErrorCount"/>
+                                        <DataGridTextColumn Header="저장 성공률" Binding="{Binding SaveSuccessRate, StringFormat={}{0:F1}%}" Width="100" SortMemberPath="SaveSuccessRate"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 저장되지 않은 오류 상세 -->
+                        <Border Style="{StaticResource KpiCard}" Background="#FEF2F2" BorderBrush="#DC2626" BorderThickness="1" Margin="0,16,0,0">
+                            <StackPanel>
+                                <TextBlock Text="저장되지 않은 오류 상세" Style="{StaticResource KpiCaption}" Foreground="#DC2626" Margin="0,0,0,12"/>
+                                
+                                <DataGrid x:Name="MissingErrorDataGrid" 
+                                         AutoGenerateColumns="False" 
+                                         IsReadOnly="True"
+                                         GridLinesVisibility="Horizontal"
+                                         HeadersVisibility="Column"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         RowBackground="Transparent"
+                                         AlternatingRowBackground="#FEF2F2"
+                                         MinHeight="200"
+                                         ScrollViewer.CanContentScroll="True"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                         VerticalScrollBarVisibility="Auto"
+                                         HorizontalScrollBarVisibility="Auto"
+                                         CanUserResizeColumns="True">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="단계" Binding="{Binding StageNumber}" Width="60" SortMemberPath="StageNumber"/>
+                                        <DataGridTextColumn Header="오류 타입" Binding="{Binding ErrorType}" Width="120" SortMemberPath="ErrorType"/>
+                                        <DataGridTextColumn Header="소스 클래스" Binding="{Binding SourceClass}" Width="120" SortMemberPath="SourceClass"/>
+                                        <DataGridTextColumn Header="소스 OID" Binding="{Binding SourceOID}" Width="80" SortMemberPath="SourceOID"/>
+                                        <DataGridTextColumn Header="메시지" Binding="{Binding Message}" Width="*" SortMemberPath="Message"/>
+                                        <DataGridTextColumn Header="실패 원인" Binding="{Binding FailureReason}" Width="120" SortMemberPath="FailureReason"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </StackPanel>
                         </Border>
                     </StackPanel>
                 </ScrollViewer>

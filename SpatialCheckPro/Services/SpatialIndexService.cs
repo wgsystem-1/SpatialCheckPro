@@ -382,7 +382,7 @@ namespace SpatialCheckPro.Services
                             var intersection = entry.Geometry.Intersection(candidate.Geometry);
                             if (intersection != null && !intersection.IsEmpty())
                             {
-                                var overlapArea = intersection.GetArea();
+                                var overlapArea = GetSurfaceArea(intersection);
                                 if (overlapArea > 0)
                                 {
                                     overlaps.Add(new OverlapResult
@@ -415,6 +415,26 @@ namespace SpatialCheckPro.Services
             {
                 _logger.LogError(ex, "공간 인덱스 기반 겹침 검사 실패: {LayerName}", layerName);
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// 면적 계산 시 지오메트리 타입을 검사하여 면(Polygon/MultiPolygon)일 때만 면적을 반환합니다
+        /// 면 형식이 아니면 0을 반환합니다.
+        /// </summary>
+        private static double GetSurfaceArea(Geometry geometry)
+        {
+            try
+            {
+                if (geometry == null || geometry.IsEmpty()) return 0.0;
+                var type = geometry.GetGeometryType();
+                return type == wkbGeometryType.wkbPolygon || type == wkbGeometryType.wkbMultiPolygon
+                    ? geometry.GetArea()
+                    : 0.0;
+            }
+            catch
+            {
+                return 0.0;
             }
         }
 

@@ -290,7 +290,7 @@ namespace SpatialCheckPro.Services
                     {
                         // 겹침 영역 계산
                         var intersection = sourceGeometry.Intersection(targetGeometry);
-                        var overlapArea = intersection.GetArea();
+                        var overlapArea = GetSurfaceArea(intersection);
 
                         // 허용 오차 범위 확인
                         if (overlapArea > rule.Tolerance)
@@ -696,7 +696,7 @@ namespace SpatialCheckPro.Services
                             if (sourceGeometry.Intersects(targetGeometry) && !sourceGeometry.Touches(targetGeometry))
                             {
                                 var intersection = sourceGeometry.Intersection(targetGeometry);
-                                var intersectionArea = intersection.GetArea();
+                                var intersectionArea = GetSurfaceArea(intersection);
                                 
                                 if (intersectionArea > rule.Tolerance)
                                 {
@@ -918,7 +918,7 @@ namespace SpatialCheckPro.Services
                 // 7. 틈 영역이 존재하는지 확인
                 if (gapsGeometry != null && !gapsGeometry.IsEmpty())
                 {
-                    var gapArea = gapsGeometry.GetArea();
+                    var gapArea = GetSurfaceArea(gapsGeometry);
                     
                     // 허용 오차보다 큰 틈만 오류로 처리
                     if (gapArea > rule.Tolerance)
@@ -1029,7 +1029,7 @@ namespace SpatialCheckPro.Services
                         
                         if (uncoveredArea != null && !uncoveredArea.IsEmpty())
                         {
-                            var uncoveredAreaSize = uncoveredArea.GetArea();
+                            var uncoveredAreaSize = GetSurfaceArea(uncoveredArea);
                             
                             // 허용 오차보다 큰 덮이지 않은 영역만 오류로 처리
                             if (uncoveredAreaSize > rule.Tolerance)
@@ -1136,7 +1136,7 @@ namespace SpatialCheckPro.Services
                         
                         if (uncoveredArea != null && !uncoveredArea.IsEmpty())
                         {
-                            var uncoveredAreaSize = uncoveredArea.GetArea();
+                            var uncoveredAreaSize = GetSurfaceArea(uncoveredArea);
                             
                             // 허용 오차보다 큰 덮이지 않은 영역만 오류로 처리
                             if (uncoveredAreaSize > rule.Tolerance)
@@ -1408,6 +1408,26 @@ namespace SpatialCheckPro.Services
             string wkt;
             geometry.ExportToWkt(out wkt);
             return wkt ?? string.Empty;
+        }
+
+        /// <summary>
+        /// 면적 계산 시 지오메트리 타입을 검사하여 면(Polygon/MultiPolygon)일 때만 면적을 반환합니다
+        /// 면 형식이 아니면 0을 반환합니다.
+        /// </summary>
+        private static double GetSurfaceArea(Geometry geometry)
+        {
+            try
+            {
+                if (geometry == null || geometry.IsEmpty()) return 0.0;
+                var type = geometry.GetGeometryType();
+                return type == wkbGeometryType.wkbPolygon || type == wkbGeometryType.wkbMultiPolygon
+                    ? geometry.GetArea()
+                    : 0.0;
+            }
+            catch
+            {
+                return 0.0;
+            }
         }
 
         #endregion

@@ -186,21 +186,41 @@ namespace SpatialCheckPro.Services
                             return false;
                         }
 
-                        // 지오메트리 타입에 따라 적절한 레이어 선택 (대소문자 및 멀티타입 지원)
-                        var geomTypeUpper = (qcError.GeometryType ?? string.Empty).Trim().ToUpperInvariant();
-                        if (string.IsNullOrEmpty(geomTypeUpper) || geomTypeUpper == "UNKNOWN")
+                        // 우선 포인트 지오메트리를 생성 시도하여 저장 레이어를 결정
+                        OSGeo.OGR.Geometry? pointGeometryCandidate = null;
+                        // 1차 시도: 기존 지오메트리에서 Point 생성
+                        if (qcError.Geometry != null)
                         {
-                            // GeometryWKT가 있으면 타입 유추
-                            if (!string.IsNullOrWhiteSpace(qcError.GeometryWKT))
-                            {
-                                var wktUpper = qcError.GeometryWKT.ToUpperInvariant();
-                                if (wktUpper.StartsWith("POINT")) geomTypeUpper = "POINT";
-                                else if (wktUpper.StartsWith("LINESTRING") || wktUpper.StartsWith("MULTILINESTRING")) geomTypeUpper = "LINESTRING";
-                                else if (wktUpper.StartsWith("POLYGON") || wktUpper.StartsWith("MULTIPOLYGON")) geomTypeUpper = "POLYGON";
-                            }
+                            try { pointGeometryCandidate = CreateSimplePoint(qcError.Geometry); } catch { pointGeometryCandidate = null; }
                         }
-                        // Point 저장 방식: 모든 오류를 Point 레이어에 저장
-                        string layerName = DetermineLayerNameForPointMode(qcError, geomTypeUpper);
+                        // 2차 시도: WKT에서 Point 생성
+                        if (pointGeometryCandidate == null && !string.IsNullOrWhiteSpace(qcError.GeometryWKT))
+                        {
+                            try
+                            {
+                                var geomFromWkt = OSGeo.OGR.Geometry.CreateFromWkt(qcError.GeometryWKT);
+                                if (geomFromWkt != null && !geomFromWkt.IsEmpty())
+                                {
+                                    pointGeometryCandidate = CreateSimplePoint(geomFromWkt);
+                                }
+                                geomFromWkt?.Dispose();
+                            }
+                            catch { pointGeometryCandidate = null; }
+                        }
+                        // 3차 시도: 좌표로부터 Point 생성 (0,0은 위치 미확정으로 간주)
+                        if (pointGeometryCandidate == null && (qcError.X != 0 || qcError.Y != 0))
+                        {
+                            try
+                            {
+                                var p = new OSGeo.OGR.Geometry(wkbGeometryType.wkbPoint);
+                                p.AddPoint(qcError.X, qcError.Y, 0);
+                                pointGeometryCandidate = p;
+                            }
+                            catch { pointGeometryCandidate = null; }
+                        }
+
+                        // 저장 레이어 결정: 포인트 지오메트리가 있으면 Point, 없으면 NoGeom
+                        string layerName = pointGeometryCandidate != null ? "QC_Errors_Point" : "QC_Errors_NoGeom";
 
                         // 데이터셋 내부 탐색: 루트에서 직접 못 찾으면 하위 계층에서 검색
                         Layer layer = dataSource.GetLayerByName(layerName);
@@ -215,8 +235,7 @@ namespace SpatialCheckPro.Services
                         if (layer == null)
                         {
                             _logger.LogWarning("QC_ERRORS 레이어를 찾을 수 없습니다: {LayerName} - 레이어 생성 시도", layerName);
-                            
-                            // 레이어가 없으면 생성 시도
+                            // 레이어가 없으면 생성 시도 (레이어명에 따라 타입 결정)
                             layer = CreateQcErrorLayer(dataSource, layerName);
                             if (layer == null)
                             {
@@ -237,90 +256,11 @@ namespace SpatialCheckPro.Services
                         feature.SetField("SourceOID", (int)qcError.SourceOID);
                         feature.SetField("Message", qcError.Message);
 
-                        // Point 저장 방식: 모든 오류에 Point 지오메트리 설정
-                        bool geometrySet = false;
-                        
-                        // 1차 시도: 기존 지오메트리에서 Point 생성
-                        if (qcError.Geometry != null && qcError.Geometry is OSGeo.OGR.Geometry ogrGeometry)
+                        // 포인트 지오메트리가 준비된 경우에만 지오메트리 설정
+                        if (pointGeometryCandidate != null)
                         {
-                            try
-                            {
-                                var pointGeometry = CreateSimplePoint(ogrGeometry);
-                                if (pointGeometry != null)
-                                {
-                                    feature.SetGeometry(pointGeometry);
-                                    pointGeometry.Dispose();
-                                    geometrySet = true;
-                                    _logger.LogDebug("기존 지오메트리에서 Point 생성 성공: {ErrorCode}", qcError.ErrCode);
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.LogWarning(ex, "기존 지오메트리 Point 생성 실패: {ErrorCode}", qcError.ErrCode);
-                            }
-                        }
-                        
-                        // 2차 시도: WKT에서 Point 생성
-                        if (!geometrySet && !string.IsNullOrWhiteSpace(qcError.GeometryWKT))
-                        {
-                            try
-                            {
-                                var geomFromWkt = OSGeo.OGR.Geometry.CreateFromWkt(qcError.GeometryWKT);
-                                if (geomFromWkt != null && !geomFromWkt.IsEmpty())
-                                {
-                                    var pointGeometry = CreateSimplePoint(geomFromWkt);
-                                    geomFromWkt.Dispose();
-                                    
-                                    if (pointGeometry != null)
-                                    {
-                                        feature.SetGeometry(pointGeometry);
-                                        pointGeometry.Dispose();
-                                        geometrySet = true;
-                                        _logger.LogDebug("WKT에서 Point 생성 성공: {ErrorCode}", qcError.ErrCode);
-                                    }
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.LogWarning(ex, "WKT Point 생성 실패: {WKT}", qcError.GeometryWKT);
-                            }
-                        }
-                        
-                        // 3차 시도: 좌표로부터 Point 생성
-                        if (!geometrySet && qcError.X != 0 && qcError.Y != 0)
-                        {
-                            try
-                            {
-                                var point = new OSGeo.OGR.Geometry(wkbGeometryType.wkbPoint);
-                                point.AddPoint(qcError.X, qcError.Y, 0);
-                                feature.SetGeometry(point);
-                                point.Dispose();
-                                geometrySet = true;
-                                _logger.LogDebug("좌표로부터 Point 생성 성공: {ErrorCode} ({X}, {Y})", 
-                                    qcError.ErrCode, qcError.X, qcError.Y);
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.LogWarning(ex, "좌표로부터 Point 생성 실패: {ErrorCode}", qcError.ErrCode);
-                            }
-                        }
-                        
-                        // 4차 시도: 기본 좌표 (0, 0)로 Point 생성
-                        if (!geometrySet)
-                        {
-                            try
-                            {
-                                var defaultPoint = new OSGeo.OGR.Geometry(wkbGeometryType.wkbPoint);
-                                defaultPoint.AddPoint(0, 0, 0);
-                                feature.SetGeometry(defaultPoint);
-                                defaultPoint.Dispose();
-                                geometrySet = true;
-                                _logger.LogDebug("기본 좌표 (0, 0)로 Point 생성: {ErrorCode}", qcError.ErrCode);
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.LogWarning(ex, "기본 좌표 Point 생성 실패: {ErrorCode}", qcError.ErrCode);
-                            }
+                            feature.SetGeometry(pointGeometryCandidate);
+                            _logger.LogDebug("Point 지오메트리 설정 완료: {ErrorCode}", qcError.ErrCode);
                         }
 
                         // 피처를 레이어에 추가
@@ -623,31 +563,18 @@ namespace SpatialCheckPro.Services
             try
             {
                 _logger.LogDebug("QC_ERRORS 레이어 생성 시작: {LayerName}", layerName);
-                
-                // Point 저장 방식: 모든 레이어를 Point로 강제 생성
-                layerName = "QC_Errors_Point";
-                var geometryType = wkbGeometryType.wkbPoint;
-                
-                _logger.LogInformation("Point 저장 방식: 모든 오류를 Point 레이어에 저장");
-                
-                // 기존 레이어가 있으면 삭제 (스키마 변경을 위해)
-                var existingLayer = dataSource.GetLayerByName(layerName);
-                if (existingLayer != null)
+
+                // 레이어별 지오메트리 타입 결정
+                var geometryType = layerName switch
                 {
-                    _logger.LogInformation("기존 레이어 삭제: {LayerName}", layerName);
-                    // 레이어 인덱스로 삭제
-                    for (int i = 0; i < dataSource.GetLayerCount(); i++)
-                    {
-                        var testLayer = dataSource.GetLayerByIndex(i);
-                        if (testLayer != null && testLayer.GetName() == layerName)
-                        {
-                            dataSource.DeleteLayer(i);
-                            break;
-                        }
-                    }
-                }
-                
-                // 레이어 생성
+                    "QC_Errors_Point" => wkbGeometryType.wkbPoint,
+                    "QC_Errors_Line" => wkbGeometryType.wkbLineString,
+                    "QC_Errors_Polygon" => wkbGeometryType.wkbPolygon,
+                    "QC_Errors_NoGeom" => wkbGeometryType.wkbNone,
+                    _ => wkbGeometryType.wkbPoint
+                };
+
+                // 레이어 생성 (기존 삭제 없이 생성만 시도)
                 var layer = dataSource.CreateLayer(layerName, null, geometryType, null);
                 if (layer == null)
                 {

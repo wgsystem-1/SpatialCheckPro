@@ -57,7 +57,7 @@ SpatialCheckPro/
 5. 의존성 주입(DI) 사용 및 IoC 컨테이너 활용
 6. 빌드 오류 및 경고 모두 해결 (TreatWarningsAsErrors=true)
 7. 설정 값은 하드코딩 금지 (설정 파일 또는 DI로 주입)
-8. 빌드는 항상 릴리스(Release) 모드로 진행
+8. 빌드는 항상 릴리스(Release) 모드로 진행하고 실행중인 모든 프로세스를 종료 후에 빌드. 
 
 ### 네이밍 컨벤션
 9. PascalCase: 클래스, 메서드, 속성, 이벤트

@@ -140,6 +140,7 @@ namespace SpatialCheckPro.GUI.Services
             services.AddSingleton<QcErrorDataService>();
             services.AddSingleton<QcErrorService>();
             services.AddSingleton<QcStoragePathService>();
+            // QGIS 프로젝트 생성기 제거
             
             // 스키마 서비스
             services.AddSingleton<FgdbSchemaService>();

@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using OSGeo.GDAL;
 using OSGeo.OGR;
 using SpatialCheckPro.Models;
+using SpatialCheckPro.Services.Interfaces;
 
 namespace SpatialCheckPro.Services
 {
@@ -21,6 +22,7 @@ namespace SpatialCheckPro.Services
 
         private string? _currentQcGdbPath;
         private string? _currentRunId;
+        private string? _currentSourceGdbPath;
 
         private static bool _isGdalInitialized = false;
         private static readonly object _gdalLock = new object();
@@ -49,6 +51,7 @@ namespace SpatialCheckPro.Services
 
             // 1. QC용 GDB 경로 생성
             _currentQcGdbPath = _pathService.BuildQcGdbPath(targetGdbPath);
+            _currentSourceGdbPath = targetGdbPath;
             _logger.LogInformation("QC 결과 저장 경로: {QcGdbPath}", _currentQcGdbPath);
 
             // 2. 해당 GDB에 스키마 보장

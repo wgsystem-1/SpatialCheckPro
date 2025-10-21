@@ -102,6 +102,15 @@ Status (상태)
 - **NUL001**: NULL 지오메트리
 - **INV001**: 무효한 지오메트리
 
+### 4.3 저장 정책(현재 현황)
+- 단건 저장(Upsert)
+  - 포인트 지오메트리를 생성할 수 있으면 `QC_Errors_Point`에 저장(지오메트리만 기록).
+  - 포인트 지오메트리를 생성할 수 없으면 `QC_Errors_NoGeom`에 저장(0,0 좌표 폴백 금지).
+- 배치 저장
+  - 일부 경로에 기본 좌표(0,0) 폴백이 남아 있을 수 있음(개선 예정: 폴백 제거 및 `NoGeom` 분기 일원화).
+- 읽기 경로
+  - FGDB 스키마에 X/Y 필드가 없는 경우가 있어 속성 기반 X/Y는 0으로 조회될 수 있음(향후 스키마 보강 시 동기화 예정).
+
 ## 5. 성능 최적화 기법
 
 ### 5.1 고성능 모드 (GDB to SQLite)
@@ -175,34 +184,27 @@ foreach (var stage in stages)
 - Chart.js와 같은 라이브러리를 활용하여 동적이고 상호작용이 가능한 웹 기반 보고서를 생성합니다.
 - 사용자는 브라우저에서 필터링, 정렬, 확대/축소 등의 기능을 통해 검수 결과를 심층적으로 분석할 수 있습니다.
 
-## 7. 오류 시각화 및 편집 (GUI)
+## 7. 오류 위치 확인 및 수정 워크플로우(현재 GUI)
 
-### 7.1 지도 기반 오류 시각화
-- **ErrorLayerService**: 검수 과정에서 발생한 지오메트리 관련 오류들을 WPF UI의 지도 위에 시각적으로 렌더링합니다.
-- **ErrorRenderingService**: 오류의 심각도(Severity)나 상태(Status)에 따라 각기 다른 심볼이나 색상으로 오류를 표현하여 직관성을 높입니다.
-- **ErrorClusteringService**: 특정 지역에 오류가 밀집된 경우, 이를 클러스터링하여 지도의 가독성을 향상시킵니다.
-
-### 7.2 대화형 오류 분석 및 편집
-- **MapInteractionService**: 사용자가 지도를 확대/축소/이동하며 오류를 탐색할 수 있도록 지원합니다.
-- **ErrorSelectionService**: 지도에 표시된 오류를 클릭하여 상세 정보를 확인하고, 관련 피처를 하이라이트합니다.
-- **GeometryEditToolService**: 지도 위에서 직접 오류가 발생한 지오메트리의 정점을 추가, 삭제, 이동하는 등 간단한 편집 및 수정 기능을 제공하여 즉각적인 데이터 교정을 가능하게 합니다.
+현재 WPF GUI에는 지도 뷰가 포함되어 있지 않습니다. 다음과 같은 외부 GIS 연계 워크플로우를 권장합니다.
+- 외부 GIS(QGIS/ArcGIS)에서 원본 FGDB와 QC FGDB를 함께 열기
+- `SourceClass`/`SourceOID` 기준으로 원본 피처 선택
+- `QC_Errors_Point`의 포인트 지오메트리를 통해 위치 파악(가능 시)
+- `QC_Errors_NoGeom` 항목은 속성/스키마 수준 수정 위주로 처리
 
 ## 8. 로깅 및 감사 시스템
 
-### 8.1 Serilog 기반 구조화된 로깅
+### 8.1 로깅 구성(현재)
+- `Microsoft.Extensions.Logging` 기반
+- 콘솔: UTF-8 고정(한글 깨짐 방지)
+- 파일: 커스텀 `FileLoggerProvider` 사용(UTF-8 BOM, 공유 읽기 허용)
 ```csharp
-Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Debug()
-    .WriteTo.File("Logs/app-.log", 
-        rollingInterval: RollingInterval.Day,
-        retainedFileCountLimit: 30)
-    .CreateLogger();
-```
-```csharp
-_logger.LogInformation("검수 시작: {FilePath}, 단계: {Stage}", 
-    filePath, stageName);
-
-_logger.LogError(ex, "검수 실패: {ErrorCode}", errorCode);
+services.AddLogging(builder =>
+{
+    builder.AddConsole();
+    builder.AddProvider(new FileLoggerProvider());
+    builder.SetMinimumLevel(LogLevel.Information);
+});
 ```
 
 ### 8.2 감사 추적

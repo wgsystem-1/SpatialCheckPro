@@ -131,11 +131,8 @@ IAttributeCheckProcessor  → AttributeCheckProcessor
 - **ReportService**: 검수 결과를 종합하여 보고서 생성을 총괄합니다. (`PdfReportService`, `ExcelReportService`, `HtmlReportService` 포함)
 - **AuditLogService**: 사용자의 주요 행위와 시스템 이벤트를 기록하여 추적 및 감사를 지원합니다.
 
-#### 5.2.5 GUI 특화 서비스 (오류 시각화 및 편집)
-- **ErrorLayerService / ErrorRenderingService**: 검수 오류를 심각도나 상태에 따라 다른 심볼로 지도 위에 시각화합니다.
-- **ErrorClusteringService**: 밀집된 오류를 클러스터링하여 가독성을 향상시킵니다.
-- **MapInteractionService / ErrorSelectionService**: 사용자가 지도와 상호작용하며 오류를 선택하고 상세 정보를 확인할 수 있도록 지원합니다.
-- **GeometryEditToolService**: 지도 위에서 오류가 발생한 지오메트리를 직접 편집하고 수정하는 기능을 제공합니다.
+#### 5.2.5 GUI 특화 서비스
+현재 WPF GUI에는 지도 뷰가 포함되어 있지 않습니다. 오류 위치 확인은 외부 GIS(QGIS/ArcGIS) 연계로 진행하는 워크플로우를 권장합니다(원본 FGDB와 QC FGDB 동시 오픈, `SourceClass/SourceOID` 선택, `QC_Errors_Point` 참조 등).
 - **SchemaValidationService**: 스키마 구조 검증 로직을 수행합니다. (GUI 프로젝트)
 
 ### 5.3 데이터 모델

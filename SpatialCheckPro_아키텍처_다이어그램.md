@@ -9,10 +9,7 @@ graph TD
         ViewModels[ViewModels]
         subgraph "GUI Services"
             SVS[SimpleValidationService]
-            ELS[ErrorLayerService]
-            ERS[ErrorRenderingService]
-            MIS[MapInteractionService]
-            GES[GeometryEditToolService]
+            %% 지도 관련 서비스(미사용)는 문서에서 제외
         end
     end
     
@@ -123,7 +120,7 @@ flowchart TD
     ParallelExecution -->|성공| QcErrors[QC_ERRORS 생성]
     
     Error0 --> Report
-    QcErrors --> SaveDB[(SQLite 저장)]
+    QcErrors --> SaveDB[(SQLite 저장 또는 FGDB QC_ERRORS)]
     SaveDB --> Report[보고서 생성<br/>PDF/Excel/HTML]
     Report --> End([완료])
 ```

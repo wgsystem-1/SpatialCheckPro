@@ -25,7 +25,6 @@
 | NetTopologySuite | 2.6.0 | 지오메트리 연산 및 토폴로지 분석 |
 | Entity Framework Core SQLite | 9.0.9 | 로컬 데이터베이스 관리 |
 | CsvHelper | 33.1.0 | CSV 설정 파일 처리 |
-| EPPlus | 7.5.2 | Excel 보고서 생성 |
 | iTextSharp.LGPLv2.Core | 3.4.21 | PDF 보고서 생성 |
 | Microsoft.Extensions.Logging + FileLoggerProvider | - | 구조화된 로깅(UTF-8 파일 로깅) |
 
@@ -188,9 +187,6 @@ FileGDB 선택
     ↓
 검수 설정 로드 (CSV)
     ↓
-(고성능 모드 활성화 시)
-FileGDB → 임시 SQLite 변환 (현재 미구현)
-    ↓
 SimpleValidationService
     ↓
 각 단계별 Processor 실행 (순차 또는 병렬)
@@ -199,7 +195,7 @@ QcError 생성 및 저장
     ↓
 검수 결과 집계
     ↓
-보고서 생성 (PDF/HTML, Excel 미구현)
+보고서 생성 (PDF/HTML)
 ```
 
 ## 7. 데이터 관리
@@ -275,7 +271,7 @@ services.AddLogging(b =>
 1. **포괄적인 검수**: 6단계의 체계적 검수 프로세스
 2. **유연한 설정**: CSV 기반 검수 규칙 설정
 3. **성능 최적화**: GDAL 네이티브 성능 활용
-4. **보고서**: PDF/HTML 일부 지원(Excel 미구현)
+4. **보고서**: PDF/HTML 지원
 5. **오류 추적**: QC_ERRORS 시스템으로 체계적 관리
 6. **확장 가능**: 새로운 검수 규칙 쉽게 추가
 

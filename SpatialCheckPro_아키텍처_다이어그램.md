@@ -46,10 +46,9 @@ graph TD
             GdbProvider[GdbDataProvider]
             SqliteProvider[SqliteDataProvider]
         end
-        subgraph "Converters & Pools"
-            GdbConverter[GdbToSqliteConverter]
-            DataSourcePool[DataSourcePool]
-        end
+    subgraph "Pools"
+        DataSourcePool[DataSourcePool]
+    end
         subgraph "Configuration"
             CsvConfigService[CsvConfigService]
         end
@@ -70,7 +69,7 @@ graph TD
     ViewModels --> SVS
 
     SVS --> TCP & SCP & GCP & RCP & ACP
-    SVS --> APM & SPM & CRM & GdbConverter & DataProvider
+    SVS --> APM & SPM & CRM & DataProvider
     
     TCP & SCP & GCP & RCP & ACP --> GdalService
     TCP & SCP & GCP & RCP & ACP -- uses --> SIM
@@ -79,7 +78,6 @@ graph TD
     CRM --> SRA
     SPM --> APM
     
-    GdbConverter --> SqliteProvider
     DataProvider -- Implements --> GdbProvider & SqliteProvider
     
     QcErrorService --> Database

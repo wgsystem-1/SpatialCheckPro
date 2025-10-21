@@ -101,18 +101,8 @@ ErrType (오류 유형)
 
 ## 5. 성능 최적화 기법
 
-### 5.1 고성능 모드 (GDB to SQLite)
-- 대용량 FileGDB(.gdb)를 검수 전에 임시 SQLite 파일로 변환합니다.
-- GDAL의 FileGDB 드라이버보다 월등히 빠른 SQLite의 네이티브 쿼리 성능을 활용하여, 특히 속성 및 관계 검사에서 속도를 극대화합니다.
-```csharp
-// GdbToSqliteConverter.cs
-public async Task<string> ConvertAsync(string gdbPath)
-{
-    // ... GDB 스키마 읽기 및 SQLite 테이블 생성 ...
-    // ... 데이터 이관 로직 ...
-    return tempSqlitePath;
-}
-```
+### 5.1 고성능 모드
+- 향후 확장 항목으로 검토 가능합니다.
 
 ### 5.2 다차원 병렬 처리 및 모니터링
 - **단계 병렬 처리**: `StageParallelProcessingManager`를 사용하여 상호 의존성이 없는 검수 단계(예: 테이블 검사, 속성 관계 검사)를 동시에 실행합니다.

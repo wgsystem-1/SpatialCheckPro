@@ -62,13 +62,12 @@ graph TD
     
     subgraph "Infrastructure"
         FileSystem[(File System: GDB, CSV)]
-        Database[(SQLite DB)]
-        Logger[Serilog Logger]
+        Database[(SQLite / FGDB QC_ERRORS)]
+        Logger[Microsoft.Extensions.Logging + FileLoggerProvider(UTF-8)]
     end
 
     Views --> ViewModels
     ViewModels --> SVS
-    SVS --> ELS & ERS & MIS & GES
 
     SVS --> TCP & SCP & GCP & RCP & ACP
     SVS --> APM & SPM & CRM & GdbConverter & DataProvider
@@ -147,8 +146,6 @@ classDiagram
         +string GlobalID
         +string ErrType
         +string ErrCode
-        +string Severity
-        +string Status
         +string RuleId
         +string SourceClass
         +long SourceOID
@@ -209,12 +206,10 @@ graph LR
             DCS[DataCacheService]
             SIM[SpatialIndexManager]
         end
-        subgraph "GUI Infrastructure"
-            MAIN[SimpleValidationService]
-            RS[ReportService]
-            ELS[ErrorLayerService]
-            MIS[MapInteractionService]
-        end
+    subgraph "GUI Infrastructure"
+        MAIN[SimpleValidationService]
+        RS[ReportService]
+    end
     end
     
     subgraph "Scoped/Transient Services"
@@ -240,7 +235,6 @@ graph LR
     MAIN -- uses --> "Performance"
     MAIN -- uses --> VDP
     MAIN -- uses --> QES & GDAL & GDC
-    MAIN -- uses --> ELS & MIS
 ```
 
 ## 5. 데이터베이스 스키마
@@ -282,7 +276,6 @@ erDiagram
         string TableName
         string FeatureId
         string Message
-        string Severity
         string ErrorType
         datetime OccurredAt
     }

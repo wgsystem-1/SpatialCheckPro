@@ -27,7 +27,7 @@
 | CsvHelper | 33.1.0 | CSV 설정 파일 처리 |
 | EPPlus | 7.5.2 | Excel 보고서 생성 |
 | iTextSharp.LGPLv2.Core | 3.4.21 | PDF 보고서 생성 |
-| Serilog | 4.2.0 | 구조화된 로깅 |
+| Microsoft.Extensions.Logging + FileLoggerProvider | - | 구조화된 로깅(UTF-8 파일 로깅) |
 
 ### 2.3 GUI 관련 라이브러리
 - **Xceed.Wpf.Toolkit**: 4.5.22477.12540 - 확장 WPF 컨트롤
@@ -128,12 +128,11 @@ IAttributeCheckProcessor  → AttributeCheckProcessor
 - **DataCacheService / LruCache**: 자주 사용하는 데이터를 캐싱하여 디스크 접근을 최소화합니다.
 
 #### 5.2.4 보고서 및 감사 서비스
-- **ReportService**: 검수 결과를 종합하여 보고서 생성을 총괄합니다. (`PdfReportService`, `ExcelReportService`, `HtmlReportService` 포함)
+- **ReportService**: 검수 결과를 종합하여 보고서 생성을 총괄합니다. (`PdfReportService`, `HtmlReportService` 포함, Excel 미구현)
 - **AuditLogService**: 사용자의 주요 행위와 시스템 이벤트를 기록하여 추적 및 감사를 지원합니다.
 
 #### 5.2.5 GUI 특화 서비스
 현재 WPF GUI에는 지도 뷰가 포함되어 있지 않습니다. 오류 위치 확인은 외부 GIS(QGIS/ArcGIS) 연계로 진행하는 워크플로우를 권장합니다(원본 FGDB와 QC FGDB 동시 오픈, `SourceClass/SourceOID` 선택, `QC_Errors_Point` 참조 등).
-- **SchemaValidationService**: 스키마 구조 검증 로직을 수행합니다. (GUI 프로젝트)
 
 ### 5.3 데이터 모델
 #### 5.3.1 검수 결과 모델
@@ -223,22 +222,20 @@ QcError 생성 및 저장
 
 ### 8.1 서비스 등록 (App.xaml.cs)
 ```csharp
-// 기본 서비스
+// 중앙 DI 구성으로 이전됨: DependencyInjectionConfigurator.ConfigureServices(services)
+// 핵심 서비스 예시
 services.AddSingleton<CsvConfigService>();
-services.AddSingleton<GdalInitializationService>();
-services.AddSingleton<GdalDataAnalysisService>();
-
-// 검수 서비스
-services.AddSingleton<GeometryValidationService>();
-services.AddSingleton<SchemaValidationService>();
 services.AddSingleton<QcErrorService>();
-
-// 프로세서
-services.AddSingleton<IRelationCheckProcessor, RelationCheckProcessor>();
-services.AddSingleton<IAttributeCheckProcessor, AttributeCheckProcessor>();
-
-// 통합 서비스
-services.AddSingleton<SimpleValidationService>();
+services.AddTransient<GdbDataProvider>();
+services.AddTransient<SqliteDataProvider>();
+services.AddSingleton<PerformanceSettings>(sp =>
+    sp.GetRequiredService<IConfigurationFactory>().CreateDefaultPerformanceSettings());
+services.AddSingleton<SystemResourceAnalyzer>();
+services.AddLogging(b =>
+{
+    b.AddConsole();
+    b.AddProvider(new FileLoggerProvider()); // UTF-8 BOM, 공유 읽기
+});
 ```
 
 ## 9. 보안 및 성능 고려사항
@@ -278,7 +275,7 @@ services.AddSingleton<SimpleValidationService>();
 1. **포괄적인 검수**: 6단계의 체계적 검수 프로세스
 2. **유연한 설정**: CSV 기반 검수 규칙 설정
 3. **성능 최적화**: GDAL 네이티브 성능 활용
-4. **상세한 보고서**: PDF/Excel 형식 지원
+4. **보고서**: PDF/HTML 일부 지원(Excel 미구현)
 5. **오류 추적**: QC_ERRORS 시스템으로 체계적 관리
 6. **확장 가능**: 새로운 검수 규칙 쉽게 추가
 

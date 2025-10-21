@@ -73,25 +73,13 @@ if (compactness < threshold)
 
 ## 4. QC_ERRORS 시스템
 
-### 4.1 오류 분류 체계
+### 4.1 오류 유형
 ```
 ErrType (오류 유형)
 ├── GEOM   : 지오메트리 오류
 ├── SCHEMA : 스키마 오류
 ├── REL    : 관계 오류
 └── ATTR   : 속성 오류
-
-Severity (심각도)
-├── CRIT   : 치명적 (레벨 4)
-├── MAJOR  : 주요 (레벨 3)
-├── MINOR  : 경미 (레벨 2)
-└── INFO   : 정보 (레벨 1)
-
-Status (상태)
-├── OPEN      : 열림
-├── FIXED     : 수정됨
-├── IGNORED   : 무시됨
-└── FALSE_POS : 오탐
 ```
 
 ### 4.2 오류 코드 체계
@@ -107,9 +95,9 @@ Status (상태)
   - 포인트 지오메트리를 생성할 수 있으면 `QC_Errors_Point`에 저장(지오메트리만 기록).
   - 포인트 지오메트리를 생성할 수 없으면 `QC_Errors_NoGeom`에 저장(0,0 좌표 폴백 금지).
 - 배치 저장
-  - 일부 경로에 기본 좌표(0,0) 폴백이 남아 있을 수 있음(개선 예정: 폴백 제거 및 `NoGeom` 분기 일원화).
+  - 좌표 (0,0) 폴백 로직은 제거되었습니다. 포인트 생성 불가 항목은 일괄적으로 `QC_Errors_NoGeom`으로 저장합니다.
 - 읽기 경로
-  - FGDB 스키마에 X/Y 필드가 없는 경우가 있어 속성 기반 X/Y는 0으로 조회될 수 있음(향후 스키마 보강 시 동기화 예정).
+  - 기본 위치 해석은 지오메트리/`GeometryWKT` 기반이며, X/Y 속성은 선택적입니다. 스키마에 X/Y 컬럼이 없는 경우 속성 기반 X/Y는 0으로 조회될 수 있습니다.
 
 ## 5. 성능 최적화 기법
 
@@ -156,7 +144,7 @@ private void ApplyOptimalSettings(SystemResourceInfo resourceInfo)
 
 ## 6. 보고서 생성
 
-### 6.1 PDF 보고서 (iTextSharp)
+### 6.1 PDF 보고서 (부분 구현)
 ```csharp
 // 표지
 document.Add(new Paragraph("공간데이터 검수 보고서"));
@@ -174,15 +162,11 @@ foreach (var stage in stages)
 }
 ```
 
-### 6.2 Excel 보고서 (EPPlus)
-- 요약 시트
-- 단계별 상세 시트
-- 오류 목록 시트
-- 통계 차트
+### 6.2 Excel 보고서 (미구현 - 계획)
+- 요약/단계별/오류 목록/통계 차트 구성을 계획하고 있으며, EPPlus 기반으로 구현 예정입니다.
 
-### 6.3 HTML 보고서
-- Chart.js와 같은 라이브러리를 활용하여 동적이고 상호작용이 가능한 웹 기반 보고서를 생성합니다.
-- 사용자는 브라우저에서 필터링, 정렬, 확대/축소 등의 기능을 통해 검수 결과를 심층적으로 분석할 수 있습니다.
+### 6.3 HTML 보고서 (부분 구현)
+- 기본 템플릿 및 요약 섹션이 제공되며, 심화 기능(차트/상호작용)은 단계적 확장 예정입니다.
 
 ## 7. 오류 위치 확인 및 수정 워크플로우(현재 GUI)
 
@@ -217,11 +201,6 @@ services.AddLogging(builder =>
 // ValidationDbContext
 protected override void OnModelCreating(ModelBuilder modelBuilder)
 {
-    // 복합 인덱스
-    modelBuilder.Entity<ValidationErrorEntity>()
-        .HasIndex(e => new { e.TableName, e.Severity })
-        .HasDatabaseName("IX_ValidationErrors_TableName_Severity");
-        
     // JSON 변환
     entity.Property(e => e.MetadataJson)
         .HasConversion(

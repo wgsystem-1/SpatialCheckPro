@@ -189,7 +189,7 @@ FileGDB 선택
 검수 설정 로드 (CSV)
     ↓
 (고성능 모드 활성화 시)
-FileGDB → 임시 SQLite 변환
+FileGDB → 임시 SQLite 변환 (현재 미구현)
     ↓
 SimpleValidationService
     ↓
@@ -199,7 +199,7 @@ QcError 생성 및 저장
     ↓
 검수 결과 집계
     ↓
-보고서 생성 (PDF/Excel/HTML)
+보고서 생성 (PDF/HTML, Excel 미구현)
 ```
 
 ## 7. 데이터 관리

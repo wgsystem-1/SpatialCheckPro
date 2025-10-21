@@ -223,7 +223,7 @@ namespace SpatialCheckPro.Services
             AddTableRow(summaryTable, "소요 시간", FormatTimeSpan(result.ProcessingTime), normalFont);
             AddTableRow(summaryTable, "검수 상태", result.IsValid ? "통과" : "실패", normalFont);
             AddTableRow(summaryTable, "총 오류", result.ErrorCount.ToString(), normalFont);
-            AddTableRow(summaryTable, "총 경고", result.WarningCount.ToString(), normalFont);
+            // 경고 항목 제거
 
             document.Add(summaryTable);
         }
@@ -242,7 +242,7 @@ namespace SpatialCheckPro.Services
             document.Add(sectionTitle);
 
             // 요약 정보
-            var summary = new Paragraph($"총 {result.TableResults.Count}개 테이블, 오류 {result.ErrorCount}개, 경고 {result.WarningCount}개", normalFont)
+            var summary = new Paragraph($"총 {result.TableResults.Count}개 테이블, 오류 {result.ErrorCount}개", normalFont)
             {
                 SpacingAfter = 10
             };
@@ -289,7 +289,7 @@ namespace SpatialCheckPro.Services
             document.Add(sectionTitle);
 
             // 요약 정보
-            var summary = new Paragraph($"처리 {result.ProcessedColumnCount}개, 스킵 {result.SkippedColumnCount}개, 오류 {result.ErrorCount}개, 경고 {result.WarningCount}개", normalFont)
+            var summary = new Paragraph($"처리 {result.ProcessedColumnCount}개, 스킵 {result.SkippedColumnCount}개, 오류 {result.ErrorCount}개", normalFont)
             {
                 SpacingAfter = 10
             };

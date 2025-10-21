@@ -128,10 +128,7 @@ namespace SpatialCheckPro.GUI.Views
                 Stage4Check.Unchecked += (_, __) => _filterDebounceTimer?.Start();
                 Stage5Check.Checked += (_, __) => _filterDebounceTimer?.Start();
                 Stage5Check.Unchecked += (_, __) => _filterDebounceTimer?.Start();
-                SeverityErrorCheck.Checked += (_, __) => _filterDebounceTimer?.Start();
-                SeverityErrorCheck.Unchecked += (_, __) => _filterDebounceTimer?.Start();
-                SeverityWarnCheck.Checked += (_, __) => _filterDebounceTimer?.Start();
-                SeverityWarnCheck.Unchecked += (_, __) => _filterDebounceTimer?.Start();
+                // 심각도 필터 제거
                 ClearFiltersButton.Click += (_, __) => ClearAdvancedFilters();
             }
             catch { /* 디자인 모드 등에서 컨트롤 없을 수 있음 */ }
@@ -185,15 +182,7 @@ namespace SpatialCheckPro.GUI.Views
             }
             if (!stageAllowed) return false;
 
-            // 심각도 체크(결과 항목에 명시적 Severity가 없으므로 ErrorType/메시지 키워드로 간접 판별)
-            var sevError = (SeverityErrorCheck?.IsChecked == true);
-            var sevWarn = (SeverityWarnCheck?.IsChecked == true);
-            if (sevError || sevWarn)
-            {
-                var isWarn = item.ErrorType.Contains("경고") || item.Message.Contains("경고");
-                if (sevError && isWarn) return false;
-                if (sevWarn && !isWarn) return false;
-            }
+            // 심각도 필터 제거됨
 
             return true;
         }
@@ -235,7 +224,7 @@ namespace SpatialCheckPro.GUI.Views
                 IncludeTextBox.Text = string.Empty;
                 ExcludeTextBox.Text = string.Empty;
                 Stage1Check.IsChecked = Stage2Check.IsChecked = Stage3Check.IsChecked = Stage4Check.IsChecked = Stage5Check.IsChecked = false;
-                SeverityErrorCheck.IsChecked = SeverityWarnCheck.IsChecked = false;
+                // 심각도 필터 제거됨
                 // 테이블 리스트 제거됨: 검색창만 초기화
                 TableFilterSearchBox.Text = string.Empty;
                 ApplyAdvancedFilter();

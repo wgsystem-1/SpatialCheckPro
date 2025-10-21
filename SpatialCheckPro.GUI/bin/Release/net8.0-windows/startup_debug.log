@@ -39,3 +39,9 @@
 [2025-10-21 11:30:22] MainWindow 생성자 시작
 [2025-10-21 11:30:23] DI 서비스 주입 완료 - ValidationService: True, QcErrorService: True, StageSummaryCollectionViewModel: True, AlertAggregationService: True
 [2025-10-21 11:30:23] DI 서비스 초기화 성공
+[2025-10-21 12:08:41] MainWindow 생성자 시작
+[2025-10-21 12:08:41] DI 서비스 주입 완료 - ValidationService: True, QcErrorService: True, StageSummaryCollectionViewModel: True, AlertAggregationService: True
+[2025-10-21 12:08:41] DI 서비스 초기화 성공
+[2025-10-21 15:56:29] MainWindow 생성자 시작
+[2025-10-21 15:56:30] DI 서비스 주입 완료 - ValidationService: True, QcErrorService: True, StageSummaryCollectionViewModel: True, AlertAggregationService: True
+[2025-10-21 15:56:30] DI 서비스 초기화 성공

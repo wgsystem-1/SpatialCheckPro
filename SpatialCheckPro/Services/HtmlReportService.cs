@@ -91,7 +91,6 @@ namespace SpatialCheckPro.Services
             html.AppendLine("        <div class='summary-card'>");
             html.AppendLine("            <h3>전체 요약</h3>");
             html.AppendLine($"            <p class='error'><strong>오류:</strong> {result.ErrorCount}개</p>");
-            html.AppendLine($"            <p class='warning'><strong>경고:</strong> {result.WarningCount}개</p>");
             html.AppendLine($"            <p><strong>상태:</strong> {(result.IsValid ? "통과" : "실패")}</p>");
             html.AppendLine("        </div>");
             html.AppendLine("    </div>");

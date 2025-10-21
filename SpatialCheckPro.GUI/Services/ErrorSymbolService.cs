@@ -63,16 +63,15 @@ namespace SpatialCheckPro.GUI.Services
                     Y = errorFeature.Y,
                     Shape = GetErrorTypeSymbol(errorFeature.ErrorType).ToString(),
                     Size = CalculateSymbolSize(_styleSettings.DefaultSymbolSize, zoomLevel),
-                    FillColor = GetSeverityColor(errorFeature.Severity),
+                    FillColor = Colors.Red,
                     IsVisible = true,
-                    ZIndex = GetZIndexBySeverity(errorFeature.Severity)
+                    ZIndex = 20
                 };
 
                 // 상태별 스타일 적용
-                var statusStyle = GetStatusStyle(errorFeature.Status);
-                symbol.StrokeColor = statusStyle.StrokeColor;
-                symbol.StrokeWidth = statusStyle.StrokeWidth;
-                symbol.Opacity = statusStyle.Opacity;
+                symbol.StrokeColor = Colors.Black;
+                symbol.StrokeWidth = 1.0;
+                symbol.Opacity = 1.0;
 
                 // 캐시에 저장
                 lock (_cacheLock)
@@ -90,8 +89,8 @@ namespace SpatialCheckPro.GUI.Services
                     }
                 }
 
-                _logger.LogDebug("심볼 생성 완료: {Id}, 심각도: {Severity}, 크기: {Size}", 
-                    errorFeature.Id, errorFeature.Severity, symbol.Size);
+                _logger.LogDebug("심볼 생성 완료: {Id}, 크기: {Size}", 
+                    errorFeature.Id, symbol.Size);
 
                 return symbol;
             }

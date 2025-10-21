@@ -598,6 +598,8 @@ namespace SpatialCheckPro.Services
                 fieldDefn.SetWidth(1024);
                 layer.CreateField(fieldDefn, 1);
                 
+                // Severity/Status 필드는 사용하지 않으므로 생성하지 않음
+                
                 _logger.LogInformation("QC_ERRORS 레이어 생성 완료 (단순화된 스키마): {LayerName}", layerName);
                 return layer;
             }

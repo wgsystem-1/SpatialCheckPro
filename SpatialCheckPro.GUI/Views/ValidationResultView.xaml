@@ -1195,13 +1195,7 @@
                                                 <CheckBox x:Name="Stage5Check" Content="5"/>
                                             </UniformGrid>
                                         </StackPanel>
-                                        <StackPanel Orientation="Horizontal" Margin="0,0,16,0">
-                                            <TextBlock Text="심각도" Style="{StaticResource CaptionText}" Margin="0,0,8,0"/>
-                                            <UniformGrid Rows="1" Columns="2" Width="120">
-                                                <CheckBox x:Name="SeverityErrorCheck" Content="오류"/>
-                                                <CheckBox x:Name="SeverityWarnCheck" Content="경고"/>
-                                            </UniformGrid>
-                                        </StackPanel>
+                                        <!-- 심각도 필터 제거 -->
                                     </StackPanel>
 
                                     <!-- 테이블 리스트 제거: 검색창만 사용 -->

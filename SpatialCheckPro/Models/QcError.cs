@@ -24,15 +24,9 @@ namespace SpatialCheckPro.Models
         /// </summary>
         public string ErrCode { get; set; } = string.Empty;
 
-        /// <summary>
-        /// 심각도 (CRIT, MAJOR, MINOR, INFO)
-        /// </summary>
+        // Severity/Status 필드는 문서 정책 변경에 따라 미사용
         public string Severity { get; set; } = string.Empty;
-
-        /// <summary>
-        /// 상태 (OPEN, FIXED, IGNORED, FALSE_POS)
-        /// </summary>
-        public string Status { get; set; } = "OPEN";
+        public string Status { get; set; } = string.Empty;
 
         /// <summary>
         /// 규칙 ID (내부 규칙 식별자)
@@ -161,30 +155,17 @@ namespace SpatialCheckPro.Models
         /// <summary>
         /// 오류 심각도 레벨 (숫자)
         /// </summary>
-        public int SeverityLevel
-        {
-            get
-            {
-                return Severity switch
-                {
-                    "CRIT" => 4,
-                    "MAJOR" => 3,
-                    "MINOR" => 2,
-                    "INFO" => 1,
-                    _ => 0
-                };
-            }
-        }
+        public int SeverityLevel => 0;
 
         /// <summary>
         /// 오류가 해결되었는지 여부
         /// </summary>
-        public bool IsResolved => Status == "FIXED" || Status == "IGNORED";
+        public bool IsResolved => false;
 
         /// <summary>
         /// 오류가 활성 상태인지 여부
         /// </summary>
-        public bool IsActive => Status == "OPEN";
+        public bool IsActive => true;
 
         /// <summary>
         /// 오류 유형의 표시명을 가져옵니다
@@ -204,32 +185,12 @@ namespace SpatialCheckPro.Models
         /// <summary>
         /// 심각도의 표시명을 가져옵니다
         /// </summary>
-        public string GetSeverityDisplayName()
-        {
-            return Severity switch
-            {
-                "CRIT" => "치명적",
-                "MAJOR" => "주요",
-                "MINOR" => "경미",
-                "INFO" => "정보",
-                _ => Severity
-            };
-        }
+        public string GetSeverityDisplayName() => string.Empty;
 
         /// <summary>
         /// 상태의 표시명을 가져옵니다
         /// </summary>
-        public string GetStatusDisplayName()
-        {
-            return Status switch
-            {
-                "OPEN" => "열림",
-                "FIXED" => "수정됨",
-                "IGNORED" => "무시됨",
-                "FALSE_POS" => "오탐",
-                _ => Status
-            };
-        }
+        public string GetStatusDisplayName() => string.Empty;
 
         /// <summary>
         /// 오류 유형에 따른 색상을 가져옵니다
@@ -266,7 +227,6 @@ namespace SpatialCheckPro.Models
         /// </summary>
         public void ChangeStatus(string newStatus)
         {
-            Status = newStatus;
             UpdatedUTC = DateTime.UtcNow;
         }
 

@@ -141,7 +141,7 @@ namespace SpatialCheckPro.Services
                     qcErrorsGdbPath, string.Join(", ", severities));
 
                 var allErrors = await _qcErrorService.GetQcErrorsAsync(qcErrorsGdbPath, null);
-                var filteredErrors = allErrors.Where(e => severities.Contains(e.Severity)).ToList();
+                var filteredErrors = allErrors.ToList(); // Severity 필터 폐지
                 
                 _logger.LogInformation("심각도별 QC_ERRORS 데이터 로딩 완료: {Count}개", filteredErrors.Count);
                 return filteredErrors;
@@ -204,10 +204,8 @@ namespace SpatialCheckPro.Services
 
                 if (allErrors.Any())
                 {
-                    // 심각도별 개수
-                    statistics.SeverityCounts = allErrors
-                        .GroupBy(e => e.Severity)
-                        .ToDictionary(g => g.Key, g => g.Count());
+                    // 심각도별 통계는 비활성화(오류 유형 중심)
+                    statistics.SeverityCounts = new Dictionary<string, int>();
 
                     // 오류 타입별 개수
                     statistics.ErrorTypeCounts = allErrors

@@ -36,15 +36,7 @@
                 </UniformGrid>
             </GroupBox>
 
-            <!-- 성능 모드 -->
-            <GroupBox Header="성능 모드" Grid.Row="3" Margin="0 10 0 0" Padding="10">
-                <StackPanel>
-                    <CheckBox x:Name="HighPerformanceModeCheckBox" 
-                              Content="고성능 모드 활성화 (SQLite 사용, 대용량 파일에 권장)"
-                              IsChecked="{Binding EnableHighPerformanceMode, Mode=TwoWay}"
-                              ToolTip="검수 대상 FileGDB를 임시 고속 데이터베이스로 변환하여 검수 속도를 향상시킵니다. 초기 변환 시간이 소요될 수 있습니다."/>
-                </StackPanel>
-            </GroupBox>
+            <!-- 성능 모드 UI 제거: 고성능 모드는 자동 판단에 의해 동작 -->
 
             <!-- 설정 미리보기 탭 (디자인 스타일 적용) -->
             <GroupBox Header="설정 미리보기 (체크 해제 시 해당 행 스킵)" Margin="0,0,0,15" Padding="10">

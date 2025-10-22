@@ -264,7 +264,7 @@ namespace SpatialCheckPro.Services
                         var item = items[i];
                         var index = i;
 
-                        var task = ProcessItemWithSemaphoreAsync(item, processor, semaphore, index, items.Count, progress, operationName);
+                        var task = ProcessItemWithSemaphoreAsync(item, processor, semaphore, index, items.Count, progress, operationName, operationId);
                         tasks.Add(task);
                     }
 
@@ -332,7 +332,7 @@ namespace SpatialCheckPro.Services
                         var rule = rules[i];
                         var index = i;
 
-                        var task = ProcessItemWithSemaphoreAsync(rule, ruleProcessor, semaphore, index, rules.Count, progress, operationName);
+                        var task = ProcessItemWithSemaphoreAsync(rule, ruleProcessor, semaphore, index, rules.Count, progress, operationName, operationId);
                         tasks.Add(task);
                     }
 
@@ -370,7 +370,8 @@ namespace SpatialCheckPro.Services
             int index,
             int totalCount,
             IProgress<string>? progress,
-            string operationName)
+            string operationName,
+            string? operationId = null)
         {
             await semaphore.WaitAsync();
             
@@ -380,9 +381,11 @@ namespace SpatialCheckPro.Services
                 
                 var result = await processor(item);
                 
-                // 성능 모니터링 업데이트 (operationId가 있는 경우에만)
-                var operationId = $"{operationName}_{Guid.NewGuid():N}";
-                _performanceMonitor?.UpdateProgress(operationId, index + 1, totalCount);
+                // 성능 모니터링 업데이트 (상위에서 전달된 동일 operationId 사용)
+                if (operationId != null)
+                {
+                    _performanceMonitor?.UpdateProgress(operationId, index + 1, totalCount);
+                }
                 
                 return result;
             }

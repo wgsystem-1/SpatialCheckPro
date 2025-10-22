@@ -45,3 +45,21 @@
 [2025-10-21 15:56:29] MainWindow 생성자 시작
 [2025-10-21 15:56:30] DI 서비스 주입 완료 - ValidationService: True, QcErrorService: True, StageSummaryCollectionViewModel: True, AlertAggregationService: True
 [2025-10-21 15:56:30] DI 서비스 초기화 성공
+[2025-10-22 07:12:52] MainWindow 생성자 시작
+[2025-10-22 07:12:52] DI 서비스 주입 완료 - ValidationService: True, QcErrorService: True, StageSummaryCollectionViewModel: True, AlertAggregationService: True
+[2025-10-22 07:12:52] DI 서비스 초기화 성공
+[2025-10-22 09:50:51] MainWindow 생성자 시작
+[2025-10-22 09:50:51] DI 서비스 주입 완료 - ValidationService: True, QcErrorService: True, StageSummaryCollectionViewModel: True, AlertAggregationService: True
+[2025-10-22 09:50:51] DI 서비스 초기화 성공
+[2025-10-22 09:51:07] MainWindow 생성자 시작
+[2025-10-22 09:51:07] DI 서비스 주입 완료 - ValidationService: True, QcErrorService: True, StageSummaryCollectionViewModel: True, AlertAggregationService: True
+[2025-10-22 09:51:07] DI 서비스 초기화 성공
+[2025-10-22 10:19:13] MainWindow 생성자 시작
+[2025-10-22 10:19:14] DI 서비스 주입 완료 - ValidationService: True, QcErrorService: True, StageSummaryCollectionViewModel: True, AlertAggregationService: True
+[2025-10-22 10:19:14] DI 서비스 초기화 성공
+[2025-10-22 10:48:40] MainWindow 생성자 시작
+[2025-10-22 10:48:40] DI 서비스 주입 완료 - ValidationService: True, QcErrorService: True, StageSummaryCollectionViewModel: True, AlertAggregationService: True
+[2025-10-22 10:48:40] DI 서비스 초기화 성공
+[2025-10-22 12:15:00] MainWindow 생성자 시작
+[2025-10-22 12:15:00] DI 서비스 주입 완료 - ValidationService: True, QcErrorService: True, StageSummaryCollectionViewModel: True, AlertAggregationService: True
+[2025-10-22 12:15:00] DI 서비스 초기화 성공

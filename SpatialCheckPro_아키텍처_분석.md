@@ -115,11 +115,21 @@ IAttributeCheckProcessor  → AttributeCheckProcessor
 - **ConditionalRuleEngine / ExpressionEngine**: 표현식과 조건에 기반한 동적 규칙을 실행하여 복잡한 검수 시나리오를 지원합니다.
 - **IValidationDataProvider**: 데이터 소스 접근을 추상화하는 인터페이스. (`GdbDataProvider`, `SqliteDataProvider` 구현체 포함)
 - **GdbToSqliteConverter**: 고성능 모드에서 FileGDB를 임시 SQLite DB로 변환하여 쿼리 속도를 높입니다.
+  - `SqliteDataProvider`는 OGR을 통해 SpatiaLite를 직접 열어 `Feature`/`FieldDefn`을 그대로 제공하여 상위 로직 호환성을 확보합니다.
 - **ValidationHistoryService**: 이전 검수 이력을 조회하고 관리하는 서비스.
+
+/// <summary>
+/// GdbToSqliteConverter 개선 사항
+/// </summary>
+- 자동 고성능 모드: 파일 크기(기본 1GB) 또는 총 피처 수(기본 50만) 임계 초과 시 활성화
+- 변환 파이프라인: SpatiaLite 초기화 → 속성/지오메트리 스키마 생성 → 배치 Insert(GeomFromWKB) → 공통 인덱스 및 공간 인덱스 생성
+- 안정성: 변환 실패 또는 확장 로드 실패 시 GDB 직접 모드로 자동 폴백
+- 수명주기: `%TEMP%/spatialcheckpro_<GUID>.sqlite` 생성, 검수 종료 시 자동 삭제
+- 배포: `mod_spatialite.dll` 및 의존 DLL을 `runtimes/win-x64/native` 또는 `ThirdParty/SpatiaLite/win-x64`에 포함, 로더가 위 경로와 실행 폴더, 기본명 순으로 탐색
 
 #### 5.2.3 성능 및 자원 관리 서비스
 - **StageParallelProcessingManager**: 독립적인 검수 단계를 병렬로 실행하여 전체 검수 시간을 단축합니다.
-- **AdvancedParallelProcessingManager**: 테이블 또는 피처 단위의 데이터 병렬 처리를 관리하여 검수 속도를 높입니다.
+- **AdvancedParallelProcessingManager**: 파일/단계/테이블/규칙 레벨 병렬 처리와 IO/CPU 유형별 병렬도 산정, 상위에서 할당한 `operationId`를 사용해 일관된 진행률/성능 집계를 제공합니다.
 - **CentralizedResourceMonitor / SystemResourceAnalyzer**: 시스템의 CPU 및 메모리 사용량을 모니터링하여 최적의 병렬 처리 수준과 배치 크기를 동적으로 결정합니다.
 - **AdvancedMemoryManager**: 메모리 사용량을 추적하고 최적화하여 대용량 파일 처리 시 안정성을 확보합니다.
 - **DataSourcePool**: GDAL DataSource 객체를 풀링하여 재사용함으로써 파일 I/O 오버헤드를 줄입니다.
@@ -127,7 +137,7 @@ IAttributeCheckProcessor  → AttributeCheckProcessor
 - **DataCacheService / LruCache**: 자주 사용하는 데이터를 캐싱하여 디스크 접근을 최소화합니다.
 
 #### 5.2.4 보고서 및 감사 서비스
-- **ReportService**: 검수 결과를 종합하여 보고서 생성을 총괄합니다. (`PdfReportService`, `HtmlReportService` 포함, Excel 미구현)
+- **ReportService**: 검수 결과를 종합하여 보고서 생성을 총괄합니다. (`PdfReportService`, `HtmlReportService` 포함. Excel 보고서는 공식적으로 지원하지 않습니다.)
 - **AuditLogService**: 사용자의 주요 행위와 시스템 이벤트를 기록하여 추적 및 감사를 지원합니다.
 
 #### 5.2.5 GUI 특화 서비스

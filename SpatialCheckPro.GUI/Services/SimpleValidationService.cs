@@ -453,14 +453,43 @@ namespace SpatialCheckPro.GUI.Services
 
                 cancellationToken.ThrowIfCancellationRequested();
 
+                // 자동 고성능 모드 판단 (UI 토글 없이 파일 크기/피처 수 기준)
+                if (_performanceSettings.EnableAutoHighPerformanceMode)
+                {
+                    try
+                    {
+                        var autoDecision = await ShouldEnableHighPerformanceModeAsync(filePath, cancellationToken);
+                        if (autoDecision)
+                        {
+                            useHighPerformanceMode = true;
+                            _logger.LogInformation("자동 고성능 모드 활성화: 기준 충족");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "자동 고성능 모드 판단 중 경고");
+                    }
+                }
+
                 if (useHighPerformanceMode)
                 {
-                    var stopwatch = Stopwatch.StartNew();
-                    tempSqliteFile = await _gdbToSqliteConverter.ConvertAsync(filePath);
-                    validationDataSourcePath = tempSqliteFile;
-                    stopwatch.Stop();
-                    _logger.LogInformation("GDB -> SQLite 변환 완료: {Duration} 소요", stopwatch.Elapsed);
-                    dataProvider = _serviceProvider.GetRequiredService<SqliteDataProvider>();
+                    try
+                    {
+                        var stopwatch = Stopwatch.StartNew();
+                        tempSqliteFile = await _gdbToSqliteConverter.ConvertAsync(filePath);
+                        validationDataSourcePath = tempSqliteFile;
+                        stopwatch.Stop();
+                        _logger.LogInformation("GDB -> SQLite 변환 완료: {Duration} 소요", stopwatch.Elapsed);
+                        dataProvider = _serviceProvider.GetRequiredService<SqliteDataProvider>();
+                    }
+                    catch (Exception ex)
+                    {
+                        // 변환 실패 시 폴백: GDB 직접 모드
+                        _logger.LogWarning(ex, "GDB -> SQLite 변환 실패, GDB 직접 모드로 폴백합니다.");
+                        useHighPerformanceMode = false;
+                        validationDataSourcePath = filePath;
+                        dataProvider = _serviceProvider.GetRequiredService<GdbDataProvider>();
+                    }
                 }
                 else
                 {
@@ -586,6 +615,71 @@ namespace SpatialCheckPro.GUI.Services
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// 파일 크기와 총 피처 수를 기준으로 고성능 모드 활성화 필요 여부를 판단합니다
+        /// </summary>
+        private async Task<bool> ShouldEnableHighPerformanceModeAsync(string filePath, System.Threading.CancellationToken cancellationToken)
+        {
+            try
+            {
+                // 파일 크기 기준 체크 (폴더형 GDB의 경우 폴더 내 파일들의 총합)
+                long totalSize = 0;
+                if (Directory.Exists(filePath))
+                {
+                    foreach (var f in Directory.EnumerateFiles(filePath, "*.*", SearchOption.TopDirectoryOnly))
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        try { totalSize += new FileInfo(f).Length; } catch { }
+                    }
+                }
+                else if (File.Exists(filePath))
+                {
+                    totalSize = new FileInfo(filePath).Length;
+                }
+
+                if (totalSize >= _performanceSettings.HighPerformanceModeSizeThresholdBytes)
+                {
+                    _logger.LogInformation("자동 HP 판단: 파일 크기 임계 초과({Size} bytes)", totalSize);
+                    return true;
+                }
+
+                // 총 피처 수 기준 체크 (GDAL로 빠른 카운트)
+                long totalFeatures = 0;
+                var ds = _dataSourcePool.GetDataSource(filePath);
+                try
+                {
+                    if (ds != null)
+                    {
+                        for (int i = 0; i < ds.GetLayerCount(); i++)
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+                            using var layer = ds.GetLayerByIndex(i);
+                            if (layer != null)
+                            {
+                                totalFeatures += layer.GetFeatureCount(1);
+                                if (totalFeatures >= _performanceSettings.HighPerformanceModeFeatureThreshold)
+                                {
+                                    _logger.LogInformation("자동 HP 판단: 피처 수 임계 초과({Count}개)", totalFeatures);
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    if (ds != null) _dataSourcePool.ReturnDataSource(filePath, ds);
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "자동 고성능 모드 판단 실패 - 기본값(비활성화) 적용");
+                return false;
+            }
         }
 
         /// <summary>

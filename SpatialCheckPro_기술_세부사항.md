@@ -101,12 +101,31 @@ ErrType (오류 유형)
 
 ## 5. 성능 최적화 기법
 
-### 5.1 고성능 모드
-- 향후 확장 항목으로 검토 가능합니다.
+### 5.1 고성능 모드 (자동 전환)
+- 파일 크기(기본 1GB) 또는 총 피처 수(기본 50만) 임계 초과 시 자동으로 활성화됩니다.
+- 활성화되면 `GdbToSqliteConverter`가 FileGDB를 임시 SpatiaLite(SQLite) DB로 변환합니다.
+- 변환 실패 또는 SpatiaLite 확장 로드 실패 시 GDB 직접 모드로 자동 폴백합니다.
+
+#### 5.1.1 변환 파이프라인
+- SpatiaLite 초기화: `EnableExtensions(true)`, `load_extension(mod_spatialite)`, `InitSpatialMetaData(1)`
+- 스키마 생성: 속성 컬럼 생성, `AddGeometryColumn(geom)` 적용
+- 데이터 적재: OGR 피처를 WKB로 추출하여 `GeomFromWKB(@wkb, @srid)`로 삽입 (트랜잭션/배치)
+- 인덱싱: OBJECTID/FID/ID/KEY/CODE 등의 후보 컬럼 인덱스와 `CreateSpatialIndex(table, 'geom')` 생성
+
+#### 5.1.2 수명주기/정리
+- 임시 DB는 `%TEMP%/spatialcheckpro_<GUID>.sqlite`에 생성되고, 검수 종료 시 자동 삭제됩니다.
+
+#### 5.1.3 배포 고려사항
+- `mod_spatialite.dll` 및 의존 DLL을 실행 폴더 하위(`runtimes/win-x64/native` 또는 `ThirdParty/SpatiaLite/win-x64`)에 포함해야 합니다.
+- 로더는 위 경로와 실행 폴더, 기본명 순으로 로드 시도합니다.
+
+#### 5.1.4 SQLite 데이터 접근 (OGR 기반)
+- 고성능 모드에서 생성된 SpatiaLite DB 접근은 `SqliteDataProvider`가 OGR로 직접 엽니다.
+- 이로써 `GdbDataProvider`와 동일하게 OGR `Feature`, `FieldDefn`을 반환하며 상위 프로세서와의 호환성을 유지합니다.
 
 ### 5.2 다차원 병렬 처리 및 모니터링
 - **단계 병렬 처리**: `StageParallelProcessingManager`를 사용하여 상호 의존성이 없는 검수 단계(예: 테이블 검사, 속성 관계 검사)를 동시에 실행합니다.
-- **데이터 병렬 처리**: `AdvancedParallelProcessingManager`를 사용하여 단일 검수 작업 내에서 테이블 또는 피처(Feature) 청크를 여러 스레드에 분배하여 처리합니다.
+- **데이터 병렬 처리**: `AdvancedParallelProcessingManager`를 사용하여 파일/단계/테이블/규칙 레벨에서 워크로드 유형(IO/CPU)에 맞춘 병렬도를 적용합니다. 개별 항목 진행률은 상위 `operationId`를 공유해 일관되게 집계됩니다.
 - **병렬 처리 모니터링**: `ParallelPerformanceMonitor`와 `ParallelErrorHandler`를 통해 병렬 작업의 성능을 추적하고 발생하는 오류를 안정적으로 관리합니다.
 
 ### 5.3 동적 리소스 모니터링 및 최적화
@@ -152,8 +171,8 @@ foreach (var stage in stages)
 }
 ```
 
-### 6.2 Excel 보고서 (미구현 - 계획)
-- 요약/단계별/오류 목록/통계 차트 구성을 계획하고 있으며, EPPlus 기반으로 구현 예정입니다.
+### 6.2 Excel 보고서
+- 본 프로젝트에서는 Excel 보고서를 공식적으로 지원하지 않습니다.
 
 ### 6.3 HTML 보고서 (부분 구현)
 - 기본 템플릿 및 요약 섹션이 제공되며, 심화 기능(차트/상호작용)은 단계적 확장 예정입니다.

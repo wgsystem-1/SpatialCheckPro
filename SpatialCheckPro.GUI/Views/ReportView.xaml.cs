@@ -319,6 +319,37 @@ namespace SpatialCheckPro.GUI.Views
             html.AppendLine($"        <p><strong>생성일시:</strong> {DateTime.Now:yyyy년 MM월 dd일 HH:mm:ss}</p>");
             html.AppendLine($"        <p><strong>검수 대상:</strong> {Path.GetFileName(_currentValidationResult.TargetFile)}</p>");
             
+            // 파일 메타데이터 (옵션)
+            if (IncludeMetadataCheck.IsChecked == true)
+            {
+                try
+                {
+                    html.AppendLine("        <details open><summary>📂 파일 메타데이터</summary>");
+                    html.AppendLine("        <div class='table-wrap'>");
+                    html.AppendLine("        <table class='table-results'>");
+                    html.AppendLine("            <tbody>");
+                    if (File.Exists(_currentValidationResult.TargetFile))
+                    {
+                        var fi = new FileInfo(_currentValidationResult.TargetFile);
+                        html.AppendLine($"                <tr><th>파일 크기</th><td>{fi.Length:N0} bytes</td></tr>");
+                        html.AppendLine($"                <tr><th>생성일</th><td>{fi.CreationTime:yyyy-MM-dd HH:mm:ss}</td></tr>");
+                        html.AppendLine($"                <tr><th>수정일</th><td>{fi.LastWriteTime:yyyy-MM-dd HH:mm:ss}</td></tr>");
+                    }
+                    else if (Directory.Exists(_currentValidationResult.TargetFile))
+                    {
+                        var di = new DirectoryInfo(_currentValidationResult.TargetFile);
+                        var files = di.GetFiles("*", SearchOption.AllDirectories);
+                        html.AppendLine($"                <tr><th>포함된 파일 수</th><td>{files.Length}개</td></tr>");
+                        html.AppendLine($"                <tr><th>수정일</th><td>{di.LastWriteTime:yyyy-MM-dd HH:mm:ss}</td></tr>");
+                    }
+                    html.AppendLine("            </tbody>");
+                    html.AppendLine("        </table>");
+                    html.AppendLine("        </div>");
+                    html.AppendLine("        </details>");
+                }
+                catch { /* 안전 폴백 */ }
+            }
+            
             // 검수 요약
             if (IncludeSummaryCheck.IsChecked == true)
             {
@@ -352,6 +383,53 @@ namespace SpatialCheckPro.GUI.Views
             html.AppendLine("          <h2>📈 검수 결과 대시보드</h2>");
             html.AppendLine("          <p class='muted'>검수 결과 요약을 한눈에 확인하세요</p>");
             html.AppendLine("          <div class='info-grid'>");
+            // 0단계: FileGDB 완전성 검수 결과
+            if (_currentValidationResult.FileGdbCheckResult != null)
+            {
+                var f0 = _currentValidationResult.FileGdbCheckResult;
+                html.AppendLine("        <h2>🧰 0단계 FileGDB 완전성 검수</h2>");
+                html.AppendLine("        <div class='summary'>");
+                html.AppendLine($"            <div><span class='label'>검수 상태</span> <span class='value'>{f0.Status}</span></div>");
+                // CheckResult에는 Message 필드가 없으므로 메타데이터나 상태만 노출
+                html.AppendLine("        </div>");
+                
+                // 오류/경고 상세 (옵션 적용)
+                var includeErrors = IncludeErrorsCheck.IsChecked == true;
+                var includeWarnings = IncludeWarningsCheck.IsChecked == true;
+                if (includeErrors && f0.Errors != null && f0.Errors.Any())
+                {
+                    html.AppendLine("        <details open><summary>0단계 오류 상세</summary>");
+                    html.AppendLine("        <div class='table-wrap'>");
+                    html.AppendLine("        <table class='table-results'><thead><tr><th>테이블명</th><th>객체ID</th><th>오류코드</th><th>메시지</th></tr></thead><tbody>");
+                    foreach (var e in f0.Errors)
+                    {
+                        html.AppendLine("            <tr>");
+                        html.AppendLine($"                <td>{System.Net.WebUtility.HtmlEncode(e.TableName ?? string.Empty)}</td>");
+                        html.AppendLine($"                <td>{System.Net.WebUtility.HtmlEncode(e.FeatureId ?? string.Empty)}</td>");
+                        html.AppendLine($"                <td>{System.Net.WebUtility.HtmlEncode(e.ErrorCode ?? string.Empty)}</td>");
+                        html.AppendLine($"                <td>{System.Net.WebUtility.HtmlEncode(e.Message ?? string.Empty)}</td>");
+                        html.AppendLine("            </tr>");
+                    }
+                    html.AppendLine("        </tbody></table></div></details>");
+                }
+                if (includeWarnings && f0.Warnings != null && f0.Warnings.Any())
+                {
+                    html.AppendLine("        <details><summary>0단계 경고 상세</summary>");
+                    html.AppendLine("        <div class='table-wrap'>");
+                    html.AppendLine("        <table class='table-results'><thead><tr><th>테이블명</th><th>객체ID</th><th>코드</th><th>메시지</th></tr></thead><tbody>");
+                    foreach (var w in f0.Warnings)
+                    {
+                        html.AppendLine("            <tr>");
+                        html.AppendLine($"                <td>{System.Net.WebUtility.HtmlEncode(w.TableName ?? string.Empty)}</td>");
+                        html.AppendLine($"                <td>{System.Net.WebUtility.HtmlEncode(w.FeatureId ?? string.Empty)}</td>");
+                        html.AppendLine($"                <td>{System.Net.WebUtility.HtmlEncode(w.ErrorCode ?? string.Empty)}</td>");
+                        html.AppendLine($"                <td>{System.Net.WebUtility.HtmlEncode(w.Message ?? string.Empty)}</td>");
+                        html.AppendLine("            </tr>");
+                    }
+                    html.AppendLine("        </tbody></table></div></details>");
+                }
+            }
+
             // 1단계
             if (_currentValidationResult.TableCheckResult != null)
             {
@@ -661,13 +739,38 @@ namespace SpatialCheckPro.GUI.Views
                     html.AppendLine($"            <div style='margin-top:8px'><span class='label'>메시지</span> <span class='value'>{System.Net.WebUtility.HtmlEncode(attrStage.Message)}</span></div>");
                 }
                 html.AppendLine("        </div>");
+                
+                // 검사된 규칙 수
+                try
+                {
+                    var ruleCount = 0;
+                    if (attrStage.ProcessedRulesCount > 0)
+                    {
+                        ruleCount = attrStage.ProcessedRulesCount;
+                    }
+                    else
+                    {
+                        // 설정 파일에서 규칙 수를 추정(경로를 알 수 없으므로 결과 내 Errors/Warnings 기준 보정)
+                        ruleCount = Math.Max(
+                            Math.Max(attrStage.Errors?.Count ?? 0, 0),
+                            Math.Max(attrStage.Warnings?.Count ?? 0, 0));
+                    }
+                    html.AppendLine($"        <div class='info-grid' style='margin:8px 0 12px 0'>");
+                    html.AppendLine($"            <div class='info-item'><div class='label'>검사된 규칙</div><div class='value'>{ruleCount}</div></div>");
+                    html.AppendLine($"            <div class='info-item'><div class='label'>속성 관계 오류</div><div class='value error'>{attrStage.ErrorCount}</div></div>");
+                    html.AppendLine($"            <div class='info-item'><div class='label'>경고 합계</div><div class='value' style='color:#b45309'>{attrStage.WarningCount}</div></div>");
+                    html.AppendLine($"        </div>");
+                }
+                catch { /* 안전 폴백 */ }
 
-                // 상세 그리드 (경고 포함 모든 메시지)
+                // 상세 그리드 (옵션 반영)
                 if ((attrStage.Errors != null && attrStage.Errors.Any()) || (attrStage.Warnings != null && attrStage.Warnings.Any()))
                 {
+                    var includeErrors = IncludeErrorsCheck.IsChecked == true;
+                    var includeWarnings = IncludeWarningsCheck.IsChecked == true;
                     var allAttr = new System.Collections.Generic.List<SpatialCheckPro.Models.ValidationError>();
-                    if (attrStage.Errors != null) allAttr.AddRange(attrStage.Errors);
-                    if (attrStage.Warnings != null) allAttr.AddRange(attrStage.Warnings);
+                    if (includeErrors && attrStage.Errors != null) allAttr.AddRange(attrStage.Errors);
+                    if (includeWarnings && attrStage.Warnings != null) allAttr.AddRange(attrStage.Warnings);
 
                     html.AppendLine("        <details open><summary>속성 관계 상세 표 보기/접기</summary>");
                     html.AppendLine("        <div class='toolbar'>");
@@ -710,13 +813,13 @@ namespace SpatialCheckPro.GUI.Views
             {
                 var rel = _currentValidationResult.RelationCheckResult;
                 html.AppendLine("        <h2>🔗 5단계 공간 관계 검수 결과</h2>");
-                html.AppendLine("        <div class='summary'>");
-                html.AppendLine($"            <div><span class='label'>검수 상태</span> <span class='value'>{(rel.IsValid ? "성공" : "실패")}</span></div>");
-                html.AppendLine($"            <div style='margin-top:8px'><span class='label'>처리 시간</span> <span class='value'>{rel.ProcessingTime.TotalSeconds:F1}초</span></div>");
-                if (!string.IsNullOrWhiteSpace(rel.Message))
-                {
-                    html.AppendLine($"            <div style='margin-top:8px'><span class='label'>메시지</span> <span class='value'>{System.Net.WebUtility.HtmlEncode(rel.Message)}</span></div>");
-                }
+                // 3칸 요약 카드
+                html.AppendLine("        <div class='info-grid' style='margin:8px 0 12px 0'>");
+                // 검사된 규칙 수 산정: RelationConfigs 수를 결과에서 직접 알 수 없으므로 오류 개수와 상태를 보정 값으로 사용
+                var processedRules = rel.ProcessedRulesCount > 0 ? rel.ProcessedRulesCount : Math.Max(1, rel.Errors?.Select(e => e.Metadata != null && e.Metadata.ContainsKey("RuleId") ? e.Metadata["RuleId"] : null).Distinct().Count() ?? 1);
+                html.AppendLine($"            <div class='info-item'><div class='label'>검사된 규칙</div><div class='value'>{processedRules}</div></div>");
+                html.AppendLine($"            <div class='info-item'><div class='label'>공간 관계 오류</div><div class='value error'>{rel.ErrorCount}</div></div>");
+                html.AppendLine($"            <div class='info-item'><div class='label'>검수 상태</div><div class='value'>{(rel.IsValid ? "성공" : "실패")}</div></div>");
                 html.AppendLine("        </div>");
 
                 if (rel.Errors != null && rel.Errors.Any())
@@ -725,6 +828,12 @@ namespace SpatialCheckPro.GUI.Views
 
                     if (spatial.Any())
                     {
+                        if (IncludeErrorsCheck.IsChecked != true)
+                        {
+                            // 오류 표시 비활성화 시 공간 오류 표를 생략
+                        }
+                        else
+                        {
                         html.AppendLine("        <details open><summary>공간 관계 오류 상세</summary>");
                         html.AppendLine("        <div class='toolbar'>");
                         html.AppendLine("          <input class='search' placeholder='검색(레이어/오류/메시지)' oninput=\"filterTable('tbl-stage5-spatial',this.value)\">");
@@ -757,6 +866,39 @@ namespace SpatialCheckPro.GUI.Views
                         html.AppendLine("        </table>");
                         html.AppendLine("        </div>");
                         html.AppendLine("        </details>");
+                        }
+                    }
+                    
+                    // (옵션) 5단계에서 수집된 비공간(속성) 오류도 표시
+                    var includeWarnings = IncludeWarningsCheck.IsChecked == true; // Relation의 경고는 거의 없지만 플래그 유지
+                    var includeErrors = IncludeErrorsCheck.IsChecked == true;
+                    var attrFromRel = rel.Errors.Where(e => string.IsNullOrWhiteSpace(e.ErrorCode) || !e.ErrorCode.StartsWith("REL_", StringComparison.OrdinalIgnoreCase)).ToList();
+                    if (includeErrors && attrFromRel.Any())
+                    {
+                        html.AppendLine("        <details><summary>속성 관계 오류(관계 단계 수집) 상세</summary>");
+                        html.AppendLine("        <div class='table-wrap'>");
+                        html.AppendLine("        <table id='tbl-stage5-attr' class='table-results' data-sort-dir='asc'>");
+                        html.AppendLine("            <thead><tr>");
+                        html.AppendLine("                <th class='th-sort' onclick=\"sortTable('tbl-stage5-attr',0,'text')\">테이블명</th>");
+                        html.AppendLine("                <th class='th-sort' onclick=\"sortTable('tbl-stage5-attr',1,'text')\">필드명</th>");
+                        html.AppendLine("                <th class='th-sort' onclick=\"sortTable('tbl-stage5-attr',2,'text')\">코드</th>");
+                        html.AppendLine("                <th class='th-sort' onclick=\"sortTable('tbl-stage5-attr',3,'num')\">객체ID</th>");
+                        html.AppendLine("                <th class='th-sort' onclick=\"sortTable('tbl-stage5-attr',4,'text')\">메시지</th>");
+                        html.AppendLine("            </tr></thead><tbody>");
+                        foreach (var e in attrFromRel)
+                        {
+                            var tableName = string.IsNullOrWhiteSpace(e.TableName) ? (e.TableId ?? string.Empty) : e.TableName;
+                            var field = e.FieldName ?? (e.Metadata != null && e.Metadata.TryGetValue("FieldName", out var fn) ? Convert.ToString(fn) ?? string.Empty : string.Empty);
+                            var oid = !string.IsNullOrWhiteSpace(e.FeatureId) ? e.FeatureId : (e.SourceObjectId?.ToString() ?? string.Empty);
+                            html.AppendLine("            <tr>");
+                            html.AppendLine($"                <td>{tableName}</td>");
+                            html.AppendLine($"                <td>{field}</td>");
+                            html.AppendLine($"                <td>{System.Net.WebUtility.HtmlEncode(e.ErrorCode ?? string.Empty)}</td>");
+                            html.AppendLine($"                <td>{oid}</td>");
+                            html.AppendLine($"                <td>{System.Net.WebUtility.HtmlEncode(e.Message ?? string.Empty)}</td>");
+                            html.AppendLine("            </tr>");
+                        }
+                        html.AppendLine("            </tbody></table></div></details>");
                     }
                 }
             }

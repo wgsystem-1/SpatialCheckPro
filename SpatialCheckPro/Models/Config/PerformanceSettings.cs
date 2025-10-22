@@ -164,5 +164,22 @@ namespace SpatialCheckPro.Models.Config
         /// 데이터베이스 연결 풀 크기
         /// </summary>
         public int DatabaseConnectionPoolSize { get; set; } = Environment.ProcessorCount * 2;
+
+        /// <summary>
+        /// 자동 고성능 모드 활성화 여부
+        /// </summary>
+        public bool EnableAutoHighPerformanceMode { get; set; } = true;
+
+        /// <summary>
+        /// 고성능 모드 자동 전환을 위한 파일 크기 임계값(바이트)
+        /// 기본값: 1GB
+        /// </summary>
+        public long HighPerformanceModeSizeThresholdBytes { get; set; } = 1_000_000_000L;
+
+        /// <summary>
+        /// 고성능 모드 자동 전환을 위한 총 피처 수 임계값
+        /// 기본값: 500,000
+        /// </summary>
+        public long HighPerformanceModeFeatureThreshold { get; set; } = 500_000L;
     }
 }

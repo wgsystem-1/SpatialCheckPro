@@ -245,6 +245,50 @@ namespace SpatialCheckPro.Services
                             }
                             _logger.LogInformation("QC_ERRORS 레이어 생성 성공: {LayerName}", layerName);
                         }
+                        else
+                        {
+                            // 기존 레이어의 지오메트리 타입 검증 및 필요시 재생성
+                            var expectedType = layerName == "QC_Errors_Point" ? wkbGeometryType.wkbPoint : wkbGeometryType.wkbNone;
+                            var currentType = layer.GetGeomType();
+                            if (currentType != expectedType)
+                            {
+                                _logger.LogWarning("레이어 지오메트리 타입 불일치: {LayerName} (현재: {CurrentType}, 기대: {ExpectedType}) - 레이어 재생성 시도", layerName, currentType, expectedType);
+                                try
+                                {
+                                    // 레이어 인덱스 조회 후 삭제
+                                    int layerIndex = -1;
+                                    for (int i = 0; i < dataSource.GetLayerCount(); i++)
+                                    {
+                                        var idxLayer = dataSource.GetLayerByIndex(i);
+                                        if (idxLayer != null && string.Equals(idxLayer.GetName(), layerName, StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            layerIndex = i;
+                                            break;
+                                        }
+                                    }
+                                    if (layerIndex >= 0)
+                                    {
+                                        dataSource.DeleteLayer(layerIndex);
+                                        _logger.LogInformation("기존 레이어 삭제 완료: {LayerName}", layerName);
+                                    }
+
+                                    layer = CreateQcErrorLayer(dataSource, layerName);
+                                    if (layer == null)
+                                    {
+                                        _logger.LogError("레이어 재생성 실패: {LayerName}", layerName);
+                                        dataSource.Dispose();
+                                        return false;
+                                    }
+                                    _logger.LogInformation("레이어 재생성 성공: {LayerName}", layerName);
+                                }
+                                catch (Exception recreateEx)
+                                {
+                                    _logger.LogError(recreateEx, "레이어 재생성 중 오류: {LayerName}", layerName);
+                                    dataSource.Dispose();
+                                    return false;
+                                }
+                            }
+                        }
 
                         // 새 피처 생성
                         var featureDefn = layer.GetLayerDefn();
@@ -259,24 +303,59 @@ namespace SpatialCheckPro.Services
                         // 포인트 지오메트리가 준비된 경우에만 지오메트리 설정
                         if (pointGeometryCandidate != null)
                         {
-                            feature.SetGeometry(pointGeometryCandidate);
-                            _logger.LogDebug("Point 지오메트리 설정 완료: {ErrorCode}", qcError.ErrCode);
+                            try
+                            {
+                                // 좌표 확인을 위한 WKT 로깅
+                                string wkt = string.Empty;
+                                pointGeometryCandidate.ExportToWkt(out wkt);
+                                _logger.LogDebug("Point 지오메트리 WKT: {Wkt}", wkt);
+
+                                // 피처에 지오메트리 설정
+                                feature.SetGeometry(pointGeometryCandidate);
+                                _logger.LogDebug("Point 지오메트리 설정 완료: {ErrorCode}", qcError.ErrCode);
+                            }
+                            finally
+                            {
+                                // SetGeometry에서 복사본을 사용하므로 원본 지오메트리 해제
+                                pointGeometryCandidate.Dispose();
+                            }
                         }
 
                         // 피처를 레이어에 추가
                         var result = layer.CreateFeature(feature);
-                        
-                        feature.Dispose();
-                        dataSource.Dispose();
 
                         if (result == 0) // OGRERR_NONE
                         {
-                            _logger.LogDebug("QC 오류 저장 성공: {ErrorCode}", qcError.ErrCode);
-                            return true;
+                            try
+                            {
+                                // 레이어 변경사항을 디스크에 동기화
+                                layer.SyncToDisk();
+                                _logger.LogDebug("레이어 동기화 완료: {LayerName}", layerName);
+
+                                // DataSource 캐시 Flush
+                                dataSource.FlushCache();
+                                _logger.LogDebug("DataSource 캐시 Flush 완료");
+
+                                _logger.LogDebug("QC 오류 저장 성공: {ErrorCode} -> {LayerName}", qcError.ErrCode, layerName);
+
+                                feature.Dispose();
+                                dataSource.Dispose();
+
+                                return true;
+                            }
+                            catch (Exception syncEx)
+                            {
+                                _logger.LogError(syncEx, "디스크 동기화 중 오류 발생: {ErrorCode}", qcError.ErrCode);
+                                feature.Dispose();
+                                dataSource.Dispose();
+                                return false;
+                            }
                         }
                         else
                         {
                             _logger.LogError("QC 오류 저장 실패: {ErrorCode}, OGR 오류 코드: {Result}", qcError.ErrCode, result);
+                            feature.Dispose();
+                            dataSource.Dispose();
                             return false;
                         }
                     }
@@ -416,49 +495,25 @@ namespace SpatialCheckPro.Services
                     using var dataSource = driver.Open(gdbPath, 1);
                     if (dataSource == null) return 0;
 
-                    var groupedErrors = qcErrors.GroupBy(e =>
+                    // 배치 처리: 오류별로 대상 레이어를 분기 (Point 또는 NoGeom)
+                    var pointLayer = dataSource.GetLayerByName("QC_Errors_Point") ?? CreateQcErrorLayer(dataSource, "QC_Errors_Point");
+                    var noGeomLayer = dataSource.GetLayerByName("QC_Errors_NoGeom") ?? CreateQcErrorLayer(dataSource, "QC_Errors_NoGeom");
+                    if (pointLayer == null)
                     {
-                        var wktType = QcError.DetermineGeometryType(e.GeometryWKT).ToUpperInvariant();
-                        if (!string.Equals(wktType, "UNKNOWN", StringComparison.Ordinal))
-                        {
-                            return wktType;
-                        }
+                        _logger.LogError("배치 저장 실패: QC_Errors_Point 레이어를 준비할 수 없습니다");
+                        return successCount;
+                    }
 
-                        var declaredType = (e.GeometryType ?? string.Empty).Trim().ToUpperInvariant();
-                        if (!string.IsNullOrEmpty(declaredType))
-                        {
-                            return declaredType;
-                        }
+                    // NoGeom 레이어는 없을 수 있으나, 필요 시에만 사용
+                    pointLayer.StartTransaction();
+                    noGeomLayer?.StartTransaction();
 
-                        if (e.Geometry != null)
-                        {
-                            return e.Geometry.GetGeometryName()?.ToUpperInvariant() ?? "NOGEOM";
-                        }
-
-                        return "NOGEOM";
-                    });
-
-                    foreach (var group in groupedErrors)
+                    foreach (var qcError in qcErrors)
                     {
-                        // Point 저장 방식: 모든 오류를 Point 레이어에 저장
-                        string layerName = "QC_Errors_Point";
-                        var layer = dataSource.GetLayerByName(layerName);
-                        if (layer == null) continue;
-
-                        layer.StartTransaction();
-                        foreach (var qcError in group)
+                        // 공통 필드 준비
+                        OSGeo.OGR.Geometry? pointGeometry = null;
+                        try
                         {
-                            using var feature = new Feature(layer.GetLayerDefn());
-                            // 필수 필드만 설정 (단순화된 스키마)
-                            feature.SetField("ErrCode", qcError.ErrCode);
-                            feature.SetField("SourceClass", qcError.SourceClass);
-                            feature.SetField("SourceOID", (int)qcError.SourceOID);
-                            feature.SetField("Message", qcError.Message);
-                            
-                            
-                            // Point 저장 방식: 모든 오류에 Point 지오메트리 설정
-                            OSGeo.OGR.Geometry? pointGeometry = null;
-                            
                             // 1차: 기존 지오메트리에서 Point 생성
                             if (qcError.Geometry != null)
                             {
@@ -474,31 +529,70 @@ namespace SpatialCheckPro.Services
                                     geometryFromWkt.Dispose();
                                 }
                             }
-                            // 3차: 좌표로 Point 생성
-                            else if (qcError.X != 0 && qcError.Y != 0)
+                            // 3차: 좌표로 Point 생성 (0,0은 무시)
+                            else if (qcError.X != 0 || qcError.Y != 0)
                             {
-                                pointGeometry = new OSGeo.OGR.Geometry(wkbGeometryType.wkbPoint);
-                                pointGeometry.AddPoint(qcError.X, qcError.Y, 0);
+                                var p = new OSGeo.OGR.Geometry(wkbGeometryType.wkbPoint);
+                                p.AddPoint(qcError.X, qcError.Y, 0);
+                                pointGeometry = p;
                             }
-                            // 4차: 기본 좌표로 Point 생성
-                            else
+
+                            // 대상 레이어 결정 및 생성
+                            var targetLayer = pointGeometry != null ? pointLayer : noGeomLayer;
+                            if (targetLayer == null)
                             {
-                                pointGeometry = new OSGeo.OGR.Geometry(wkbGeometryType.wkbPoint);
-                                pointGeometry.AddPoint(0, 0, 0);
+                                // NoGeom 레이어도 없으면 생성 시도
+                                targetLayer = CreateQcErrorLayer(dataSource, "QC_Errors_NoGeom");
+                                if (targetLayer == null)
+                                {
+                                    _logger.LogWarning("대상 레이어를 준비할 수 없어 오류를 건너뜁니다: {ErrCode}", qcError.ErrCode);
+                                    pointGeometry?.Dispose();
+                                    continue;
+                                }
+                                noGeomLayer = targetLayer;
                             }
-                            
+
+                            using var feature = new Feature(targetLayer.GetLayerDefn());
+                            feature.SetField("ErrCode", qcError.ErrCode);
+                            feature.SetField("SourceClass", qcError.SourceClass);
+                            feature.SetField("SourceOID", (int)qcError.SourceOID);
+                            feature.SetField("Message", qcError.Message);
+
                             if (pointGeometry != null)
                             {
+                                // 좌표 확인 로그 (디버그)
+                                string wkt = string.Empty;
+                                pointGeometry.ExportToWkt(out wkt);
+                                _logger.LogDebug("배치 Point WKT: {Wkt}", wkt);
+
                                 feature.SetGeometry(pointGeometry);
                                 pointGeometry.Dispose();
                             }
 
-                            if (layer.CreateFeature(feature) == 0)
+                            if (targetLayer.CreateFeature(feature) == 0)
                             {
                                 successCount++;
                             }
                         }
-                        layer.CommitTransaction();
+                        catch (Exception feEx)
+                        {
+                            _logger.LogWarning(feEx, "배치 개별 피처 생성 실패: {ErrCode}", qcError.ErrCode);
+                            pointGeometry?.Dispose();
+                        }
+                    }
+
+                    pointLayer.CommitTransaction();
+                    noGeomLayer?.CommitTransaction();
+
+                    try
+                    {
+                        pointLayer.SyncToDisk();
+                        noGeomLayer?.SyncToDisk();
+                        dataSource.FlushCache();
+                    }
+                    catch (Exception syncEx)
+                    {
+                        _logger.LogWarning(syncEx, "배치 저장 동기화 경고 (Point/NoGeom)");
                     }
                 }
                 catch (Exception ex)
@@ -598,8 +692,12 @@ namespace SpatialCheckPro.Services
                 fieldDefn.SetWidth(1024);
                 layer.CreateField(fieldDefn, 1);
                 
+                // 레이어 스키마 변경사항을 디스크에 동기화
+                layer.SyncToDisk();
+                _logger.LogDebug("레이어 스키마 동기화 완료: {LayerName}", layerName);
+
                 // Severity/Status 필드는 사용하지 않으므로 생성하지 않음
-                
+
                 _logger.LogInformation("QC_ERRORS 레이어 생성 완료 (단순화된 스키마): {LayerName}", layerName);
                 return layer;
             }

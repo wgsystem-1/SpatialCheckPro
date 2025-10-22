@@ -91,10 +91,13 @@ graph TD
 ```mermaid
 flowchart TD
     Start([시작]) --> SelectFile[FileGDB 선택]
-    SelectFile --> Mode{고성능 모드?}
+    SelectFile --> AutoHP{자동 HP 판단\n(파일크기/피처수)}
+    AutoHP -->|임계 초과| ModeHP[고성능 모드 활성화]
+    AutoHP -->|미만| ModeNormal[일반 모드]
+    ModeHP --> ConvertToSqlite[GDB to SQLite 변환]\n(SqliteDataProvider=OGR)
+    ModeNormal --> LoadGdb[GDB 직접 로드]
     
-    Mode -->|Yes| ConvertToSqlite[GDB to SQLite 변환]
-    Mode -->|No| LoadGdb[GDB 직접 로드]
+    ConvertToSqlite -->|실패시| LoadGdb
     
     ConvertToSqlite --> LoadConfig
     LoadGdb --> LoadConfig[검수 설정 로드<br/>CSV 파일]
@@ -118,7 +121,7 @@ flowchart TD
     
     Error0 --> Report
     QcErrors --> SaveDB[(SQLite 저장 또는 FGDB QC_ERRORS)]
-    SaveDB --> Report[보고서 생성<br/>PDF/Excel/HTML]
+    SaveDB --> Report[보고서 생성<br/>PDF/HTML]
     Report --> End([완료])
 ```
 
@@ -235,6 +238,8 @@ graph LR
     MAIN -- uses --> QES & GDAL & GDC
 ```
 
+> 참고: AdvancedParallelProcessingManager는 상위에서 할당된 operationId를 공유하여 진행률/성능 집계를 일관되게 처리합니다.
+
 ## 5. 데이터베이스 스키마
 
 ```mermaid
@@ -312,7 +317,7 @@ graph TB
         
         subgraph "Input/Output"
             INPUT[FileGDB/SHP/GPKG]
-            OUTPUT[PDF/Excel Reports]
+            OUTPUT[PDF/HTML Reports]
         end
     end
     

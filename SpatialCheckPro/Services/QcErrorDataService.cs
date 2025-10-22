@@ -153,74 +153,235 @@ namespace SpatialCheckPro.Services
         }
 
         /// <summary>
-        /// QC 오류를 저장합니다
+        /// QC 오류를 저장합니다 (4단계 좌표 추출 전략 + 원본 GDB 재추출)
         /// </summary>
         public async Task<bool> UpsertQcErrorAsync(string gdbPath, QcError qcError)
         {
             try
             {
-                _logger.LogDebug("QC 오류 저장 시작: {ErrorCode} - {TableId}:{ObjectId}", 
+                _logger.LogInformation("═══ QC 오류 저장 시작: {ErrorCode} - {TableId}:{ObjectId} ═══",
                     qcError.ErrCode, qcError.SourceClass, qcError.SourceOID);
 
-                return await Task.Run(() =>
+                return await Task.Run(async () =>
                 {
+                    OSGeo.OGR.Geometry? pointGeometry = null;
+                    double finalX = 0, finalY = 0;
+
                     try
                     {
                         // GDAL 초기화 확인 (안전장치)
                         EnsureGdalInitialized();
-                        
+
                         // FileGDB를 쓰기 모드로 열기 (안전한 방식)
                         var driver = GetFileGdbDriverSafely();
                         if (driver == null)
                         {
-                            _logger.LogError("FileGDB 드라이버를 찾을 수 없습니다: {GdbPath}", gdbPath);
+                            _logger.LogError("❌ FileGDB 드라이버를 찾을 수 없습니다: {GdbPath}", gdbPath);
                             return false;
                         }
-                        
+
                         // 데이터셋(QC_ERRORS) 하위에 Feature Class가 위치할 수 있으므로 우선 루트 열기
                         var dataSource = driver.Open(gdbPath, 1); // 쓰기 모드
 
                         if (dataSource == null)
                         {
-                            _logger.LogError("FileGDB를 쓰기 모드로 열 수 없습니다: {GdbPath}", gdbPath);
+                            _logger.LogError("❌ FileGDB를 쓰기 모드로 열 수 없습니다: {GdbPath}", gdbPath);
                             return false;
                         }
 
-                        // 우선 포인트 지오메트리를 생성 시도하여 저장 레이어를 결정
-                        OSGeo.OGR.Geometry? pointGeometryCandidate = null;
-                        // 1차 시도: 기존 지오메트리에서 Point 생성
+                        // ═══════════════════════════════════════════════════════════
+                        // 4단계 좌표 추출 전략 시작
+                        // ═══════════════════════════════════════════════════════════
+
+                        // 시도 1: qcError.Geometry에서 Point 생성
+                        _logger.LogDebug("🔍 시도 1: qcError.Geometry에서 Point 추출");
                         if (qcError.Geometry != null)
                         {
-                            try { pointGeometryCandidate = CreateSimplePoint(qcError.Geometry); } catch { pointGeometryCandidate = null; }
+                            try
+                            {
+                                pointGeometry = CreateSimplePoint(qcError.Geometry);
+                                if (pointGeometry != null && !pointGeometry.IsEmpty())
+                                {
+                                    var pointArray = new double[3];
+                                    pointGeometry.GetPoint(0, pointArray);
+                                    finalX = pointArray[0];
+                                    finalY = pointArray[1];
+
+                                    if (finalX != 0 || finalY != 0)
+                                    {
+                                        _logger.LogInformation("✓ 시도 1 성공: Geometry에서 추출 → ({X}, {Y})", finalX, finalY);
+                                    }
+                                    else
+                                    {
+                                        _logger.LogWarning("✗ 시도 1 실패: 좌표가 (0, 0)");
+                                        pointGeometry?.Dispose();
+                                        pointGeometry = null;
+                                    }
+                                }
+                                else
+                                {
+                                    _logger.LogWarning("✗ 시도 1 실패: Point 생성 불가 (Empty Geometry)");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "✗ 시도 1 실패: Geometry 처리 중 예외");
+                                pointGeometry = null;
+                            }
                         }
-                        // 2차 시도: WKT에서 Point 생성
-                        if (pointGeometryCandidate == null && !string.IsNullOrWhiteSpace(qcError.GeometryWKT))
+                        else
                         {
+                            _logger.LogDebug("✗ 시도 1 건너뜀: qcError.Geometry가 null");
+                        }
+
+                        // 시도 2: GeometryWKT에서 Point 생성
+                        if (pointGeometry == null && !string.IsNullOrWhiteSpace(qcError.GeometryWKT))
+                        {
+                            _logger.LogDebug("🔍 시도 2: GeometryWKT에서 Point 추출");
                             try
                             {
                                 var geomFromWkt = OSGeo.OGR.Geometry.CreateFromWkt(qcError.GeometryWKT);
                                 if (geomFromWkt != null && !geomFromWkt.IsEmpty())
                                 {
-                                    pointGeometryCandidate = CreateSimplePoint(geomFromWkt);
+                                    pointGeometry = CreateSimplePoint(geomFromWkt);
+                                    if (pointGeometry != null && !pointGeometry.IsEmpty())
+                                    {
+                                        var pointArray = new double[3];
+                                        pointGeometry.GetPoint(0, pointArray);
+                                        finalX = pointArray[0];
+                                        finalY = pointArray[1];
+
+                                        if (finalX != 0 || finalY != 0)
+                                        {
+                                            _logger.LogInformation("✓ 시도 2 성공: WKT에서 추출 → ({X}, {Y})", finalX, finalY);
+                                        }
+                                        else
+                                        {
+                                            _logger.LogWarning("✗ 시도 2 실패: 좌표가 (0, 0)");
+                                            pointGeometry?.Dispose();
+                                            pointGeometry = null;
+                                        }
+                                    }
                                 }
                                 geomFromWkt?.Dispose();
                             }
-                            catch { pointGeometryCandidate = null; }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "✗ 시도 2 실패: WKT 처리 중 예외");
+                                pointGeometry = null;
+                            }
                         }
-                        // 3차 시도: 좌표로부터 Point 생성 (0,0은 위치 미확정으로 간주)
-                        if (pointGeometryCandidate == null && (qcError.X != 0 || qcError.Y != 0))
+                        else if (pointGeometry == null)
                         {
+                            _logger.LogDebug("✗ 시도 2 건너뜀: GeometryWKT가 비어있음");
+                        }
+
+                        // 시도 3: X, Y 좌표로 Point 생성
+                        if (pointGeometry == null && (qcError.X != 0 || qcError.Y != 0))
+                        {
+                            _logger.LogDebug("🔍 시도 3: X, Y 좌표로 Point 생성 - ({X}, {Y})", qcError.X, qcError.Y);
                             try
                             {
                                 var p = new OSGeo.OGR.Geometry(wkbGeometryType.wkbPoint);
                                 p.AddPoint(qcError.X, qcError.Y, 0);
-                                pointGeometryCandidate = p;
+                                pointGeometry = p;
+                                finalX = qcError.X;
+                                finalY = qcError.Y;
+                                _logger.LogInformation("✓ 시도 3 성공: 좌표에서 생성 → ({X}, {Y})", finalX, finalY);
                             }
-                            catch { pointGeometryCandidate = null; }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "✗ 시도 3 실패: 좌표로 Point 생성 중 예외");
+                                pointGeometry = null;
+                            }
+                        }
+                        else if (pointGeometry == null)
+                        {
+                            _logger.LogDebug("✗ 시도 3 건너뜀: X와 Y가 모두 0");
+                        }
+
+                        // ⭐ 시도 4: 모든 시도 실패 시 원본 GDB에서 재추출
+                        if (pointGeometry == null || (finalX == 0 && finalY == 0))
+                        {
+                            _logger.LogWarning("⭐⭐⭐ 시도 1~3 실패. 원본 GDB에서 재추출 시작 ⭐⭐⭐");
+                            _logger.LogDebug("🔍 시도 4: 원본 GDB 경로 탐색 - SourceClass: {SourceClass}", qcError.SourceClass);
+
+                            // 원본 GDB 경로 찾기
+                            string? currentGdbDir = Path.GetDirectoryName(gdbPath);
+                            string? originalGdbPath = FindOriginalGdbPath(currentGdbDir, qcError.SourceClass);
+
+                            if (!string.IsNullOrEmpty(originalGdbPath))
+                            {
+                                _logger.LogInformation("✓ 원본 GDB 발견: {OriginalGdbPath}", originalGdbPath);
+
+                                // 원본 GDB에서 지오메트리 재추출
+                                var (reExtractedGeometry, reX, reY, reGeomType) =
+                                    await RetrieveGeometryFromOriginalGdb(
+                                        originalGdbPath,
+                                        qcError.SourceClass,
+                                        qcError.SourceOID.ToString()
+                                    );
+
+                                if (reExtractedGeometry != null && !reExtractedGeometry.IsEmpty())
+                                {
+                                    // 재추출된 지오메트리에서 Point 생성
+                                    pointGeometry?.Dispose(); // 기존 실패한 geometry 정리
+                                    pointGeometry = CreateSimplePoint(reExtractedGeometry);
+
+                                    if (pointGeometry != null && !pointGeometry.IsEmpty())
+                                    {
+                                        var pointArray = new double[3];
+                                        pointGeometry.GetPoint(0, pointArray);
+                                        finalX = pointArray[0];
+                                        finalY = pointArray[1];
+
+                                        if (finalX != 0 || finalY != 0)
+                                        {
+                                            _logger.LogInformation("✓✓✓ 시도 4 성공: 원본 GDB에서 재추출 → ({X}, {Y}) [GeomType: {GeomType}]",
+                                                finalX, finalY, reGeomType);
+                                        }
+                                        else
+                                        {
+                                            _logger.LogWarning("⚠ 시도 4: 재추출 성공했으나 좌표가 (0, 0)");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        _logger.LogWarning("✗ 시도 4 실패: 재추출된 Geometry에서 Point 생성 불가");
+                                    }
+
+                                    reExtractedGeometry.Dispose();
+                                }
+                                else
+                                {
+                                    _logger.LogWarning("✗ 시도 4 실패: 원본 GDB에서 Geometry 재추출 불가");
+                                }
+                            }
+                            else
+                            {
+                                _logger.LogWarning("✗ 시도 4 실패: 원본 GDB 경로를 찾을 수 없음 (Directory: {Dir})", currentGdbDir);
+                            }
+                        }
+
+                        // ═══════════════════════════════════════════════════════════
+                        // 최종 결과 로깅
+                        // ═══════════════════════════════════════════════════════════
+                        if (pointGeometry != null && (finalX != 0 || finalY != 0))
+                        {
+                            _logger.LogInformation("✓✓✓ 최종 좌표 확정: ({X}, {Y}) - {ErrorCode}", finalX, finalY, qcError.ErrCode);
+                        }
+                        else if (pointGeometry != null)
+                        {
+                            _logger.LogWarning("⚠ Point 생성됨, 그러나 좌표는 (0, 0) - {ErrorCode}", qcError.ErrCode);
+                        }
+                        else
+                        {
+                            _logger.LogError("❌ 모든 시도 실패: Point 생성 불가 - {ErrorCode}. NoGeom 레이어에 저장됨", qcError.ErrCode);
                         }
 
                         // 저장 레이어 결정: 포인트 지오메트리가 있으면 Point, 없으면 NoGeom
-                        string layerName = pointGeometryCandidate != null ? "QC_Errors_Point" : "QC_Errors_NoGeom";
+                        string layerName = pointGeometry != null ? "QC_Errors_Point" : "QC_Errors_NoGeom";
+                        _logger.LogDebug("📍 저장 레이어: {LayerName}", layerName);
 
                         // 데이터셋 내부 탐색: 루트에서 직접 못 찾으면 하위 계층에서 검색
                         Layer layer = dataSource.GetLayerByName(layerName);
@@ -234,16 +395,17 @@ namespace SpatialCheckPro.Services
                         }
                         if (layer == null)
                         {
-                            _logger.LogWarning("QC_ERRORS 레이어를 찾을 수 없습니다: {LayerName} - 레이어 생성 시도", layerName);
+                            _logger.LogWarning("⚠ QC_ERRORS 레이어를 찾을 수 없습니다: {LayerName} - 레이어 생성 시도", layerName);
                             // 레이어가 없으면 생성 시도 (레이어명에 따라 타입 결정)
                             layer = CreateQcErrorLayer(dataSource, layerName);
                             if (layer == null)
                             {
-                                _logger.LogError("QC_ERRORS 레이어 생성 실패: {LayerName}", layerName);
+                                _logger.LogError("❌ QC_ERRORS 레이어 생성 실패: {LayerName}", layerName);
+                                pointGeometry?.Dispose();
                                 dataSource.Dispose();
                                 return false;
                             }
-                            _logger.LogInformation("QC_ERRORS 레이어 생성 성공: {LayerName}", layerName);
+                            _logger.LogInformation("✓ QC_ERRORS 레이어 생성 성공: {LayerName}", layerName);
                         }
 
                         // 새 피처 생성
@@ -255,41 +417,73 @@ namespace SpatialCheckPro.Services
                         feature.SetField("SourceClass", qcError.SourceClass);
                         feature.SetField("SourceOID", (int)qcError.SourceOID);
                         feature.SetField("Message", qcError.Message);
+                        _logger.LogDebug("✓ 피처 속성 설정 완료");
 
                         // 포인트 지오메트리가 준비된 경우에만 지오메트리 설정
-                        if (pointGeometryCandidate != null)
+                        if (pointGeometry != null)
                         {
-                            feature.SetGeometry(pointGeometryCandidate);
-                            _logger.LogDebug("Point 지오메트리 설정 완료: {ErrorCode}", qcError.ErrCode);
+                            feature.SetGeometry(pointGeometry);
+                            _logger.LogDebug("✓ Point 지오메트리 설정 완료: ({X}, {Y})", finalX, finalY);
                         }
 
                         // 피처를 레이어에 추가
+                        _logger.LogDebug("💾 CreateFeature 호출...");
                         var result = layer.CreateFeature(feature);
-                        
-                        feature.Dispose();
-                        dataSource.Dispose();
 
                         if (result == 0) // OGRERR_NONE
                         {
-                            _logger.LogDebug("QC 오류 저장 성공: {ErrorCode}", qcError.ErrCode);
-                            return true;
+                            _logger.LogDebug("✓ CreateFeature 성공 (OGR 코드: 0)");
+
+                            try
+                            {
+                                // 🔧 FIX: 레이어를 디스크에 동기화
+                                _logger.LogDebug("💾 layer.SyncToDisk() 호출...");
+                                layer.SyncToDisk();
+                                _logger.LogInformation("✓ 레이어 동기화 완료: {LayerName}", layerName);
+
+                                // 🔧 FIX: DataSource 캐시 Flush
+                                _logger.LogDebug("💾 dataSource.FlushCache() 호출...");
+                                dataSource.FlushCache();
+                                _logger.LogInformation("✓ DataSource 캐시 Flush 완료");
+
+                                _logger.LogInformation("✓✓✓ QC 오류 저장 성공: {ErrorCode} → {LayerName} (좌표: {X}, {Y})",
+                                    qcError.ErrCode, layerName, finalX, finalY);
+
+                                pointGeometry?.Dispose();
+                                feature.Dispose();
+                                dataSource.Dispose();
+
+                                return true;
+                            }
+                            catch (Exception syncEx)
+                            {
+                                _logger.LogError(syncEx, "❌ 디스크 동기화 중 오류 발생: {ErrorCode}", qcError.ErrCode);
+                                pointGeometry?.Dispose();
+                                feature.Dispose();
+                                dataSource.Dispose();
+                                return false;
+                            }
                         }
                         else
                         {
-                            _logger.LogError("QC 오류 저장 실패: {ErrorCode}, OGR 오류 코드: {Result}", qcError.ErrCode, result);
+                            _logger.LogError("❌ QC 오류 저장 실패: {ErrorCode}, OGR 오류 코드: {Result}", qcError.ErrCode, result);
+                            pointGeometry?.Dispose();
+                            feature.Dispose();
+                            dataSource.Dispose();
                             return false;
                         }
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "QC 오류 저장 중 예외 발생: {ErrorCode}", qcError.ErrCode);
+                        _logger.LogError(ex, "❌ QC 오류 저장 중 예외 발생: {ErrorCode}", qcError.ErrCode);
+                        pointGeometry?.Dispose();
                         return false;
                     }
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "QC 오류 저장 실패: {ErrorCode}", qcError.ErrCode);
+                _logger.LogError(ex, "❌ QC 오류 저장 실패 (외부): {ErrorCode}", qcError.ErrCode);
                 return false;
             }
         }
@@ -597,7 +791,11 @@ namespace SpatialCheckPro.Services
                 fieldDefn = new FieldDefn("Message", FieldType.OFTString);
                 fieldDefn.SetWidth(1024);
                 layer.CreateField(fieldDefn, 1);
-                
+
+                // 🔧 FIX: 레이어 스키마를 디스크에 동기화
+                layer.SyncToDisk();
+                _logger.LogDebug("✓ 레이어 스키마 동기화 완료: {LayerName}", layerName);
+
                 _logger.LogInformation("QC_ERRORS 레이어 생성 완료 (단순화된 스키마): {LayerName}", layerName);
                 return layer;
             }

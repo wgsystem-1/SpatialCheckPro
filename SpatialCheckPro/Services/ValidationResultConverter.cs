@@ -270,6 +270,106 @@ namespace SpatialCheckPro.Services
                         }
                     }
 
+                    // 좌표/WKT 보완을 위해 사전 계산
+                    double outX = errorDetail.X;
+                    double outY = errorDetail.Y;
+                    if ((outX == 0 && outY == 0) && geometry != null)
+                    {
+                        try
+                        {
+                            // 지오메트리 타입에 따른 대표 좌표 추출 (첫 점 또는 엔벨로프 중심)
+                            switch (geometry.GetGeometryType())
+                            {
+                                case wkbGeometryType.wkbPoint:
+                                {
+                                    var p = new double[3];
+                                    geometry.GetPoint(0, p);
+                                    outX = p[0]; outY = p[1];
+                                    break;
+                                }
+                                case wkbGeometryType.wkbMultiPoint:
+                                {
+                                    if (geometry.GetGeometryCount() > 0)
+                                    {
+                                        var first = geometry.GetGeometryRef(0);
+                                        if (first != null)
+                                        {
+                                            var p = new double[3];
+                                            first.GetPoint(0, p);
+                                            outX = p[0]; outY = p[1];
+                                        }
+                                    }
+                                    break;
+                                }
+                                case wkbGeometryType.wkbLineString:
+                                {
+                                    if (geometry.GetPointCount() > 0)
+                                    {
+                                        var p = new double[3];
+                                        geometry.GetPoint(0, p);
+                                        outX = p[0]; outY = p[1];
+                                    }
+                                    break;
+                                }
+                                case wkbGeometryType.wkbMultiLineString:
+                                {
+                                    if (geometry.GetGeometryCount() > 0)
+                                    {
+                                        var firstLine = geometry.GetGeometryRef(0);
+                                        if (firstLine != null && firstLine.GetPointCount() > 0)
+                                        {
+                                            var p = new double[3];
+                                            firstLine.GetPoint(0, p);
+                                            outX = p[0]; outY = p[1];
+                                        }
+                                    }
+                                    break;
+                                }
+                                case wkbGeometryType.wkbPolygon:
+                                {
+                                    if (geometry.GetGeometryCount() > 0)
+                                    {
+                                        var ring = geometry.GetGeometryRef(0);
+                                        if (ring != null && ring.GetPointCount() > 0)
+                                        {
+                                            var p = new double[3];
+                                            ring.GetPoint(0, p);
+                                            outX = p[0]; outY = p[1];
+                                        }
+                                    }
+                                    break;
+                                }
+                                case wkbGeometryType.wkbMultiPolygon:
+                                {
+                                    if (geometry.GetGeometryCount() > 0)
+                                    {
+                                        var poly = geometry.GetGeometryRef(0);
+                                        if (poly != null && poly.GetGeometryCount() > 0)
+                                        {
+                                            var ring = poly.GetGeometryRef(0);
+                                            if (ring != null && ring.GetPointCount() > 0)
+                                            {
+                                                var p = new double[3];
+                                                ring.GetPoint(0, p);
+                                                outX = p[0]; outY = p[1];
+                                            }
+                                        }
+                                    }
+                                    break;
+                                }
+                                default:
+                                {
+                                    var env = new Envelope();
+                                    geometry.GetEnvelope(env);
+                                    outX = (env.MinX + env.MaxX) / 2.0;
+                                    outY = (env.MinY + env.MaxY) / 2.0;
+                                    break;
+                                }
+                            }
+                        }
+                        catch { /* 좌표 보완 실패 시 무시 */ }
+                    }
+
                     var qcError = new QcError
                     {
                         GlobalID = Guid.NewGuid().ToString(),
@@ -297,8 +397,8 @@ namespace SpatialCheckPro.Services
                         Geometry = geometry, // 생성된 지오메트리 객체 할당
                         GeometryWKT = errorDetail.GeometryWkt,
                         GeometryType = QcError.DetermineGeometryType(errorDetail.GeometryWkt),
-                        X = errorDetail.X,
-                        Y = errorDetail.Y,
+                        X = outX,
+                        Y = outY,
                         ErrorValue = errorDetail.ErrorValue,
                         ThresholdValue = errorDetail.ThresholdValue
                     };

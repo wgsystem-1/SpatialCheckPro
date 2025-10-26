@@ -73,6 +73,13 @@ namespace SpatialCheckPro.Services
                     for (int i = 1; i < group.Count; i++)
                     {
                         var (objectId, geometry) = group[i];
+                        // 오류 좌표 및 WKT 설정 (엔벨로프 중심점 사용)
+                        geometry.ExportToWkt(out string dupWkt);
+                        var dupEnv = new Envelope();
+                        geometry.GetEnvelope(dupEnv);
+                        var dupX = (dupEnv.MinX + dupEnv.MaxX) / 2.0;
+                        var dupY = (dupEnv.MinY + dupEnv.MaxY) / 2.0;
+
                         errorDetails.Add(new GeometryErrorDetail
                         {
                             ObjectId = objectId.ToString(),
@@ -81,7 +88,10 @@ namespace SpatialCheckPro.Services
                             ThresholdValue = coordinateTolerance > 0 ? $"좌표 허용오차 {coordinateTolerance}m" : "Exact match",
                             DetailMessage = coordinateTolerance > 0
                                 ? $"OBJECTID {objectId}: 좌표 허용오차 {coordinateTolerance}m 이내 동일한 지오메트리"
-                                : $"OBJECTID {objectId}: 완전히 동일한 지오메트리"
+                                : $"OBJECTID {objectId}: 완전히 동일한 지오메트리",
+                            X = dupX,
+                            Y = dupY,
+                            GeometryWkt = dupWkt
                         });
                         duplicateCount++;
                     }
@@ -121,13 +131,39 @@ namespace SpatialCheckPro.Services
 
                 foreach (var overlap in overlaps)
                 {
+                    // 대상 피처에서 좌표 및 WKT 추출 (엔벨로프 중심점)
+                    double ovX = 0;
+                    double ovY = 0;
+                    string? ovWkt = null;
+                    Feature? ovFeature = null;
+                    try
+                    {
+                        ovFeature = layer.GetFeature(overlap.ObjectId);
+                        var ovGeom = ovFeature?.GetGeometryRef();
+                        if (ovGeom != null && !ovGeom.IsEmpty())
+                        {
+                            ovGeom.ExportToWkt(out ovWkt);
+                            var ovEnv = new Envelope();
+                            ovGeom.GetEnvelope(ovEnv);
+                            ovX = (ovEnv.MinX + ovEnv.MaxX) / 2.0;
+                            ovY = (ovEnv.MinY + ovEnv.MaxY) / 2.0;
+                        }
+                    }
+                    finally
+                    {
+                        ovFeature?.Dispose();
+                    }
+
                     errorDetails.Add(new GeometryErrorDetail
                     {
                         ObjectId = overlap.ObjectId.ToString(),
                         ErrorType = "겹침 지오메트리",
                         ErrorValue = $"겹침 영역: {overlap.OverlapArea:F2}㎡",
                         ThresholdValue = $"{tolerance}m",
-                        DetailMessage = $"OBJECTID {overlap.ObjectId}: 겹침 영역 {overlap.OverlapArea:F2}㎡ 검출"
+                        DetailMessage = $"OBJECTID {overlap.ObjectId}: 겹침 영역 {overlap.OverlapArea:F2}㎡ 검출",
+                        X = ovX,
+                        Y = ovY,
+                        GeometryWkt = ovWkt
                     });
                 }
 

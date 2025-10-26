@@ -137,11 +137,11 @@ _logger.LogInformation("QC_ERRORS 레이어 생성 완료 (단순화된 스키�
 return layer;
 ```
 
-#### 변경 사항 요약
+#### 변경 사항 요약1
 
+```text
 1. **layer.SyncToDisk() 추가**: 스키마 변경사항을 디스크에 기록
 2. **로그 추가**: 스키마 동기화 확인 로그
-
 ---
 
 ## 📝 기술적 설명

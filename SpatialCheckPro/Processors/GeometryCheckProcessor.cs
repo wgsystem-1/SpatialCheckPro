@@ -4,6 +4,9 @@ using SpatialCheckPro.Services;
 using Microsoft.Extensions.Logging;
 using OSGeo.OGR;
 using System.Collections.Concurrent;
+using NetTopologySuite.IO;
+using NetTopologySuite.Operation.Valid;
+using SpatialCheckPro.Utils;
 
 namespace SpatialCheckPro.Processors
 {
@@ -213,13 +216,38 @@ namespace SpatialCheckPro.Processors
                         // 자체꼬임, 자기중첩, 링방향, 홀-쉘 관계 등 자동 검사
                         if (!geometry.IsValid())
                         {
+                            geometry.ExportToWkt(out string wkt);
+                            var reader = new WKTReader();
+                            var ntsGeom = reader.Read(wkt);
+                            var validator = new IsValidOp(ntsGeom);
+                            var validationError = validator.ValidationError;
+
+                            double errorX = 0, errorY = 0;
+                            string errorTypeName = "지오메트리 유효성 오류";
+                            if (validationError != null)
+                            {
+                                errorTypeName = GeometryCoordinateExtractor.GetKoreanErrorType((int)validationError.ErrorType);
+                                (errorX, errorY) = GeometryCoordinateExtractor.GetValidationErrorLocation(ntsGeom, validationError);
+                            }
+                            else
+                            {
+                                (errorX, errorY) = GeometryCoordinateExtractor.GetEnvelopeCenter(geometry);
+                            }
+
                             errors.Add(new ValidationError
                             {
                                 ErrorCode = "GEOM_INVALID",
-                                Message = "지오메트리 유효성 오류 (자체꼬임, 자기중첩, 홀폴리곤, 링방향 등)",
+                                Message = validationError != null ? $"{errorTypeName}: {validationError.Message}" : "지오메트리 유효성 오류 (자체꼬임, 자기중첩, 홀폴리곤, 링방향 등)",
                                 TableName = config.TableId,
                                 FeatureId = fid.ToString(),
-                                Severity = Models.Enums.ErrorSeverity.Error
+                                Severity = Models.Enums.ErrorSeverity.Error,
+                                Metadata =
+                                {
+                                    ["X"] = errorX.ToString(),
+                                    ["Y"] = errorY.ToString(),
+                                    ["GeometryWkt"] = wkt,
+                                    ["ErrorType"] = errorTypeName
+                                }
                             });
                         }
 
@@ -306,13 +334,30 @@ namespace SpatialCheckPro.Processors
                                     var length = workingGeometry.Length();
                                     if (length < _criteria.MinLineLength && length > 0)
                                     {
+                                        int pointCount = workingGeometry.GetPointCount();
+                                        double midX = 0, midY = 0;
+                                        if (pointCount > 0)
+                                        {
+                                            int midIndex = pointCount / 2;
+                                            midX = workingGeometry.GetX(midIndex);
+                                            midY = workingGeometry.GetY(midIndex);
+                                        }
+
+                                        workingGeometry.ExportToWkt(out string wkt);
+
                                         errors.Add(new ValidationError
                                         {
                                             ErrorCode = "GEOM_SHORT_LINE",
                                             Message = $"선이 너무 짧습니다: {length:F3}m (최소: {_criteria.MinLineLength}m)",
                                             TableName = config.TableId,
                                             FeatureId = fid.ToString(),
-                                            Severity = Models.Enums.ErrorSeverity.Warning
+                                            Severity = Models.Enums.ErrorSeverity.Warning,
+                                            Metadata =
+                                            {
+                                                ["X"] = midX.ToString(),
+                                                ["Y"] = midY.ToString(),
+                                                ["GeometryWkt"] = wkt
+                                            }
                                         });
                                     }
                                 }
@@ -322,13 +367,26 @@ namespace SpatialCheckPro.Processors
                                     var area = workingGeometry.GetArea();
                                     if (area > 0 && area < _criteria.MinPolygonArea)
                                     {
+                                        var envelope = new Envelope();
+                                        workingGeometry.GetEnvelope(envelope);
+                                        double centerX = (envelope.MinX + envelope.MaxX) / 2.0;
+                                        double centerY = (envelope.MinY + envelope.MaxY) / 2.0;
+
+                                        workingGeometry.ExportToWkt(out string wkt);
+
                                         errors.Add(new ValidationError
                                         {
                                             ErrorCode = "GEOM_SMALL_AREA",
                                             Message = $"면적이 너무 작습니다: {area:F2}㎡ (최소: {_criteria.MinPolygonArea}㎡)",
                                             TableName = config.TableId,
                                             FeatureId = fid.ToString(),
-                                            Severity = Models.Enums.ErrorSeverity.Warning
+                                            Severity = Models.Enums.ErrorSeverity.Warning,
+                                            Metadata =
+                                            {
+                                                ["X"] = centerX.ToString(),
+                                                ["Y"] = centerY.ToString(),
+                                                ["GeometryWkt"] = wkt
+                                            }
                                         });
                                     }
                                 }
@@ -342,6 +400,22 @@ namespace SpatialCheckPro.Processors
                                             ? string.Empty
                                             : $" ({minVertexCheck.Detail})";
 
+                                        double x = 0, y = 0;
+                                        if (workingGeometry.GetPointCount() > 0)
+                                        {
+                                            x = workingGeometry.GetX(0);
+                                            y = workingGeometry.GetY(0);
+                                        }
+                                        else
+                                        {
+                                            var env = new Envelope();
+                                            workingGeometry.GetEnvelope(env);
+                                            x = (env.MinX + env.MaxX) / 2.0;
+                                            y = (env.MinY + env.MaxY) / 2.0;
+                                        }
+
+                                        workingGeometry.ExportToWkt(out string wkt);
+
                                         errors.Add(new ValidationError
                                         {
                                             ErrorCode = "GEOM_MIN_VERTEX",
@@ -351,7 +425,10 @@ namespace SpatialCheckPro.Processors
                                             Severity = Models.Enums.ErrorSeverity.Error,
                                             Metadata =
                                             {
-                                                ["PolygonDebug"] = BuildPolygonDebugInfo(workingGeometry, minVertexCheck)
+                                                ["PolygonDebug"] = BuildPolygonDebugInfo(workingGeometry, minVertexCheck),
+                                                ["X"] = x.ToString(),
+                                                ["Y"] = y.ToString(),
+                                                ["GeometryWkt"] = wkt
                                             }
                                         });
                                     }
@@ -413,13 +490,40 @@ namespace SpatialCheckPro.Processors
                         {
                             if (IsSliverPolygon(geometry, out string sliverMessage))
                             {
+                                double centerX = 0, centerY = 0;
+                                if (geometry.GetGeometryCount() > 0)
+                                {
+                                    var exteriorRing = geometry.GetGeometryRef(0);
+                                    if (exteriorRing != null && exteriorRing.GetPointCount() > 0)
+                                    {
+                                        int pointCount = exteriorRing.GetPointCount();
+                                        int midIndex = pointCount / 2;
+                                        centerX = exteriorRing.GetX(midIndex);
+                                        centerY = exteriorRing.GetY(midIndex);
+                                    }
+                                }
+                                if (centerX == 0 && centerY == 0)
+                                {
+                                    var env = new Envelope();
+                                    geometry.GetEnvelope(env);
+                                    centerX = (env.MinX + env.MaxX) / 2.0;
+                                    centerY = (env.MinY + env.MaxY) / 2.0;
+                                }
+                                geometry.ExportToWkt(out string wkt);
+
                                 errors.Add(new ValidationError
                                 {
                                     ErrorCode = "GEOM_SLIVER",
                                     Message = sliverMessage,
                                     TableName = config.TableId,
                                     FeatureId = fid.ToString(),
-                                    Severity = Models.Enums.ErrorSeverity.Warning
+                                    Severity = Models.Enums.ErrorSeverity.Warning,
+                                    Metadata =
+                                    {
+                                        ["X"] = centerX.ToString(),
+                                        ["Y"] = centerY.ToString(),
+                                        ["GeometryWkt"] = wkt
+                                    }
                                 });
                             }
                         }
@@ -427,15 +531,22 @@ namespace SpatialCheckPro.Processors
                         // 2. 스파이크 검사 (뾰족한 돌출부)
                         if (config.ShouldCheckSpikes)
                         {
-                            if (HasSpike(geometry, out string spikeMessage))
+                            if (HasSpike(geometry, out string spikeMessage, out double spikeX, out double spikeY))
                             {
+                                geometry.ExportToWkt(out string wkt);
                                 errors.Add(new ValidationError
                                 {
                                     ErrorCode = "GEOM_SPIKE",
                                     Message = spikeMessage,
                                     TableName = config.TableId,
                                     FeatureId = fid.ToString(),
-                                    Severity = Models.Enums.ErrorSeverity.Warning
+                                    Severity = Models.Enums.ErrorSeverity.Warning,
+                                    Metadata =
+                                    {
+                                        ["X"] = spikeX.ToString(),
+                                        ["Y"] = spikeY.ToString(),
+                                        ["GeometryWkt"] = wkt
+                                    }
                                 });
                             }
                         }
@@ -499,9 +610,11 @@ namespace SpatialCheckPro.Processors
         /// <summary>
         /// 스파이크 검출 (뾰족한 돌출부)
         /// </summary>
-        private bool HasSpike(Geometry geometry, out string message)
+        private bool HasSpike(Geometry geometry, out string message, out double spikeX, out double spikeY)
         {
             message = string.Empty;
+            spikeX = 0;
+            spikeY = 0;
 
             try
             {
@@ -512,7 +625,7 @@ namespace SpatialCheckPro.Processors
                     for (int g = 0; g < geomCount; g++)
                     {
                         var part = geometry.GetGeometryRef(g);
-                        if (part != null && CheckSpikeInSingleGeometry(part, out message))
+                        if (part != null && CheckSpikeInSingleGeometry(part, out message, out spikeX, out spikeY))
                         {
                             return true;
                         }
@@ -520,7 +633,7 @@ namespace SpatialCheckPro.Processors
                 }
                 else
                 {
-                    return CheckSpikeInSingleGeometry(geometry, out message);
+                    return CheckSpikeInSingleGeometry(geometry, out message, out spikeX, out spikeY);
                 }
             }
             catch (Exception ex)
@@ -534,9 +647,11 @@ namespace SpatialCheckPro.Processors
         /// <summary>
         /// 단일 지오메트리에서 스파이크 검사
         /// </summary>
-        private bool CheckSpikeInSingleGeometry(Geometry geometry, out string message)
+        private bool CheckSpikeInSingleGeometry(Geometry geometry, out string message, out double spikeX, out double spikeY)
         {
             message = string.Empty;
+            spikeX = 0;
+            spikeY = 0;
             var pointCount = geometry.GetPointCount();
             
             if (pointCount < 3) return false;
@@ -558,6 +673,8 @@ namespace SpatialCheckPro.Processors
                 if (angle < threshold)
                 {
                     message = $"스파이크 검출: 정점 {i}번 각도 {angle:F1}도 (임계값: {threshold}도)";
+                    spikeX = x2;
+                    spikeY = y2;
                     return true;
                 }
             }

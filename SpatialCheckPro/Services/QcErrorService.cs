@@ -424,6 +424,44 @@ namespace SpatialCheckPro.Services
         }
 
         /// <summary>
+        /// ValidationError를 GeometryErrorDetail로 변환 (Metadata 기반 좌표/WKT 반영)
+        /// </summary>
+        private GeometryErrorDetail ConvertValidationErrorToGeometryErrorDetail(ValidationError error)
+        {
+            var detail = new GeometryErrorDetail
+            {
+                ObjectId = error.FeatureId,
+                ErrorType = error.ErrorCode,
+                ErrorValue = error.Message,
+                DetailMessage = error.Message
+            };
+
+            if (error.Metadata != null)
+            {
+                if (error.Metadata.TryGetValue("X", out var xValue) && double.TryParse(xValue?.ToString(), out var x))
+                {
+                    detail.X = x;
+                }
+
+                if (error.Metadata.TryGetValue("Y", out var yValue) && double.TryParse(yValue?.ToString(), out var y))
+                {
+                    detail.Y = y;
+                }
+
+                if (error.Metadata.TryGetValue("GeometryWkt", out var wktObj))
+                {
+                    var wkt = wktObj?.ToString();
+                    if (!string.IsNullOrWhiteSpace(wkt))
+                    {
+                        detail.GeometryWkt = wkt;
+                    }
+                }
+            }
+
+            return detail;
+        }
+
+        /// <summary>
         /// 지오메트리 검수 결과를 QC_ERRORS에 저장합니다
         /// </summary>
         /// <param name="qcErrorsGdbPath">QC_ERRORS FileGDB 경로</param>
@@ -765,7 +803,14 @@ namespace SpatialCheckPro.Services
         /// <param name="tableId">테이블 ID</param>
         /// <param name="objectId">객체 ID</param>
         /// <returns>지오메트리, X좌표, Y좌표, 지오메트리 타입</returns>
-        private async Task<(OSGeo.OGR.Geometry? geometry, double x, double y, string geometryType)> ExtractGeometryInfoAsync(
+        /// <summary>
+        /// 원본 FileGDB에서 실제 지오메트리 정보를 추출합니다
+        /// </summary>
+        /// <param name="sourceGdbPath">원본 FileGDB 경로</param>
+        /// <param name="tableId">테이블 ID</param>
+        /// <param name="objectId">객체 ID</param>
+        /// <returns>지오메트리, X좌표, Y좌표, 지오메트리 타입</returns>
+        public async Task<(OSGeo.OGR.Geometry? geometry, double x, double y, string geometryType)> ExtractGeometryInfoAsync(
             string sourceGdbPath, string tableId, string objectId)
         {
             try
@@ -1077,6 +1122,18 @@ namespace SpatialCheckPro.Services
                 _logger.LogError(ex, "지오메트리 정보 추출 실패: {TableId}:{ObjectId}", tableId, objectId);
                 return (null, 0, 0, "Unknown");
             }
+        }
+
+        /// <summary>
+        /// QcError 목록을 배치로 저장합니다
+        /// </summary>
+        /// <param name="gdbPath">QC_ERRORS FileGDB 경로</param>
+        /// <param name="qcErrors">저장할 QcError 목록</param>
+        /// <param name="batchSize">배치 크기(기본 1000)</param>
+        /// <returns>성공적으로 저장된 개수</returns>
+        public async Task<int> BatchAppendQcErrorsAsync(string gdbPath, IEnumerable<QcError> qcErrors, int batchSize = 1000)
+        {
+            return await _dataService.BatchAppendQcErrorsAsync(gdbPath, qcErrors, batchSize);
         }
 
         /// <summary>

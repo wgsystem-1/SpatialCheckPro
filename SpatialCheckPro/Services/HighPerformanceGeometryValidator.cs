@@ -73,6 +73,13 @@ namespace SpatialCheckPro.Services
                     for (int i = 1; i < group.Count; i++)
                     {
                         var (objectId, geometry) = group[i];
+                        // 오류 좌표 및 WKT 설정 (엔벨로프 중심점 사용)
+                        geometry.ExportToWkt(out string dupWkt);
+                        var dupEnv = new Envelope();
+                        geometry.GetEnvelope(dupEnv);
+                        var dupX = (dupEnv.MinX + dupEnv.MaxX) / 2.0;
+                        var dupY = (dupEnv.MinY + dupEnv.MaxY) / 2.0;
+
                         errorDetails.Add(new GeometryErrorDetail
                         {
                             ObjectId = objectId.ToString(),
@@ -81,7 +88,10 @@ namespace SpatialCheckPro.Services
                             ThresholdValue = coordinateTolerance > 0 ? $"좌표 허용오차 {coordinateTolerance}m" : "Exact match",
                             DetailMessage = coordinateTolerance > 0
                                 ? $"OBJECTID {objectId}: 좌표 허용오차 {coordinateTolerance}m 이내 동일한 지오메트리"
-                                : $"OBJECTID {objectId}: 완전히 동일한 지오메트리"
+                                : $"OBJECTID {objectId}: 완전히 동일한 지오메트리",
+                            X = dupX,
+                            Y = dupY,
+                            GeometryWkt = dupWkt
                         });
                         duplicateCount++;
                     }
@@ -121,13 +131,51 @@ namespace SpatialCheckPro.Services
 
                 foreach (var overlap in overlaps)
                 {
+                    // 교차 영역 중심점 및 WKT 추출 (교차 지오메트리가 있으면 우선 사용)
+                    double centerX = 0, centerY = 0;
+                    string? intersectionWkt = null;
+
+                    if (overlap.IntersectionGeometry != null && !overlap.IntersectionGeometry.IsEmpty())
+                    {
+                        var envInt = new Envelope();
+                        overlap.IntersectionGeometry.GetEnvelope(envInt);
+                        centerX = (envInt.MinX + envInt.MaxX) / 2.0;
+                        centerY = (envInt.MinY + envInt.MaxY) / 2.0;
+                        overlap.IntersectionGeometry.ExportToWkt(out intersectionWkt);
+                    }
+                    else
+                    {
+                        // 폴백: 대상 피처 중심
+                        Feature? feat = null;
+                        try
+                        {
+                            feat = layer.GetFeature(overlap.ObjectId);
+                            var g = feat?.GetGeometryRef();
+                            if (g != null && !g.IsEmpty())
+                            {
+                                var env = new Envelope();
+                                g.GetEnvelope(env);
+                                centerX = (env.MinX + env.MaxX) / 2.0;
+                                centerY = (env.MinY + env.MaxY) / 2.0;
+                                g.ExportToWkt(out intersectionWkt);
+                            }
+                        }
+                        finally
+                        {
+                            feat?.Dispose();
+                        }
+                    }
+
                     errorDetails.Add(new GeometryErrorDetail
                     {
                         ObjectId = overlap.ObjectId.ToString(),
                         ErrorType = "겹침 지오메트리",
                         ErrorValue = $"겹침 영역: {overlap.OverlapArea:F2}㎡",
                         ThresholdValue = $"{tolerance}m",
-                        DetailMessage = $"OBJECTID {overlap.ObjectId}: 겹침 영역 {overlap.OverlapArea:F2}㎡ 검출"
+                        DetailMessage = $"OBJECTID {overlap.ObjectId}: 겹침 영역 {overlap.OverlapArea:F2}㎡ 검출",
+                        X = centerX,
+                        Y = centerY,
+                        GeometryWkt = intersectionWkt
                     });
                 }
 

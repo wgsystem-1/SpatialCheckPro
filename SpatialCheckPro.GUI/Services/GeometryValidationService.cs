@@ -209,7 +209,14 @@ namespace SpatialCheckPro.GUI.Services
                         }
                         if (!g.IsValid())
                         {
-                            list.Add(new GeometryErrorDetail { ObjectId = GetObjectId(f), ErrorType = "기본검수", DetailMessage = "무효한 지오메트리" });
+                            // 좌표 및 WKT 보강
+                            g.ExportToWkt(out string wkt);
+                            var env = new Envelope();
+                            g.GetEnvelope(env);
+                            var cx = (env.MinX + env.MaxX) / 2.0;
+                            var cy = (env.MinY + env.MaxY) / 2.0;
+
+                            list.Add(new GeometryErrorDetail { ObjectId = GetObjectId(f), ErrorType = "기본검수", DetailMessage = "무효한 지오메트리", X = cx, Y = cy, GeometryWkt = wkt });
                         }
                     }
                     finally { f.Dispose(); }
@@ -236,7 +243,12 @@ namespace SpatialCheckPro.GUI.Services
                         var nts = reader.Read(wkt);
                         if (!nts.IsValid)
                         {
-                            result.Add(new GeometryErrorDetail { ObjectId = GetObjectId(f), ErrorType = "자체꼬임", DetailMessage = "자체 교차 또는 위상 오류" });
+                            // 좌표 및 WKT 보강
+                            var env = new Envelope();
+                            g.GetEnvelope(env);
+                            var cx = (env.MinX + env.MaxX) / 2.0;
+                            var cy = (env.MinY + env.MaxY) / 2.0;
+                            result.Add(new GeometryErrorDetail { ObjectId = GetObjectId(f), ErrorType = "자체꼬임", DetailMessage = "자체 교차 또는 위상 오류", X = cx, Y = cy, GeometryWkt = wkt });
                         }
                     }
                     finally { f.Dispose(); }
@@ -304,11 +316,20 @@ namespace SpatialCheckPro.GUI.Services
 
                         if (!string.IsNullOrEmpty(message))
                         {
+                            // 좌표 및 WKT 보강
+                            geometryClone.ExportToWkt(out string wkt2);
+                            var env2 = new Envelope();
+                            geometryClone.GetEnvelope(env2);
+                            var cx2 = (env2.MinX + env2.MaxX) / 2.0;
+                            var cy2 = (env2.MinY + env2.MaxY) / 2.0;
                             details.Add(new GeometryErrorDetail
                             {
                                 ObjectId = GetObjectId(feature),
                                 ErrorType = "최소정점개수",
-                                DetailMessage = message
+                                DetailMessage = message,
+                                X = cx2,
+                                Y = cy2,
+                                GeometryWkt = wkt2
                             });
                         }
 
@@ -351,11 +372,20 @@ namespace SpatialCheckPro.GUI.Services
                                     double angle = CalculateAngle(p1, p2, p3);
                                     if (angle < 10.0) // 기본값, 실제 기준은 geometry_criteria.csv에서 로드
                                     {
+                                        // 좌표 및 WKT 보강
+                                        geometry.ExportToWkt(out string wkt3);
+                                        var env3 = new Envelope();
+                                        geometry.GetEnvelope(env3);
+                                        var cx3 = (env3.MinX + env3.MaxX) / 2.0;
+                                        var cy3 = (env3.MinY + env3.MaxY) / 2.0;
                                         details.Add(new GeometryErrorDetail
                                         {
                                             ObjectId = GetObjectId(feature),
                                             ErrorType = "스파이크",
-                                            DetailMessage = $"폴리곤에서 스파이크(뾰족점) 검출 (각도 {angle:F2}°)"
+                                            DetailMessage = $"폴리곤에서 스파이크(뾰족점) 검출 (각도 {angle:F2}°)",
+                                            X = cx3,
+                                            Y = cy3,
+                                            GeometryWkt = wkt3
                                         });
                                         goto NextFeature;
                                     }
@@ -389,11 +419,31 @@ namespace SpatialCheckPro.GUI.Services
                         var nts = reader.Read(wkt);
                         if (!nts.IsValid)
                         {
+                            // NTS ValidationError로 정확한 위치 추출
+                            var validator = new NetTopologySuite.Operation.Valid.IsValidOp(nts);
+                            var validationError = validator.ValidationError;
+
+                            double errorX = 0, errorY = 0;
+                            if (validationError?.Coordinate != null)
+                            {
+                                errorX = validationError.Coordinate.X;
+                                errorY = validationError.Coordinate.Y;
+                            }
+                            else
+                            {
+                                var envelope = nts.EnvelopeInternal;
+                                errorX = envelope.Centre.X;
+                                errorY = envelope.Centre.Y;
+                            }
+
                             details.Add(new GeometryErrorDetail
                             {
                                 ObjectId = GetObjectId(feature),
                                 ErrorType = "자기중첩",
-                                DetailMessage = "NTS 유효성 검사에서 위상 오류 감지"
+                                DetailMessage = validationError != null ? $"위상 오류: {validationError.Message}" : "NTS 유효성 검사에서 위상 오류 감지",
+                                X = errorX,
+                                Y = errorY,
+                                GeometryWkt = wkt
                             });
                         }
                     }
@@ -484,11 +534,22 @@ namespace SpatialCheckPro.GUI.Services
                             
                             bool isEndpoint = closestPointOnTarget.Distance(targetStart) < 1e-9 || closestPointOnTarget.Distance(targetEnd) < 1e-9;
                             
+                            // 좌표 및 WKT 보강: 라인 끝점 좌표 사용
+                            var cx5 = p.X;
+                            var cy5 = p.Y;
+
+                            // 간격 선분 WKT 생성
+                            var gapLineString = new NetTopologySuite.Geometries.LineString(new[] { p.Coordinate, closestPointOnTarget.Coordinate });
+                            string gapLineWkt = gapLineString.ToText();
+
                             details.Add(new GeometryErrorDetail
                             {
                                 ObjectId = objectId,
                                 ErrorType = isEndpoint ? "오버슛" : "언더슛",
-                                DetailMessage = $"선 끝점 비연결 (최소 이격 {minDistance:F3}m)"
+                                DetailMessage = $"선 끝점 비연결 (최소 이격 {minDistance:F3}m)",
+                                X = cx5,
+                                Y = cy5,
+                                GeometryWkt = gapLineWkt
                             });
                             // 한 피처당 하나의 오류만 보고하기 위해 루프 탈출
                             goto NextLine;

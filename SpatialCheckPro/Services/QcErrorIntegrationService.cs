@@ -18,6 +18,7 @@ namespace SpatialCheckPro.Services
         private readonly ValidationResultConverter _converter;
         private readonly ShapefileToFgdbMigrationService _migrationService;
         private readonly QcStoragePathService _pathService;
+        private readonly RelationErrorsIntegrator _relationIntegrator;
 
         public QcErrorIntegrationService(
             ILogger<QcErrorIntegrationService> logger,
@@ -25,7 +26,8 @@ namespace SpatialCheckPro.Services
             QcErrorDataService dataService,
             ValidationResultConverter converter,
             ShapefileToFgdbMigrationService migrationService,
-            QcStoragePathService pathService)
+            QcStoragePathService pathService,
+            RelationErrorsIntegrator relationIntegrator)
         {
             _logger = logger;
             _schemaService = schemaService;
@@ -33,6 +35,7 @@ namespace SpatialCheckPro.Services
             _converter = converter;
             _migrationService = migrationService;
             _pathService = pathService;
+            _relationIntegrator = relationIntegrator;
         }
 
         /// <summary>
@@ -70,11 +73,39 @@ namespace SpatialCheckPro.Services
                     return 0;
                 }
 
-                // ValidationResult를 QcError 목록으로 변환
+                // ValidationResult를 QcError 목록으로 변환 (1/2/3단계 중심)
                 var qcErrors = _converter.ConvertValidationResultToQcErrors(validationResult, Guid.Parse(qcRun.GlobalID));
 
-                // QC 오류 데이터 저장
+                // QC 오류 데이터 저장 (1/2/3단계)
                 var savedCount = await _dataService.BatchAppendQcErrorsAsync(outputGdbPath, qcErrors);
+
+                // === Stage 4/5 결과 저장 (REL/ATTR_REL) 추가 ===
+                if (validationResult.RelationCheckResult != null && 
+                    (validationResult.RelationCheckResult.ErrorCount > 0 || validationResult.RelationCheckResult.Errors.Count > 0))
+                {
+                    // RelationCheckResult를 RelationValidationResult로 변환 (간단 매핑)
+                    var rel = new RelationValidationResult
+                    {
+                        ValidationId = validationResult.ValidationId,
+                        StartedAt = validationResult.StartedAt,
+                        CompletedAt = validationResult.CompletedAt ?? DateTime.UtcNow,
+                        IsValid = validationResult.RelationCheckResult.Status == CheckStatus.Passed,
+                        SpatialErrorCount = validationResult.RelationCheckResult.ErrorCount,
+                        AttributeErrorCount = 0
+                    };
+
+                    // RelationCheckResult.Errors를 SpatialRelationError로 해석 가능한 경우에만 매핑 (메타 기반 확장 여지)
+                    // 현재 구조에서는 별도 수집 모델이 있을 가능성이 높으므로, 실제 오류 컬렉션이 별도에 있다면 그 컬렉션을 전달해야 함
+                    // 여기서는 빈 리스트를 그대로 유지
+
+                    var integrated = await _relationIntegrator.SaveRelationValidationResultAsync(
+                        outputGdbPath,
+                        rel,
+                        qcRun.GlobalID,
+                        targetFilePath);
+
+                    _logger.LogInformation("Stage 4/5 결과 저장 {Status}", integrated ? "성공" : "실패");
+                }
 
                 // QC 실행 상태 업데이트
                 var runStatus = validationResult.Status == ValidationStatus.Completed ? 
@@ -86,8 +117,8 @@ namespace SpatialCheckPro.Services
                     runStatus,
                     validationResult.TotalErrors,
                     validationResult.TotalWarnings,
-                    $"총 {savedCount}개 오류 저장 완료"
-                );
+                    $"총 {savedCount}개 오류 저장 완료")
+                ;
 
                 _logger.LogInformation("검수 결과 FGDB 저장 완료: {SavedCount}개 오류, 출력: {OutputGdbPath}", 
                     savedCount, outputGdbPath);

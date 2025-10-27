@@ -389,7 +389,8 @@ namespace SpatialCheckPro.Services
                                     {
                                         ObjectId = long.Parse(entry.ObjectId),
                                         OverlapArea = overlapArea,
-                                        OverlappingObjectId = long.Parse(candidate.ObjectId)
+                                        OverlappingObjectId = long.Parse(candidate.ObjectId),
+                                        IntersectionGeometry = intersection.Clone()
                                     });
                                 }
                             }
@@ -863,5 +864,6 @@ namespace SpatialCheckPro.Services
         public long ObjectId { get; set; }
         public double OverlapArea { get; set; }
         public long OverlappingObjectId { get; set; }
+        public Geometry? IntersectionGeometry { get; set; }
     }
 }

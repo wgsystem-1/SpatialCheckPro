@@ -765,7 +765,14 @@ namespace SpatialCheckPro.Services
         /// <param name="tableId">테이블 ID</param>
         /// <param name="objectId">객체 ID</param>
         /// <returns>지오메트리, X좌표, Y좌표, 지오메트리 타입</returns>
-        private async Task<(OSGeo.OGR.Geometry? geometry, double x, double y, string geometryType)> ExtractGeometryInfoAsync(
+        /// <summary>
+        /// 원본 FileGDB에서 실제 지오메트리 정보를 추출합니다
+        /// </summary>
+        /// <param name="sourceGdbPath">원본 FileGDB 경로</param>
+        /// <param name="tableId">테이블 ID</param>
+        /// <param name="objectId">객체 ID</param>
+        /// <returns>지오메트리, X좌표, Y좌표, 지오메트리 타입</returns>
+        public async Task<(OSGeo.OGR.Geometry? geometry, double x, double y, string geometryType)> ExtractGeometryInfoAsync(
             string sourceGdbPath, string tableId, string objectId)
         {
             try
@@ -1077,6 +1084,18 @@ namespace SpatialCheckPro.Services
                 _logger.LogError(ex, "지오메트리 정보 추출 실패: {TableId}:{ObjectId}", tableId, objectId);
                 return (null, 0, 0, "Unknown");
             }
+        }
+
+        /// <summary>
+        /// QcError 목록을 배치로 저장합니다
+        /// </summary>
+        /// <param name="gdbPath">QC_ERRORS FileGDB 경로</param>
+        /// <param name="qcErrors">저장할 QcError 목록</param>
+        /// <param name="batchSize">배치 크기(기본 1000)</param>
+        /// <returns>성공적으로 저장된 개수</returns>
+        public async Task<int> BatchAppendQcErrorsAsync(string gdbPath, IEnumerable<QcError> qcErrors, int batchSize = 1000)
+        {
+            return await _dataService.BatchAppendQcErrorsAsync(gdbPath, qcErrors, batchSize);
         }
 
         /// <summary>

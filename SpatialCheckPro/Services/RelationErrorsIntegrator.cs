@@ -59,19 +59,24 @@ namespace SpatialCheckPro.Services
 
                 var qcErrors = new List<QcError>();
 
-                // 공간 관계 오류 변환
+                // 공간 관계 오류 변환 (비동기, 원본 GDB에서 지오메트리 추출)
                 foreach (var spatialError in relationResult.SpatialErrors)
                 {
-                    var qcError = ConvertSpatialRelationErrorToQcError(spatialError, runId);
+                    var qcError = await ConvertSpatialRelationErrorToQcErrorAsync(
+                        spatialError,
+                        runId,
+                        sourceGdbPath);
                     qcError.SourceFile = System.IO.Path.GetFileName(sourceGdbPath);
-                    // 좌표 미기록 시 GeometryWKT에서 좌표 추정(센터) 시도는 저장 단계에서 처리되므로 여기서는 통과
                     qcErrors.Add(qcError);
                 }
 
-                // 속성 관계 오류 변환
+                // 속성 관계 오류 변환 (비동기, 원본 GDB에서 지오메트리 추출)
                 foreach (var attributeError in relationResult.AttributeErrors)
                 {
-                    var qcError = ConvertAttributeRelationErrorToQcError(attributeError, runId);
+                    var qcError = await ConvertAttributeRelationErrorToQcErrorAsync(
+                        attributeError,
+                        runId,
+                        sourceGdbPath);
                     qcError.SourceFile = System.IO.Path.GetFileName(sourceGdbPath);
                     qcErrors.Add(qcError);
                 }
@@ -79,28 +84,11 @@ namespace SpatialCheckPro.Services
                 _logger.LogInformation("QcError 변환 완료: {TotalErrors}개 오류를 {QcErrorCount}개 QcError로 변환", 
                     totalErrors, qcErrors.Count);
 
-                // QC_ERRORS에 저장
-                var successCount = 0;
-                var failedCount = 0;
-
-                foreach (var qcError in qcErrors)
-                {
-                var success = await SaveSingleQcErrorAsync(qcErrorsGdbPath, qcError);
-                    if (success)
-                    {
-                        successCount++;
-                    }
-                    else
-                    {
-                        failedCount++;
-                        _logger.LogWarning("QcError 저장 실패: {ErrorCode} ({SourceClass}:{SourceOID})", 
-                            qcError.ErrCode, qcError.SourceClass, qcError.SourceOID);
-                    }
-                }
-
+                // 배치 저장 사용 (성능 최적화)
+                var successCount = await _qcErrorService.BatchAppendQcErrorsAsync(qcErrorsGdbPath, qcErrors);
                 var allSuccess = successCount == qcErrors.Count;
                 _logger.LogInformation("관계 검수 결과 저장 완료: 성공 {Success}개, 실패 {Failed}개, 총 {Total}개", 
-                    successCount, failedCount, qcErrors.Count);
+                    successCount, qcErrors.Count - successCount, qcErrors.Count);
 
                 return allSuccess;
             }
@@ -112,13 +100,27 @@ namespace SpatialCheckPro.Services
         }
 
         /// <summary>
-        /// 공간 관계 오류를 QcError로 변환합니다
+        /// 공간 관계 오류를 QcError로 변환합니다 (원본 FGDB에서 지오메트리 추출)
         /// </summary>
-        /// <param name="spatialError">공간 관계 오류</param>
-        /// <param name="runId">검수 실행 ID</param>
-        /// <returns>변환된 QcError</returns>
-        private QcError ConvertSpatialRelationErrorToQcError(SpatialRelationError spatialError, string runId)
+        private async Task<QcError> ConvertSpatialRelationErrorToQcErrorAsync(
+            SpatialRelationError spatialError,
+            string runId,
+            string sourceGdbPath)
         {
+            // 원본 FGDB에서 지오메트리 추출
+            var (geometry, x, y, geometryType) = await _qcErrorService.ExtractGeometryInfoAsync(
+                sourceGdbPath,
+                spatialError.SourceLayer,
+                spatialError.SourceObjectId.ToString()
+            );
+
+            // WKT 변환
+            string? extractedWkt = null;
+            if (geometry != null)
+            {
+                try { geometry.ExportToWkt(out extractedWkt); } catch { extractedWkt = null; }
+            }
+
             var qcError = new QcError
             {
                 GlobalID = Guid.NewGuid().ToString(),
@@ -129,11 +131,12 @@ namespace SpatialCheckPro.Services
                 RuleId = $"SPATIAL_{spatialError.RelationType}_{spatialError.ErrorType}",
                 SourceClass = spatialError.SourceLayer,
                 SourceOID = spatialError.SourceObjectId,
-                SourceGlobalID = null, // 향후 구현
-                X = spatialError.ErrorLocationX,
-                Y = spatialError.ErrorLocationY,
-                GeometryWKT = string.IsNullOrWhiteSpace(spatialError.GeometryWKT) ? null : spatialError.GeometryWKT,
-                GeometryType = DetermineGeometryTypeFromWKT(spatialError.GeometryWKT).ToUpperInvariant(),
+                SourceGlobalID = null,
+                X = (x != 0 || y != 0) ? x : spatialError.ErrorLocationX,
+                Y = (x != 0 || y != 0) ? y : spatialError.ErrorLocationY,
+                Geometry = geometry?.Clone(),
+                GeometryWKT = extractedWkt ?? spatialError.GeometryWKT,
+                GeometryType = (geometryType != "Unknown") ? geometryType : DetermineGeometryTypeFromWKT(spatialError.GeometryWKT).ToUpperInvariant(),
                 ErrorValue = spatialError.TargetObjectId?.ToString() ?? "",
                 ThresholdValue = spatialError.TargetLayer,
                 Message = spatialError.Message,
@@ -152,10 +155,12 @@ namespace SpatialCheckPro.Services
                 ["SourceObjectId"] = spatialError.SourceObjectId,
                 ["TargetObjectId"] = spatialError.TargetObjectId,
                 ["DetectedAt"] = spatialError.DetectedAt,
-                ["Properties"] = spatialError.Properties
+                ["Properties"] = spatialError.Properties,
+                ["GeometryExtracted"] = geometry != null
             };
-
             qcError.DetailsJSON = JsonSerializer.Serialize(detailsDict);
+
+            geometry?.Dispose();
 
             return qcError;
         }
@@ -166,8 +171,23 @@ namespace SpatialCheckPro.Services
         /// <param name="attributeError">속성 관계 오류</param>
         /// <param name="runId">검수 실행 ID</param>
         /// <returns>변환된 QcError</returns>
-        private QcError ConvertAttributeRelationErrorToQcError(AttributeRelationError attributeError, string runId)
+        private async Task<QcError> ConvertAttributeRelationErrorToQcErrorAsync(
+            AttributeRelationError attributeError,
+            string runId,
+            string sourceGdbPath)
         {
+            var (geometry, x, y, geometryType) = await _qcErrorService.ExtractGeometryInfoAsync(
+                sourceGdbPath,
+                attributeError.TableName,
+                attributeError.ObjectId.ToString());
+
+            // WKT 변환
+            string? extractedWkt = null;
+            if (geometry != null)
+            {
+                try { geometry.ExportToWkt(out extractedWkt); } catch { extractedWkt = null; }
+            }
+
             var qcError = new QcError
             {
                 GlobalID = Guid.NewGuid().ToString(),
@@ -178,11 +198,12 @@ namespace SpatialCheckPro.Services
                 RuleId = $"ATTR_REL_{attributeError.RuleName}",
                 SourceClass = attributeError.TableName,
                 SourceOID = attributeError.ObjectId,
-                SourceGlobalID = null, // 향후 구현
-                X = 0, // 속성 오류는 공간 위치가 없음
-                Y = 0,
-                GeometryWKT = null,
-                GeometryType = "NoGeometry",
+                SourceGlobalID = null,
+                X = x,
+                Y = y,
+                Geometry = geometry?.Clone(),
+                GeometryWKT = extractedWkt,
+                GeometryType = (geometryType != "Unknown") ? geometryType : "NoGeometry",
                 ErrorValue = attributeError.ActualValue,
                 ThresholdValue = attributeError.ExpectedValue,
                 Message = attributeError.Message,
@@ -191,7 +212,6 @@ namespace SpatialCheckPro.Services
                 UpdatedUTC = DateTime.UtcNow
             };
 
-            // 상세 정보를 JSON으로 저장
             var detailsDict = new Dictionary<string, object>
             {
                 ["RuleName"] = attributeError.RuleName,
@@ -204,10 +224,12 @@ namespace SpatialCheckPro.Services
                 ["RelatedTableName"] = attributeError.RelatedTableName ?? "",
                 ["RelatedObjectId"] = attributeError.RelatedObjectId,
                 ["DetectedAt"] = attributeError.DetectedAt,
-                ["Properties"] = attributeError.Properties
+                ["Properties"] = attributeError.Properties,
+                ["GeometryExtracted"] = geometry != null
             };
-
             qcError.DetailsJSON = JsonSerializer.Serialize(detailsDict);
+
+            geometry?.Dispose();
 
             return qcError;
         }

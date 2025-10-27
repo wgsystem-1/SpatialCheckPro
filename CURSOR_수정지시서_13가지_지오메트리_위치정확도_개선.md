@@ -1,10 +1,371 @@
-# Cursor AI 수정 지시서: 13가지 지오메트리 오류 위치 정확도 개선
+# Cursor AI 수정 지시서: Stage 4,5 저장 + 13가지 지오메트리 오류 위치 정확도 개선
 
 ## 📋 수정 개요
 
-**목적**: 13가지 지오메트리 오류 타입에서 정확한 X, Y 좌표 추출
-**영향 범위**: 3개 파일 수정 + 1개 유틸리티 클래스 신규 생성
-**우선순위**: Phase 1 (긴급) → Phase 2 (높음) → Phase 3 (중간/낮음)
+**목적**:
+1. **최우선**: Stage 4, 5 오류가 QC_Errors_Point에 저장되도록 수정
+2. 13가지 지오메트리 오류 타입에서 정확한 X, Y 좌표 추출
+
+**영향 범위**: 4개 파일 수정 + 1개 유틸리티 클래스 신규 생성
+**우선순위**: **Phase 0 (최우선)** → Phase 1 (긴급) → Phase 2 (높음) → Phase 3 (중간/낮음)
+
+---
+
+## ⚠️ Phase 0: 최우선 - Stage 4, 5 저장 문제 해결 (URGENT)
+
+### 🎯 현재 문제점
+
+- **Stage 1, 2**: QC_Errors_NoGeom 테이블 저장 ✅ 정상
+- **Stage 3**: QC_Errors_Point 저장 ✅ 정상
+- **Stage 4 (REL)**: GeometryWKT 없으면 NoGeom 저장 ⚠️ ~40% 실패
+- **Stage 5 (ATTR_REL)**: X=0, Y=0 강제 설정 ❌ 100% NoGeom 저장
+
+### 📁 수정 대상 파일
+`/SpatialCheckPro/Services/RelationErrorsIntegrator.cs`
+
+---
+
+### 1️⃣ Stage 4: ConvertSpatialRelationErrorToQcError 메서드 수정
+
+#### 🔍 수정 위치: 120-160번 라인
+
+#### ❌ 수정 전 코드 (동기 메서드)
+```csharp
+private QcError ConvertSpatialRelationErrorToQcError(SpatialRelationError spatialError, string runId)
+{
+    var qcError = new QcError
+    {
+        GlobalID = Guid.NewGuid().ToString(),
+        ErrType = "REL",
+        // ...
+        X = spatialError.ErrorLocationX,  // ⚠️ 종종 0,0
+        Y = spatialError.ErrorLocationY,
+        GeometryWKT = string.IsNullOrWhiteSpace(spatialError.GeometryWKT) ? null : spatialError.GeometryWKT,  // ⚠️ 종종 null
+        // ❌ 원본 FGDB에서 지오메트리 추출 없음
+    };
+    return qcError;
+}
+```
+
+#### ✅ 수정 후 코드 (비동기 메서드 + 지오메트리 추출)
+```csharp
+/// <summary>
+/// 공간 관계 오류를 QcError로 변환합니다 (원본 FGDB에서 지오메트리 추출)
+/// </summary>
+private async Task<QcError> ConvertSpatialRelationErrorToQcErrorAsync(
+    SpatialRelationError spatialError,
+    string runId,
+    string sourceGdbPath)  // ✅ 원본 FGDB 경로 추가
+{
+    var qcError = new QcError
+    {
+        GlobalID = Guid.NewGuid().ToString(),
+        ErrType = "REL",
+        ErrCode = GetSpatialRelationErrorCode(spatialError.RelationType, spatialError.ErrorType),
+        Severity = ConvertErrorSeverityToString(spatialError.Severity),
+        Status = "OPEN",
+        RuleId = $"SPATIAL_{spatialError.RelationType}_{spatialError.ErrorType}",
+        SourceClass = spatialError.SourceLayer,
+        SourceOID = spatialError.SourceObjectId,
+        SourceGlobalID = null,
+        Message = spatialError.Message,
+        RunID = runId,
+        CreatedUTC = spatialError.DetectedAt,
+        UpdatedUTC = DateTime.UtcNow
+    };
+
+    // ✅ 1차 시도: SpatialRelationError의 기존 좌표/WKT 사용
+    double x = spatialError.ErrorLocationX;
+    double y = spatialError.ErrorLocationY;
+    string? geometryWkt = string.IsNullOrWhiteSpace(spatialError.GeometryWKT) ? null : spatialError.GeometryWKT;
+    string geometryType = DetermineGeometryTypeFromWKT(spatialError.GeometryWKT).ToUpperInvariant();
+
+    // ✅ 2차 시도: 좌표가 0,0이거나 WKT가 없으면 원본 FGDB에서 추출
+    if ((x == 0 && y == 0) || string.IsNullOrWhiteSpace(geometryWkt))
+    {
+        try
+        {
+            // QcErrorService의 ExtractGeometryInfoAsync 메서드 활용
+            var (extractedGeometry, extractedX, extractedY, extractedGeomType) =
+                await ExtractGeometryFromSourceAsync(
+                    sourceGdbPath,
+                    spatialError.SourceLayer,
+                    spatialError.SourceObjectId);
+
+            if (extractedGeometry != null)
+            {
+                x = extractedX;
+                y = extractedY;
+                extractedGeometry.ExportToWkt(out geometryWkt);
+                geometryType = extractedGeomType;
+
+                _logger.LogDebug("Stage 4: FGDB에서 지오메트리 추출 성공 - Layer: {Layer}, OID: {OID}, X: {X}, Y: {Y}",
+                    spatialError.SourceLayer, spatialError.SourceObjectId, x, y);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Stage 4: FGDB에서 지오메트리 추출 실패 - Layer: {Layer}, OID: {OID}",
+                spatialError.SourceLayer, spatialError.SourceObjectId);
+        }
+    }
+
+    qcError.X = x;
+    qcError.Y = y;
+    qcError.GeometryWKT = geometryWkt;
+    qcError.GeometryType = geometryType;
+    qcError.ErrorValue = spatialError.TargetObjectId?.ToString() ?? "";
+    qcError.ThresholdValue = spatialError.TargetLayer;
+
+    // 상세 정보를 JSON으로 저장
+    var detailsDict = new Dictionary<string, object>
+    {
+        ["RelationType"] = spatialError.RelationType.ToString(),
+        ["ErrorType"] = spatialError.ErrorType,
+        ["SourceLayer"] = spatialError.SourceLayer,
+        ["TargetLayer"] = spatialError.TargetLayer,
+        ["SourceObjectId"] = spatialError.SourceObjectId,
+        ["TargetObjectId"] = spatialError.TargetObjectId,
+        ["DetectedAt"] = spatialError.DetectedAt,
+        ["Properties"] = spatialError.Properties
+    };
+
+    qcError.DetailsJSON = JsonSerializer.Serialize(detailsDict);
+
+    return qcError;
+}
+
+/// <summary>
+/// 원본 FGDB에서 지오메트리 정보 추출 (QcErrorService.ExtractGeometryInfoAsync와 동일 로직)
+/// </summary>
+private async Task<(OSGeo.OGR.Geometry? geometry, double x, double y, string geometryType)> ExtractGeometryFromSourceAsync(
+    string sourceGdbPath,
+    string tableId,
+    string objectId)
+{
+    return await Task.Run(() =>
+    {
+        try
+        {
+            OSGeo.GDAL.Gdal.AllRegister();
+            var driver = OSGeo.OGR.Ogr.GetDriverByName("OpenFileGDB");
+            if (driver == null)
+                return (null, 0, 0, "Unknown");
+
+            var dataSource = driver.Open(sourceGdbPath, 0);
+            if (dataSource == null)
+                return (null, 0, 0, "Unknown");
+
+            OSGeo.OGR.Layer? layer = null;
+            for (int i = 0; i < dataSource.GetLayerCount(); i++)
+            {
+                var testLayer = dataSource.GetLayerByIndex(i);
+                if (testLayer.GetName().Equals(tableId, StringComparison.OrdinalIgnoreCase))
+                {
+                    layer = testLayer;
+                    break;
+                }
+            }
+
+            if (layer == null)
+                return (null, 0, 0, "Unknown");
+
+            var geometryTypeName = layer.GetGeomType().ToString();
+
+            // ObjectId로 피처 검색
+            layer.SetAttributeFilter($"OBJECTID = {objectId}");
+            layer.ResetReading();
+            var feature = layer.GetNextFeature();
+
+            if (feature != null)
+            {
+                var geometry = feature.GetGeometryRef();
+                if (geometry != null)
+                {
+                    var clonedGeom = geometry.Clone();
+                    var envelope = new OSGeo.OGR.Envelope();
+                    clonedGeom.GetEnvelope(envelope);
+                    double centerX = (envelope.MinX + envelope.MaxX) / 2.0;
+                    double centerY = (envelope.MinY + envelope.MaxY) / 2.0;
+
+                    return (clonedGeom, centerX, centerY, geometryTypeName);
+                }
+            }
+
+            return (null, 0, 0, "Unknown");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "지오메트리 추출 실패: {Path}, {Table}, {OID}", sourceGdbPath, tableId, objectId);
+            return (null, 0, 0, "Unknown");
+        }
+    });
+}
+```
+
+#### 🔧 호출 메서드 수정 필요
+
+`IntegrateRelationErrors` 메서드에서 `ConvertSpatialRelationErrorToQcError` 호출을 `await ConvertSpatialRelationErrorToQcErrorAsync`로 변경:
+
+```csharp
+// ❌ 수정 전
+var qcError = ConvertSpatialRelationErrorToQcError(spatialError, runId);
+
+// ✅ 수정 후
+var qcError = await ConvertSpatialRelationErrorToQcErrorAsync(spatialError, runId, sourceGdbPath);
+```
+
+**중요**: `sourceGdbPath`를 `IntegrateRelationErrors` 메서드 파라미터로 추가하거나, 클래스 필드에서 가져와야 합니다.
+
+---
+
+### 2️⃣ Stage 5: ConvertAttributeRelationErrorToQcError 메서드 수정
+
+#### 🔍 수정 위치: 169-213번 라인
+
+#### ❌ 수정 전 코드
+```csharp
+private QcError ConvertAttributeRelationErrorToQcError(AttributeRelationError attributeError, string runId)
+{
+    var qcError = new QcError
+    {
+        GlobalID = Guid.NewGuid().ToString(),
+        ErrType = "ATTR_REL",
+        // ...
+        X = 0,  // ❌ 강제로 0 설정 (주석: "속성 오류는 공간 위치가 없음")
+        Y = 0,  // ❌ 강제로 0 설정
+        GeometryWKT = null,
+        GeometryType = "NoGeometry",
+        // ❌ 원본 FGDB에서 지오메트리 추출 없음
+    };
+    return qcError;
+}
+```
+
+#### ✅ 수정 후 코드
+```csharp
+/// <summary>
+/// 속성 관계 오류를 QcError로 변환합니다 (원본 FGDB에서 지오메트리 추출)
+/// </summary>
+private async Task<QcError> ConvertAttributeRelationErrorToQcErrorAsync(
+    AttributeRelationError attributeError,
+    string runId,
+    string sourceGdbPath)  // ✅ 원본 FGDB 경로 추가
+{
+    var qcError = new QcError
+    {
+        GlobalID = Guid.NewGuid().ToString(),
+        ErrType = "ATTR_REL",
+        ErrCode = GetAttributeRelationErrorCode(attributeError.RelationType, attributeError.ErrorType),
+        Severity = ConvertErrorSeverityToString(attributeError.Severity),
+        Status = "OPEN",
+        RuleId = $"ATTR_{attributeError.RelationType}_{attributeError.ErrorType}",
+        SourceClass = attributeError.SourceLayer,
+        SourceOID = attributeError.SourceObjectId,
+        SourceGlobalID = null,
+        Message = attributeError.Message,
+        RunID = runId,
+        CreatedUTC = attributeError.DetectedAt,
+        UpdatedUTC = DateTime.UtcNow
+    };
+
+    // ✅ 원본 FGDB에서 지오메트리 추출 시도
+    double x = 0, y = 0;
+    string? geometryWkt = null;
+    string geometryType = "NoGeometry";
+
+    try
+    {
+        var (extractedGeometry, extractedX, extractedY, extractedGeomType) =
+            await ExtractGeometryFromSourceAsync(
+                sourceGdbPath,
+                attributeError.SourceLayer,
+                attributeError.SourceObjectId);
+
+        if (extractedGeometry != null)
+        {
+            x = extractedX;
+            y = extractedY;
+            extractedGeometry.ExportToWkt(out geometryWkt);
+            geometryType = extractedGeomType;
+
+            _logger.LogDebug("Stage 5: FGDB에서 지오메트리 추출 성공 - Layer: {Layer}, OID: {OID}, X: {X}, Y: {Y}",
+                attributeError.SourceLayer, attributeError.SourceObjectId, x, y);
+        }
+        else
+        {
+            _logger.LogDebug("Stage 5: 지오메트리 없음 (NoGeom으로 저장) - Layer: {Layer}, OID: {OID}",
+                attributeError.SourceLayer, attributeError.SourceObjectId);
+        }
+    }
+    catch (Exception ex)
+    {
+        _logger.LogWarning(ex, "Stage 5: FGDB에서 지오메트리 추출 실패 - Layer: {Layer}, OID: {OID}",
+            attributeError.SourceLayer, attributeError.SourceObjectId);
+    }
+
+    qcError.X = x;
+    qcError.Y = y;
+    qcError.GeometryWKT = geometryWkt;
+    qcError.GeometryType = geometryType;
+    qcError.ErrorValue = attributeError.SourceAttributeValue?.ToString() ?? "";
+    qcError.ThresholdValue = attributeError.TargetLayer;
+
+    // 상세 정보를 JSON으로 저장
+    var detailsDict = new Dictionary<string, object>
+    {
+        ["RelationType"] = attributeError.RelationType.ToString(),
+        ["ErrorType"] = attributeError.ErrorType,
+        ["SourceLayer"] = attributeError.SourceLayer,
+        ["TargetLayer"] = attributeError.TargetLayer,
+        ["SourceObjectId"] = attributeError.SourceObjectId,
+        ["SourceAttribute"] = attributeError.SourceAttribute ?? "",
+        ["SourceAttributeValue"] = attributeError.SourceAttributeValue ?? "",
+        ["TargetAttribute"] = attributeError.TargetAttribute ?? "",
+        ["DetectedAt"] = attributeError.DetectedAt,
+        ["Properties"] = attributeError.Properties
+    };
+
+    qcError.DetailsJSON = JsonSerializer.Serialize(detailsDict);
+
+    return qcError;
+}
+```
+
+#### 🔧 호출 메서드 수정 필요
+
+`IntegrateRelationErrors` 메서드에서 호출 변경:
+
+```csharp
+// ❌ 수정 전
+var qcError = ConvertAttributeRelationErrorToQcError(attributeError, runId);
+
+// ✅ 수정 후
+var qcError = await ConvertAttributeRelationErrorToQcErrorAsync(attributeError, runId, sourceGdbPath);
+```
+
+---
+
+### 📦 필요한 using 추가
+파일 상단에 다음 using 추가 (없으면):
+```csharp
+using System.Text.Json;
+using OSGeo.OGR;
+using OSGeo.GDAL;
+```
+
+---
+
+### ✅ Phase 0 검증 체크리스트
+
+- [ ] `ConvertSpatialRelationErrorToQcError` → `ConvertSpatialRelationErrorToQcErrorAsync`로 변경
+- [ ] `ConvertAttributeRelationErrorToQcError` → `ConvertAttributeRelationErrorToQcErrorAsync`로 변경
+- [ ] `ExtractGeometryFromSourceAsync` 메서드 추가 확인
+- [ ] 두 변환 메서드 모두 `sourceGdbPath` 파라미터 추가 확인
+- [ ] 호출하는 `IntegrateRelationErrors` 메서드에 `await` 추가 확인
+- [ ] `sourceGdbPath`를 호출 시점에 전달하도록 수정 확인
+- [ ] Stage 4, 5 오류가 QC_Errors_Point에 저장되는지 테스트
+- [ ] X, Y 좌표가 0,0이 아닌 실제 값인지 확인
 
 ---
 
@@ -1102,6 +1463,15 @@ private GeometryErrorDetail ConvertValidationErrorToGeometryErrorDetail(Validati
 
 수정 완료 후 다음을 확인하세요:
 
+### Phase 0: Stage 4, 5 저장 문제 (최우선) ⚠️
+- [ ] `ConvertSpatialRelationErrorToQcError` → `ConvertSpatialRelationErrorToQcErrorAsync` 변경
+- [ ] `ConvertAttributeRelationErrorToQcError` → `ConvertAttributeRelationErrorToQcErrorAsync` 변경
+- [ ] `ExtractGeometryFromSourceAsync` 메서드 추가
+- [ ] 두 변환 메서드에 `sourceGdbPath` 파라미터 추가
+- [ ] `IntegrateRelationErrors`에서 `await` 키워드 사용
+- [ ] Stage 4, 5 오류가 QC_Errors_Point에 저장되는지 테스트
+- [ ] X, Y 좌표가 0,0이 아닌 실제 값인지 확인
+
 ### Phase 1: 유틸리티 클래스
 - [ ] `GeometryCoordinateExtractor.cs` 파일 생성 확인
 - [ ] 빌드 오류 없이 컴파일되는지 확인
@@ -1147,9 +1517,24 @@ private GeometryErrorDetail ConvertValidationErrorToGeometryErrorDetail(Validati
 ## 📊 예상 결과
 
 수정 완료 후:
+
+### Stage별 저장 결과
+- **Stage 1, 2**: QC_Errors_NoGeom ✅ (유지)
+- **Stage 3**: QC_Errors_Point ✅ (유지)
+- **Stage 4**: QC_Errors_Point ✅ (개선: 40% → 100%)
+- **Stage 5**: QC_Errors_Point ✅ (개선: 0% → 지오메트리 있는 경우 100%)
+
+### 지오메트리 오류 위치 정확도
 - **13가지 오류 타입** 중 **12가지**가 정확한 X, Y 좌표와 함께 저장
-- **Stage 3 지오메트리 검수** 결과가 모두 QC_Errors_Point에 저장
-- **사용자가 ArcGIS/QGIS에서 오류 위치를 정확히 확인 가능**
+- **겹침**: 교차 영역 중심점
+- **스파이크**: 정확한 스파이크 정점
+- **언더슛/오버슛**: 정확한 끝점 + 간격 선분
+- **자체 꼬임/자기 중첩**: NTS ValidationError 교차점
+- **기타 오류**: 적절한 대표 위치
+
+### 사용자 경험
+- **ArcGIS/QGIS에서 모든 오류 위치를 정확히 확인 가능**
+- **오류 수정 작업 효율성 대폭 향상**
 
 ---
 

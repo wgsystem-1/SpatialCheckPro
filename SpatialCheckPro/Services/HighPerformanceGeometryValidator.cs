@@ -131,28 +131,39 @@ namespace SpatialCheckPro.Services
 
                 foreach (var overlap in overlaps)
                 {
-                    // 교차 영역 중심점 및 WKT 추출 (교차 지오메트리가 없는 경우 대상 피처 중심으로 폴백)
+                    // 교차 영역 중심점 및 WKT 추출 (교차 지오메트리가 있으면 우선 사용)
                     double centerX = 0, centerY = 0;
                     string? intersectionWkt = null;
 
-                    // 현재 OverlapResult에는 교차 지오메트리 속성이 없으므로, 대상 피처에서 중심 추출
-                    Feature? feat = null;
-                    try
+                    if (overlap.IntersectionGeometry != null && !overlap.IntersectionGeometry.IsEmpty())
                     {
-                        feat = layer.GetFeature(overlap.ObjectId);
-                        var g = feat?.GetGeometryRef();
-                        if (g != null && !g.IsEmpty())
-                        {
-                            var env = new Envelope();
-                            g.GetEnvelope(env);
-                            centerX = (env.MinX + env.MaxX) / 2.0;
-                            centerY = (env.MinY + env.MaxY) / 2.0;
-                            g.ExportToWkt(out intersectionWkt);
-                        }
+                        var envInt = new Envelope();
+                        overlap.IntersectionGeometry.GetEnvelope(envInt);
+                        centerX = (envInt.MinX + envInt.MaxX) / 2.0;
+                        centerY = (envInt.MinY + envInt.MaxY) / 2.0;
+                        overlap.IntersectionGeometry.ExportToWkt(out intersectionWkt);
                     }
-                    finally
+                    else
                     {
-                        feat?.Dispose();
+                        // 폴백: 대상 피처 중심
+                        Feature? feat = null;
+                        try
+                        {
+                            feat = layer.GetFeature(overlap.ObjectId);
+                            var g = feat?.GetGeometryRef();
+                            if (g != null && !g.IsEmpty())
+                            {
+                                var env = new Envelope();
+                                g.GetEnvelope(env);
+                                centerX = (env.MinX + env.MaxX) / 2.0;
+                                centerY = (env.MinY + env.MaxY) / 2.0;
+                                g.ExportToWkt(out intersectionWkt);
+                            }
+                        }
+                        finally
+                        {
+                            feat?.Dispose();
+                        }
                     }
 
                     errorDetails.Add(new GeometryErrorDetail

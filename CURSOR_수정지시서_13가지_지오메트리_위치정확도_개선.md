@@ -11,6 +11,7 @@
 ## 🎯 Phase 1: 공통 유틸리티 클래스 생성 (필수 선행 작업)
 
 ### 📁 신규 파일 생성
+
 **파일 경로**: `/SpatialCheckPro/Utils/GeometryCoordinateExtractor.cs`
 
 ```csharp
@@ -160,11 +161,13 @@ namespace SpatialCheckPro.Utils
 ### 1️⃣ 스파이크 (GEOM_SPIKE)
 
 #### 📁 수정 파일
+
 `/SpatialCheckPro/Processors/GeometryCheckProcessor.cs`
 
 #### 🔍 수정 위치: 537-566번 라인
 
 #### ❌ 수정 전 코드
+
 ```csharp
 private bool CheckSpikeInSingleGeometry(Geometry geometry, out string message)
 {
@@ -198,6 +201,7 @@ private bool CheckSpikeInSingleGeometry(Geometry geometry, out string message)
 ```
 
 #### ✅ 수정 후 코드
+
 ```csharp
 private bool CheckSpikeInSingleGeometry(Geometry geometry, out string message, out double spikeX, out double spikeY)
 {
@@ -238,6 +242,7 @@ private bool CheckSpikeInSingleGeometry(Geometry geometry, out string message, o
 #### 🔍 수정 위치: 502-532번 라인 (HasSpike 메서드)
 
 #### ❌ 수정 전 코드
+
 ```csharp
 private bool HasSpike(Geometry geometry, out string message)
 {
@@ -272,6 +277,7 @@ private bool HasSpike(Geometry geometry, out string message)
 ```
 
 #### ✅ 수정 후 코드
+
 ```csharp
 private bool HasSpike(Geometry geometry, out string message, out double spikeX, out double spikeY)
 {
@@ -310,6 +316,7 @@ private bool HasSpike(Geometry geometry, out string message, out double spikeX, 
 #### 🔍 수정 위치: 425-440번 라인 (HasSpike 호출 부분)
 
 #### ❌ 수정 전 코드
+
 ```csharp
 if (config.ShouldCheckSpikes && GeometryRepresentsPolygon(workingGeometry))
 {
@@ -328,6 +335,7 @@ if (config.ShouldCheckSpikes && GeometryRepresentsPolygon(workingGeometry))
 ```
 
 #### ✅ 수정 후 코드
+
 ```csharp
 if (config.ShouldCheckSpikes && GeometryRepresentsPolygon(workingGeometry))
 {
@@ -359,11 +367,13 @@ if (config.ShouldCheckSpikes && GeometryRepresentsPolygon(workingGeometry))
 ### 2️⃣ 자체 꼬임/교차 (GEOM_INVALID)
 
 #### 📁 수정 파일
+
 `/SpatialCheckPro/Processors/GeometryCheckProcessor.cs`
 
 #### 🔍 수정 위치: 213-223번 라인
 
 #### ❌ 수정 전 코드
+
 ```csharp
 if (!geometry.IsValid())
 {
@@ -379,6 +389,7 @@ if (!geometry.IsValid())
 ```
 
 #### ✅ 수정 후 코드
+
 ```csharp
 if (!geometry.IsValid())
 {
@@ -428,7 +439,9 @@ if (!geometry.IsValid())
 ```
 
 #### 📦 필요한 using 추가
+
 파일 상단에 다음 using 추가:
+
 ```csharp
 using NetTopologySuite.IO;
 using NetTopologySuite.Operation.Valid;
@@ -439,11 +452,13 @@ using NetTopologySuite.Operation.Valid;
 ### 3️⃣ 자기 중첩 (Self-Overlap)
 
 #### 📁 수정 파일
+
 `/SpatialCheckPro.GUI/Services/GeometryValidationService.cs`
 
 #### 🔍 수정 위치: 373-404번 라인
 
 #### ❌ 수정 전 코드
+
 ```csharp
 private async Task<List<GeometryErrorDetail>> CheckSelfOverlapAsync(Layer layer)
 {
@@ -482,6 +497,7 @@ private async Task<List<GeometryErrorDetail>> CheckSelfOverlapAsync(Layer layer)
 ```
 
 #### ✅ 수정 후 코드
+
 ```csharp
 private async Task<List<GeometryErrorDetail>> CheckSelfOverlapAsync(Layer layer)
 {
@@ -542,6 +558,7 @@ private async Task<List<GeometryErrorDetail>> CheckSelfOverlapAsync(Layer layer)
 ```
 
 #### 📦 필요한 using 추가
+
 ```csharp
 using NetTopologySuite.Operation.Valid;
 ```
@@ -551,11 +568,13 @@ using NetTopologySuite.Operation.Valid;
 ### 4️⃣ 언더슛/오버슛 (Undershoot/Overshoot)
 
 #### 📁 수정 파일
+
 `/SpatialCheckPro.GUI/Services/GeometryValidationService.cs`
 
 #### 🔍 수정 위치: 477-495번 라인
 
 #### ❌ 수정 전 코드
+
 ```csharp
 if (!isConnected && minDistance < searchDistance && closestLine != null)
 {
@@ -579,6 +598,7 @@ if (!isConnected && minDistance < searchDistance && closestLine != null)
 ```
 
 #### ✅ 수정 후 코드
+
 ```csharp
 if (!isConnected && minDistance < searchDistance && closestLine != null)
 {
@@ -614,9 +634,11 @@ if (!isConnected && minDistance < searchDistance && closestLine != null)
 ### 5️⃣ 겹침 지오메트리 (Overlap)
 
 #### 📁 수정 파일
+
 `/SpatialCheckPro/Services/HighPerformanceGeometryValidator.cs`
 
 #### ⚠️ 복잡도: 높음
+
 이 수정은 `SpatialIndexService.FindOverlaps()` 메서드가 교차 지오메트리를 반환하도록 수정해야 합니다.
 
 #### Step 1: OverlapInfo 클래스 수정
@@ -624,6 +646,7 @@ if (!isConnected && minDistance < searchDistance && closestLine != null)
 **위치**: OverlapInfo 클래스 정의 (파일 내 검색 필요)
 
 #### ❌ 수정 전
+
 ```csharp
 public class OverlapInfo
 {
@@ -634,6 +657,7 @@ public class OverlapInfo
 ```
 
 #### ✅ 수정 후
+
 ```csharp
 public class OverlapInfo
 {
@@ -670,6 +694,7 @@ if (intersection != null && !intersection.IsEmpty())
 #### 🔍 수정 위치: 122-132번 라인
 
 #### ❌ 수정 전 코드
+
 ```csharp
 foreach (var overlap in overlaps)
 {
@@ -685,6 +710,7 @@ foreach (var overlap in overlaps)
 ```
 
 #### ✅ 수정 후 코드
+
 ```csharp
 foreach (var overlap in overlaps)
 {
@@ -723,11 +749,13 @@ foreach (var overlap in overlaps)
 ### 6️⃣ 중복 지오메트리 (Duplicate)
 
 #### 📁 수정 파일
+
 `/SpatialCheckPro/Services/HighPerformanceGeometryValidator.cs`
 
 #### 🔍 수정 위치: 76-85번 라인
 
 #### ❌ 수정 전 코드
+
 ```csharp
 for (int i = 1; i < group.Count; i++)
 {
@@ -747,6 +775,7 @@ for (int i = 1; i < group.Count; i++)
 ```
 
 #### ✅ 수정 후 코드
+
 ```csharp
 for (int i = 1; i < group.Count; i++)
 {

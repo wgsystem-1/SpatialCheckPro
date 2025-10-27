@@ -80,23 +80,89 @@ namespace SpatialCheckPro.Services
                 var savedCount = await _dataService.BatchAppendQcErrorsAsync(outputGdbPath, qcErrors);
 
                 // === Stage 4/5 결과 저장 (REL/ATTR_REL) 추가 ===
-                if (validationResult.RelationCheckResult != null && 
+                if (validationResult.RelationCheckResult != null &&
                     (validationResult.RelationCheckResult.ErrorCount > 0 || validationResult.RelationCheckResult.Errors.Count > 0))
                 {
+                    _logger.LogInformation("Stage 4/5 오류 변환 시작: {ErrorCount}개", validationResult.RelationCheckResult.Errors.Count);
+
                     // RelationCheckResult를 RelationValidationResult로 변환 (간단 매핑)
                     var rel = new RelationValidationResult
                     {
                         ValidationId = validationResult.ValidationId,
                         StartedAt = validationResult.StartedAt,
                         CompletedAt = validationResult.CompletedAt ?? DateTime.UtcNow,
-                        IsValid = validationResult.RelationCheckResult.Status == CheckStatus.Passed,
-                        SpatialErrorCount = validationResult.RelationCheckResult.ErrorCount,
-                        AttributeErrorCount = 0
+                        IsValid = validationResult.RelationCheckResult.Status == CheckStatus.Passed
                     };
 
-                    // RelationCheckResult.Errors를 SpatialRelationError로 해석 가능한 경우에만 매핑 (메타 기반 확장 여지)
-                    // 현재 구조에서는 별도 수집 모델이 있을 가능성이 높으므로, 실제 오류 컬렉션이 별도에 있다면 그 컬렉션을 전달해야 함
-                    // 여기서는 빈 리스트를 그대로 유지
+                    // ValidationError를 SpatialRelationError/AttributeRelationError로 변환
+                    foreach (var error in validationResult.RelationCheckResult.Errors)
+                    {
+                        // ErrorCode 패턴으로 Stage 4(공간 관계) vs Stage 5(속성 관계) 구분
+                        // REL_로 시작하는 경우: Stage 4 공간 관계 오류
+                        if (!string.IsNullOrEmpty(error.ErrorCode) && error.ErrorCode.StartsWith("REL_", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var spatialError = new SpatialRelationError
+                            {
+                                SourceObjectId = error.SourceObjectId ?? 0,
+                                SourceLayer = error.SourceTable ?? string.Empty,
+                                TargetLayer = error.RelatedTable ?? string.Empty,
+                                TargetObjectId = error.RelatedObjectId,
+                                ErrorType = error.ErrorCode,
+                                Severity = error.Severity,
+                                Message = error.Message ?? string.Empty,
+                                GeometryWKT = error.GeometryWKT ?? string.Empty,
+                                DetectedAt = DateTime.UtcNow,
+                                RelationType = Models.Enums.SpatialRelationType.Custom
+                            };
+
+                            rel.SpatialErrors.Add(spatialError);
+                        }
+                        // ATTR_로 시작하는 경우: Stage 5 속성 관계 오류
+                        else if (!string.IsNullOrEmpty(error.ErrorCode) && error.ErrorCode.StartsWith("ATTR_", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var attrError = new AttributeRelationError
+                            {
+                                ObjectId = error.SourceObjectId ?? 0,
+                                TableName = error.SourceTable ?? string.Empty,
+                                FieldName = error.FieldName ?? string.Empty,
+                                RuleName = error.ErrorCode,
+                                Message = error.Message ?? string.Empty,
+                                Details = error.Description ?? string.Empty,
+                                Severity = error.Severity,
+                                RelatedTableName = error.RelatedTable ?? string.Empty,
+                                RelatedObjectId = error.RelatedObjectId,
+                                DetectedAt = DateTime.UtcNow
+                            };
+
+                            rel.AttributeErrors.Add(attrError);
+                        }
+                        // 기타 관계 오류는 기본적으로 공간 관계로 간주
+                        else
+                        {
+                            var spatialError = new SpatialRelationError
+                            {
+                                SourceObjectId = error.SourceObjectId ?? 0,
+                                SourceLayer = error.SourceTable ?? string.Empty,
+                                TargetLayer = error.RelatedTable ?? string.Empty,
+                                TargetObjectId = error.RelatedObjectId,
+                                ErrorType = error.ErrorCode ?? "UNKNOWN",
+                                Severity = error.Severity,
+                                Message = error.Message ?? string.Empty,
+                                GeometryWKT = error.GeometryWKT ?? string.Empty,
+                                DetectedAt = DateTime.UtcNow,
+                                RelationType = Models.Enums.SpatialRelationType.Custom
+                            };
+
+                            rel.SpatialErrors.Add(spatialError);
+                        }
+                    }
+
+                    // 개수 업데이트
+                    rel.SpatialErrorCount = rel.SpatialErrors.Count;
+                    rel.AttributeErrorCount = rel.AttributeErrors.Count;
+
+                    _logger.LogInformation("오류 변환 완료: 공간 {SpatialCount}개, 속성 {AttrCount}개",
+                        rel.SpatialErrorCount, rel.AttributeErrorCount);
 
                     var integrated = await _relationIntegrator.SaveRelationValidationResultAsync(
                         outputGdbPath,
@@ -104,7 +170,8 @@ namespace SpatialCheckPro.Services
                         qcRun.GlobalID,
                         targetFilePath);
 
-                    _logger.LogInformation("Stage 4/5 결과 저장 {Status}", integrated ? "성공" : "실패");
+                    _logger.LogInformation("Stage 4/5 결과 저장 {Status}: 공간 {Spatial}개, 속성 {Attr}개",
+                        integrated ? "성공" : "실패", rel.SpatialErrorCount, rel.AttributeErrorCount);
                 }
 
                 // QC 실행 상태 업데이트

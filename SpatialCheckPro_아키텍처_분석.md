@@ -108,24 +108,10 @@ IAttributeCheckProcessor  → AttributeCheckProcessor
 #### 5.2.1 검수 오케스트레이션 서비스
 - **SimpleValidationService**: 전체 검수 프로세스를 총괄하는 핵심 서비스. 각 검수 단계를 조율하고 진행률을 보고합니다. (`SpatialCheckPro.GUI` 프로젝트에 위치)
 
-#### 5.2.2 핵심 로직 및 데이터 서비스
-- **GdalDataAnalysisService**: GDAL을 사용하여 공간 데이터를 분석하고 읽는 서비스.
-- **QcErrorService**: QC_ERRORS 테이블 생성 및 오류 기록을 관리하는 서비스.
-- **CsvConfigService**: CSV 형식의 검수 설정 파일을 읽고 관리합니다.
-- **ConditionalRuleEngine / ExpressionEngine**: 표현식과 조건에 기반한 동적 규칙을 실행하여 복잡한 검수 시나리오를 지원합니다.
-- **IValidationDataProvider**: 데이터 소스 접근을 추상화하는 인터페이스. (`GdbDataProvider`, `SqliteDataProvider` 구현체 포함)
-- **GdbToSqliteConverter**: 고성능 모드에서 FileGDB를 임시 SQLite DB로 변환하여 쿼리 속도를 높입니다.
-  - `SqliteDataProvider`는 OGR을 통해 SpatiaLite를 직접 열어 `Feature`/`FieldDefn`을 그대로 제공하여 상위 로직 호환성을 확보합니다.
-- **ValidationHistoryService**: 이전 검수 이력을 조회하고 관리하는 서비스.
-
-/// <summary>
-/// GdbToSqliteConverter 개선 사항
-/// </summary>
-- 자동 고성능 모드: 파일 크기(기본 1GB) 또는 총 피처 수(기본 50만) 임계 초과 시 활성화
-- 변환 파이프라인: SpatiaLite 초기화 → 속성/지오메트리 스키마 생성 → 배치 Insert(GeomFromWKB) → 공통 인덱스 및 공간 인덱스 생성
-- 안정성: 변환 실패 또는 확장 로드 실패 시 GDB 직접 모드로 자동 폴백
-- 수명주기: `%TEMP%/spatialcheckpro_<GUID>.sqlite` 생성, 검수 종료 시 자동 삭제
-- 배포: `mod_spatialite.dll` 및 의존 DLL을 `runtimes/win-x64/native` 또는 `ThirdParty/SpatiaLite/win-x64`에 포함, 로더가 위 경로와 실행 폴더, 기본명 순으로 탐색
+#### 5.2.2 핵심 로직 및 데이터 서비스 (업데이트)
+- **RelationErrorsIntegrator**: Stage 4(REL), Stage 5(ATTR_REL) 변환 시 원본 FGDB에서 지오메트리를 직접 추출(`ExtractGeometryFromSourceAsync`)하여 X/Y/GeometryWKT를 채워 `QC_Errors_Point` 저장률을 개선합니다.
+- **SpatialIndexService**: 겹침 검사 시 교차 지오메트리를 `OverlapResult.IntersectionGeometry`로 반환합니다.
+- **HighPerformanceGeometryValidator**: Overlap에서 교차 지오메트리 중심 좌표와 WKT를 사용해 오류 위치 정확도를 높입니다(없으면 대상 피처 중심으로 폴백).
 
 #### 5.2.3 성능 및 자원 관리 서비스
 - **StageParallelProcessingManager**: 독립적인 검수 단계를 병렬로 실행하여 전체 검수 시간을 단축합니다.

@@ -6,6 +6,8 @@ using Microsoft.Extensions.Logging;
 using SpatialCheckPro.Models;
 using SpatialCheckPro.Models.Enums;
 using System.Text.Json;
+using OSGeo.OGR;
+using OSGeo.GDAL;
 
 namespace SpatialCheckPro.Services
 {
@@ -107,8 +109,8 @@ namespace SpatialCheckPro.Services
             string runId,
             string sourceGdbPath)
         {
-            // 원본 FGDB에서 지오메트리 추출
-            var (geometry, x, y, geometryType) = await _qcErrorService.ExtractGeometryInfoAsync(
+            // 원본 FGDB에서 지오메트리 추출 (로컬 메서드 사용)
+            var (geometry, x, y, geometryType) = await ExtractGeometryFromSourceAsync(
                 sourceGdbPath,
                 spatialError.SourceLayer,
                 spatialError.SourceObjectId.ToString()
@@ -176,7 +178,7 @@ namespace SpatialCheckPro.Services
             string runId,
             string sourceGdbPath)
         {
-            var (geometry, x, y, geometryType) = await _qcErrorService.ExtractGeometryInfoAsync(
+            var (geometry, x, y, geometryType) = await ExtractGeometryFromSourceAsync(
                 sourceGdbPath,
                 attributeError.TableName,
                 attributeError.ObjectId.ToString());
@@ -232,6 +234,93 @@ namespace SpatialCheckPro.Services
             geometry?.Dispose();
 
             return qcError;
+        }
+
+        /// <summary>
+        /// 원본 FGDB에서 지오메트리 정보 추출 (Stage 4/5 전용)
+        /// </summary>
+        private async Task<(OSGeo.OGR.Geometry? geometry, double x, double y, string geometryType)> ExtractGeometryFromSourceAsync(
+            string sourceGdbPath,
+            string tableId,
+            string objectId)
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    // GDAL 드라이버 등록
+                    Gdal.AllRegister();
+                    var driver = Ogr.GetDriverByName("OpenFileGDB") ?? Ogr.GetDriverByName("FileGDB");
+                    if (driver == null)
+                    {
+                        _logger.LogWarning("FGDB 드라이버를 찾을 수 없습니다.");
+                        return (null, 0, 0, "Unknown");
+                    }
+
+                    var dataSource = driver.Open(sourceGdbPath, 0);
+                    if (dataSource == null)
+                    {
+                        _logger.LogWarning("FGDB를 열 수 없습니다: {Path}", sourceGdbPath);
+                        return (null, 0, 0, "Unknown");
+                    }
+
+                    Layer? layer = null;
+                    for (int i = 0; i < dataSource.GetLayerCount(); i++)
+                    {
+                        var testLayer = dataSource.GetLayerByIndex(i);
+                        if (testLayer != null && testLayer.GetName().Equals(tableId, StringComparison.OrdinalIgnoreCase))
+                        {
+                            layer = testLayer;
+                            break;
+                        }
+                    }
+
+                    if (layer == null)
+                    {
+                        _logger.LogWarning("레이어를 찾을 수 없습니다: {TableId}", tableId);
+                        dataSource.Dispose();
+                        return (null, 0, 0, "Unknown");
+                    }
+
+                    var geometryTypeName = layer.GetGeomType().ToString();
+
+                    // OBJECTID 검색
+                    try
+                    {
+                        layer.SetAttributeFilter($"OBJECTID = {objectId}");
+                    }
+                    catch { layer.SetAttributeFilter(null); }
+                    layer.ResetReading();
+                    var feature = layer.GetNextFeature();
+
+                    if (feature != null)
+                    {
+                        var geometryRef = feature.GetGeometryRef();
+                        if (geometryRef != null && !geometryRef.IsEmpty())
+                        {
+                            var clonedGeom = geometryRef.Clone();
+                            var envelope = new Envelope();
+                            clonedGeom.GetEnvelope(envelope);
+                            double centerX = (envelope.MinX + envelope.MaxX) / 2.0;
+                            double centerY = (envelope.MinY + envelope.MaxY) / 2.0;
+
+                            _logger.LogDebug("FGDB 지오메트리 추출: {Table}:{OID} -> ({X:F3},{Y:F3})", tableId, objectId, centerX, centerY);
+                            feature.Dispose();
+                            dataSource.Dispose();
+                            return (clonedGeom, centerX, centerY, geometryTypeName);
+                        }
+                        feature.Dispose();
+                    }
+
+                    dataSource.Dispose();
+                    return (null, 0, 0, "Unknown");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "FGDB 지오메트리 추출 실패: {Path} {Table} {OID}", sourceGdbPath, tableId, objectId);
+                    return (null, 0, 0, "Unknown");
+                }
+            });
         }
 
         /// <summary>

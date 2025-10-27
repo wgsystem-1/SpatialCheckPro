@@ -26,6 +26,11 @@ private static void SetupProjEnvironment()
 - 동일 파일에 대한 중복 Open 방지
 - 메모리 효율적 관리
 
+## 1.3 Stage 4/5 지오메트리 추출 업데이트 (신규)
+- `RelationErrorsIntegrator`에 `ExtractGeometryFromSourceAsync` 추가로 원본 FGDB에서 직접 지오메트리 추출
+- Stage 4(REL), Stage 5(ATTR_REL) 변환 시 X/Y 및 GeometryWKT를 우선적으로 채워 `QC_Errors_Point` 저장률 대폭 개선
+- 폴백 정책: 추출 실패 시 NoGeom 저장 유지
+
 ## 2. 동적 검수 규칙 시스템
 
 ### 2.1 CSV 기반 설정
@@ -71,6 +76,11 @@ if (compactness < threshold)
 - 닫히지 않은 폴리곤
 - 중복 정점 (Duplicate vertices)
 
+### 3.3 겹침(Overlap) 정밀 좌표 고도화 (신규)
+- `SpatialIndexService.FindOverlaps`가 교차 지오메트리를 Clone하여 `OverlapResult.IntersectionGeometry`로 반환
+- `HighPerformanceGeometryValidator`가 교차 지오메트리 중심점(X/Y)과 WKT를 사용해 `GeometryErrorDetail`에 기록
+- 교차 지오메트리가 없을 때는 대상 피처 중심점으로 폴백
+
 ## 4. QC_ERRORS 시스템
 
 ### 4.1 오류 유형
@@ -98,6 +108,10 @@ ErrType (오류 유형)
   - 좌표 (0,0) 폴백 로직은 제거되었습니다. 포인트 생성 불가 항목은 일괄적으로 `QC_Errors_NoGeom`으로 저장합니다.
 - 읽기 경로
   - 기본 위치 해석은 지오메트리/`GeometryWKT` 기반이며, X/Y 속성은 선택적입니다. 스키마에 X/Y 컬럼이 없는 경우 속성 기반 X/Y는 0으로 조회될 수 있습니다.
+
+### 4.4 Stage 4/5 저장 개선 요약 (신규)
+- Stage 4: 원본 FGDB 추출 기반으로 X/Y/WKT 채워 `QC_Errors_Point` 저장률 향상
+- Stage 5: 지오메트리 보유 시 동일 로직 적용, 미보유 시 NoGeom 저장
 
 ## 5. 성능 최적화 기법
 

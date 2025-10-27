@@ -86,6 +86,10 @@ graph TD
     CsvConfigService --> FileSystem
 ```
 
+### 업데이트(신규)
+- Stage 4/5: `RelationErrorsIntegrator`가 원본 FGDB에서 지오메트리를 추출하여 X/Y/WKT를 채워 저장
+- 겹침: `SpatialIndexService.FindOverlaps`가 교차 지오메트리를 반환하고, `HighPerformanceGeometryValidator`가 중심점/WKT를 사용해 오류 위치 정확도 향상
+
 ## 2. 검수 프로세스 플로우
 
 ```mermaid

@@ -419,18 +419,30 @@ namespace SpatialCheckPro.GUI.Services
                         var nts = reader.Read(wkt);
                         if (!nts.IsValid)
                         {
-                            // 좌표 및 WKT 보강
-                            var env4 = new Envelope();
-                            geom.GetEnvelope(env4);
-                            var cx4 = (env4.MinX + env4.MaxX) / 2.0;
-                            var cy4 = (env4.MinY + env4.MaxY) / 2.0;
+                            // NTS ValidationError로 정확한 위치 추출
+                            var validator = new NetTopologySuite.Operation.Valid.IsValidOp(nts);
+                            var validationError = validator.ValidationError;
+
+                            double errorX = 0, errorY = 0;
+                            if (validationError?.Coordinate != null)
+                            {
+                                errorX = validationError.Coordinate.X;
+                                errorY = validationError.Coordinate.Y;
+                            }
+                            else
+                            {
+                                var envelope = nts.EnvelopeInternal;
+                                errorX = envelope.Centre.X;
+                                errorY = envelope.Centre.Y;
+                            }
+
                             details.Add(new GeometryErrorDetail
                             {
                                 ObjectId = GetObjectId(feature),
                                 ErrorType = "자기중첩",
-                                DetailMessage = "NTS 유효성 검사에서 위상 오류 감지",
-                                X = cx4,
-                                Y = cy4,
+                                DetailMessage = validationError != null ? $"위상 오류: {validationError.Message}" : "NTS 유효성 검사에서 위상 오류 감지",
+                                X = errorX,
+                                Y = errorY,
                                 GeometryWkt = wkt
                             });
                         }
@@ -526,6 +538,10 @@ namespace SpatialCheckPro.GUI.Services
                             var cx5 = p.X;
                             var cy5 = p.Y;
 
+                            // 간격 선분 WKT 생성
+                            var gapLineString = new NetTopologySuite.Geometries.LineString(new[] { p.Coordinate, closestPointOnTarget.Coordinate });
+                            string gapLineWkt = gapLineString.ToText();
+
                             details.Add(new GeometryErrorDetail
                             {
                                 ObjectId = objectId,
@@ -533,7 +549,7 @@ namespace SpatialCheckPro.GUI.Services
                                 DetailMessage = $"선 끝점 비연결 (최소 이격 {minDistance:F3}m)",
                                 X = cx5,
                                 Y = cy5,
-                                GeometryWkt = line.AsText()
+                                GeometryWkt = gapLineWkt
                             });
                             // 한 피처당 하나의 오류만 보고하기 위해 루프 탈출
                             goto NextLine;

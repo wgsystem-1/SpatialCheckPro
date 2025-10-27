@@ -131,27 +131,28 @@ namespace SpatialCheckPro.Services
 
                 foreach (var overlap in overlaps)
                 {
-                    // 대상 피처에서 좌표 및 WKT 추출 (엔벨로프 중심점)
-                    double ovX = 0;
-                    double ovY = 0;
-                    string? ovWkt = null;
-                    Feature? ovFeature = null;
+                    // 교차 영역 중심점 및 WKT 추출 (교차 지오메트리가 없는 경우 대상 피처 중심으로 폴백)
+                    double centerX = 0, centerY = 0;
+                    string? intersectionWkt = null;
+
+                    // 현재 OverlapResult에는 교차 지오메트리 속성이 없으므로, 대상 피처에서 중심 추출
+                    Feature? feat = null;
                     try
                     {
-                        ovFeature = layer.GetFeature(overlap.ObjectId);
-                        var ovGeom = ovFeature?.GetGeometryRef();
-                        if (ovGeom != null && !ovGeom.IsEmpty())
+                        feat = layer.GetFeature(overlap.ObjectId);
+                        var g = feat?.GetGeometryRef();
+                        if (g != null && !g.IsEmpty())
                         {
-                            ovGeom.ExportToWkt(out ovWkt);
-                            var ovEnv = new Envelope();
-                            ovGeom.GetEnvelope(ovEnv);
-                            ovX = (ovEnv.MinX + ovEnv.MaxX) / 2.0;
-                            ovY = (ovEnv.MinY + ovEnv.MaxY) / 2.0;
+                            var env = new Envelope();
+                            g.GetEnvelope(env);
+                            centerX = (env.MinX + env.MaxX) / 2.0;
+                            centerY = (env.MinY + env.MaxY) / 2.0;
+                            g.ExportToWkt(out intersectionWkt);
                         }
                     }
                     finally
                     {
-                        ovFeature?.Dispose();
+                        feat?.Dispose();
                     }
 
                     errorDetails.Add(new GeometryErrorDetail
@@ -161,9 +162,9 @@ namespace SpatialCheckPro.Services
                         ErrorValue = $"겹침 영역: {overlap.OverlapArea:F2}㎡",
                         ThresholdValue = $"{tolerance}m",
                         DetailMessage = $"OBJECTID {overlap.ObjectId}: 겹침 영역 {overlap.OverlapArea:F2}㎡ 검출",
-                        X = ovX,
-                        Y = ovY,
-                        GeometryWkt = ovWkt
+                        X = centerX,
+                        Y = centerY,
+                        GeometryWkt = intersectionWkt
                     });
                 }
 

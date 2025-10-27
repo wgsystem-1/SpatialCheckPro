@@ -424,6 +424,44 @@ namespace SpatialCheckPro.Services
         }
 
         /// <summary>
+        /// ValidationError를 GeometryErrorDetail로 변환 (Metadata 기반 좌표/WKT 반영)
+        /// </summary>
+        private GeometryErrorDetail ConvertValidationErrorToGeometryErrorDetail(ValidationError error)
+        {
+            var detail = new GeometryErrorDetail
+            {
+                ObjectId = error.FeatureId,
+                ErrorType = error.ErrorCode,
+                ErrorValue = error.Message,
+                DetailMessage = error.Message
+            };
+
+            if (error.Metadata != null)
+            {
+                if (error.Metadata.TryGetValue("X", out var xValue) && double.TryParse(xValue?.ToString(), out var x))
+                {
+                    detail.X = x;
+                }
+
+                if (error.Metadata.TryGetValue("Y", out var yValue) && double.TryParse(yValue?.ToString(), out var y))
+                {
+                    detail.Y = y;
+                }
+
+                if (error.Metadata.TryGetValue("GeometryWkt", out var wktObj))
+                {
+                    var wkt = wktObj?.ToString();
+                    if (!string.IsNullOrWhiteSpace(wkt))
+                    {
+                        detail.GeometryWkt = wkt;
+                    }
+                }
+            }
+
+            return detail;
+        }
+
+        /// <summary>
         /// 지오메트리 검수 결과를 QC_ERRORS에 저장합니다
         /// </summary>
         /// <param name="qcErrorsGdbPath">QC_ERRORS FileGDB 경로</param>

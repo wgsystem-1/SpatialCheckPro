@@ -389,7 +389,8 @@ namespace SpatialCheckPro.Services
                                     {
                                         ObjectId = long.Parse(entry.ObjectId),
                                         OverlapArea = overlapArea,
-                                        OverlappingObjectId = long.Parse(candidate.ObjectId)
+                                        OverlappingObjectId = long.Parse(candidate.ObjectId),
+                                        // 확장: 교차 지오메트리를 포함할 수 있도록 속성 추가 시 참조
                                     });
                                 }
                             }

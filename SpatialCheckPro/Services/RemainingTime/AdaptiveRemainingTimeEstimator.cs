@@ -233,6 +233,30 @@ namespace SpatialCheckPro.Services.RemainingTime
             return new StageEtaResult(state.StageId, state.StageNumber, state.StageName, eta, confidence, hint);
         }
 
+        /// <summary>
+        /// 진행 단계에 따라 적응형 EWMA 알파값을 반환합니다
+        /// </summary>
+        /// <param name="state">단계 상태</param>
+        /// <param name="progressPercent">진행률 (%)</param>
+        /// <returns>적응형 알파값</returns>
+        private double GetAdaptiveAlpha(StageEtaInternalState state, double progressPercent)
+        {
+            // 초기 단계 (0-20%): 높은 alpha로 빠른 적응
+            if (progressPercent < 20 || state.RecentUnitRates.Count < 5)
+            {
+                return 0.6;
+            }
+
+            // 중기 (20-70%): 표준 alpha로 균형 잡힌 스무딩
+            if (progressPercent < 70)
+            {
+                return 0.35;
+            }
+
+            // 후기 (70-100%): 낮은 alpha로 안정화
+            return 0.15;
+        }
+
         private void UpdateUnitRate(StageEtaInternalState state, long processedUnits, double elapsedSeconds)
         {
             if (processedUnits <= 0 || elapsedSeconds <= 0)
@@ -247,9 +271,13 @@ namespace SpatialCheckPro.Services.RemainingTime
             }
 
             state.LastProcessedUnits = processedUnits;
+
+            // 적응형 알파값 사용
+            var alpha = GetAdaptiveAlpha(state, state.LastProgressPercent);
+
             state.SmoothedUnitRate = state.SmoothedUnitRate <= 0
                 ? rate
-                : EwmaAlpha * rate + (1 - EwmaAlpha) * state.SmoothedUnitRate;
+                : alpha * rate + (1 - alpha) * state.SmoothedUnitRate;
 
             state.RecentUnitRates.Add(rate);
             if (state.RecentUnitRates.Count > 30)
@@ -277,9 +305,12 @@ namespace SpatialCheckPro.Services.RemainingTime
                 return;
             }
 
+            // 적응형 알파값 사용
+            var alpha = GetAdaptiveAlpha(state, progressPercent);
+
             state.SmoothedProgressRate = state.SmoothedProgressRate <= 0
                 ? rate
-                : EwmaAlpha * rate + (1 - EwmaAlpha) * state.SmoothedProgressRate;
+                : alpha * rate + (1 - alpha) * state.SmoothedProgressRate;
         }
 
         private string? BuildDisplayHint(StageEtaInternalState state, TimeSpan? eta)

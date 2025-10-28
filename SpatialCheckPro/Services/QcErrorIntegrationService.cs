@@ -113,14 +113,14 @@ namespace SpatialCheckPro.Services
                             {
                                 SourceObjectId = error.SourceObjectId ?? 0,
                                 SourceLayer = error.SourceTable ?? string.Empty,
-                                TargetLayer = error.RelatedTable ?? string.Empty,
-                                TargetObjectId = error.RelatedObjectId,
+                                TargetLayer = error.TargetTable ?? string.Empty,
+                                TargetObjectId = error.TargetObjectId,
                                 ErrorType = error.ErrorCode ?? "REL_UNKNOWN",
                                 Severity = error.Severity,
                                 Message = error.Message ?? string.Empty,
                                 GeometryWKT = error.GeometryWKT ?? string.Empty,
                                 DetectedAt = DateTime.UtcNow,
-                                RelationType = Models.Enums.SpatialRelationType.Custom
+                                RelationType = MapErrorCodeToRelationType(error.ErrorCode ?? "REL_UNKNOWN")
                             };
 
                             rel.SpatialErrors.Add(spatialError);
@@ -139,10 +139,10 @@ namespace SpatialCheckPro.Services
                                 FieldName = error.FieldName ?? string.Empty,
                                 RuleName = error.ErrorCode ?? "ATTR_UNKNOWN",
                                 Message = error.Message ?? string.Empty,
-                                Details = error.Description ?? string.Empty,
+                                Details = error.Message ?? string.Empty,
                                 Severity = error.Severity,
-                                RelatedTableName = error.RelatedTable ?? string.Empty,
-                                RelatedObjectId = error.RelatedObjectId,
+                                RelatedTableName = error.TargetTable ?? string.Empty,
+                                RelatedObjectId = error.TargetObjectId,
                                 DetectedAt = DateTime.UtcNow
                             };
 
@@ -378,6 +378,41 @@ namespace SpatialCheckPro.Services
                 _logger.LogError(ex, "FGDB 통계 정보 조회 중 오류 발생");
                 return null;
             }
+        }
+
+        /// <summary>
+        /// ErrorCode를 기반으로 적절한 SpatialRelationType을 매핑합니다
+        /// </summary>
+        /// <param name="errorCode">오류 코드 (예: REL_CONTAINS, REL_WITHIN)</param>
+        /// <returns>SpatialRelationType</returns>
+        private SpatialRelationType MapErrorCodeToRelationType(string errorCode)
+        {
+            if (string.IsNullOrEmpty(errorCode))
+                return SpatialRelationType.Intersects;
+
+            var upperCode = errorCode.ToUpperInvariant();
+
+            // ErrorCode에서 관계 타입 추론
+            if (upperCode.Contains("CONTAIN"))
+                return SpatialRelationType.Contains;
+            if (upperCode.Contains("WITHIN"))
+                return SpatialRelationType.Within;
+            if (upperCode.Contains("INTERSECT"))
+                return SpatialRelationType.Intersects;
+            if (upperCode.Contains("OVERLAP"))
+                return SpatialRelationType.Overlaps;
+            if (upperCode.Contains("TOUCH"))
+                return SpatialRelationType.Touches;
+            if (upperCode.Contains("CROSS"))
+                return SpatialRelationType.Crosses;
+            if (upperCode.Contains("DISJOINT"))
+                return SpatialRelationType.Disjoint;
+            if (upperCode.Contains("EQUAL"))
+                return SpatialRelationType.Equals;
+
+            // 기본값: Intersects
+            _logger.LogDebug("ErrorCode '{ErrorCode}'를 기본 RelationType(Intersects)으로 매핑", errorCode);
+            return SpatialRelationType.Intersects;
         }
     }
 

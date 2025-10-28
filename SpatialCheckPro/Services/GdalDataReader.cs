@@ -18,30 +18,56 @@ namespace SpatialCheckPro.Services
         private readonly ILogger<GdalDataReader> _logger;
         private readonly IMemoryManager? _memoryManager;
         private readonly IValidationCacheService? _cacheService;
+        private readonly IDataSourcePool? _dataSourcePool;
         private readonly int _maxRetryAttempts = 3;
         private readonly int _retryDelayMs = 1000;
 
         public GdalDataReader(
-            ILogger<GdalDataReader> logger, 
+            ILogger<GdalDataReader> logger,
             IMemoryManager? memoryManager = null,
-            IValidationCacheService? cacheService = null)
+            IValidationCacheService? cacheService = null,
+            IDataSourcePool? dataSourcePool = null)
         {
             _logger = logger;
             _memoryManager = memoryManager;
             _cacheService = cacheService;
+            _dataSourcePool = dataSourcePool;
             InitializeGdal();
         }
 
         /// <summary>
-        /// GDAL 초기화
+        /// GDAL 초기화 (성능 최적화 설정 포함)
         /// </summary>
         private void InitializeGdal()
         {
             try
             {
+                // === GDAL 성능 최적화 설정 ===
+
+                // 1. 캐시 메모리 설정 (512MB)
+                Gdal.SetConfigOption("GDAL_CACHEMAX", "512");
+                _logger.LogDebug("GDAL 캐시 크기: 512MB");
+
+                // 2. SQLite 캐시 설정 (512MB)
+                Gdal.SetConfigOption("OGR_SQLITE_CACHE", "512");
+
+                // 3. 임시 파일 사용 설정 (대용량 파일 처리 시 안정성 향상)
+                Gdal.SetConfigOption("CPL_VSIL_USE_TEMP_FILE_FOR_RANDOM_WRITE", "YES");
+
+                // 4. 멀티스레드 활성화 (모든 CPU 코어 활용)
+                Gdal.SetConfigOption("GDAL_NUM_THREADS", "ALL_CPUS");
+                _logger.LogDebug("GDAL 멀티스레드: ALL_CPUS");
+
+                // 5. FileGDB 전용 최적화
+                Gdal.SetConfigOption("FGDB_BULK_LOAD", "YES");
+                Gdal.SetConfigOption("OPENFILEGDB_USE_SPATIAL_INDEX", "YES");
+                _logger.LogDebug("FileGDB 최적화 설정 적용: BULK_LOAD, SPATIAL_INDEX");
+
+                // 6. GDAL/OGR 드라이버 등록
                 Gdal.AllRegister();
                 Ogr.RegisterAll();
-                _logger.LogDebug("GDAL 초기화 완료");
+
+                _logger.LogInformation("GDAL 초기화 완료 (성능 최적화 설정 적용)");
             }
             catch (Exception ex)
             {
@@ -473,7 +499,61 @@ namespace SpatialCheckPro.Services
         }
 
         /// <summary>
-        /// DataSource를 안전하게 열기
+        /// DataSource 풀링을 위한 Disposable 래퍼 클래스
+        /// using 패턴을 유지하면서 풀에 반환 처리
+        /// </summary>
+        private class DisposableDataSourceHandle : IDisposable
+        {
+            private readonly DataSource? _dataSource;
+            private readonly string? _path;
+            private readonly IDataSourcePool? _pool;
+            private readonly ILogger _logger;
+            private bool _disposed = false;
+
+            public DataSource? DataSource => _dataSource;
+
+            public DisposableDataSourceHandle(
+                DataSource? dataSource,
+                string? path,
+                IDataSourcePool? pool,
+                ILogger logger)
+            {
+                _dataSource = dataSource;
+                _path = path;
+                _pool = pool;
+                _logger = logger;
+            }
+
+            public void Dispose()
+            {
+                if (_disposed || _dataSource == null)
+                    return;
+
+                if (_pool != null && !string.IsNullOrEmpty(_path))
+                {
+                    // 풀에 반환 (실제 Dispose하지 않음)
+                    _pool.ReturnDataSource(_path, _dataSource);
+                    _logger.LogDebug("DataSource를 풀에 반환: {Path}", _path);
+                }
+                else
+                {
+                    // 풀이 없으면 직접 Dispose
+                    _dataSource.Dispose();
+                    _logger.LogDebug("DataSource 직접 Dispose: {Path}", _path);
+                }
+
+                _disposed = true;
+            }
+
+            // DataSource의 암시적 변환 지원 (using var dataSource = ... 코드 호환성)
+            public static implicit operator DataSource?(DisposableDataSourceHandle handle)
+            {
+                return handle?.DataSource;
+            }
+        }
+
+        /// <summary>
+        /// DataSource를 안전하게 열기 (풀링 지원)
         /// </summary>
         private async Task<DataSource?> OpenDataSourceAsync(string gdbPath)
         {
@@ -481,11 +561,30 @@ namespace SpatialCheckPro.Services
             {
                 try
                 {
-                    var dataSource = Ogr.Open(gdbPath, 0); // 읽기 전용
+                    DataSource? dataSource;
+
+                    // DataSourcePool이 있으면 풀에서 가져오기
+                    if (_dataSourcePool != null)
+                    {
+                        dataSource = _dataSourcePool.GetDataSource(gdbPath);
+                        if (dataSource != null)
+                        {
+                            _logger.LogDebug("DataSource 풀에서 가져옴: {Path}", gdbPath);
+                            return dataSource;
+                        }
+                    }
+
+                    // 풀이 없거나 실패 시 직접 열기
+                    dataSource = Ogr.Open(gdbPath, 0); // 읽기 전용
                     if (dataSource == null)
                     {
                         _logger.LogError("FileGDB를 열 수 없습니다: {Path}", gdbPath);
                     }
+                    else
+                    {
+                        _logger.LogDebug("DataSource 직접 열기: {Path}", gdbPath);
+                    }
+
                     return dataSource;
                 }
                 catch (Exception ex)

@@ -22,6 +22,9 @@ namespace SpatialCheckPro.Processors
         private readonly GeometryCriteria _criteria;
         private readonly double _ringClosureTolerance;
 
+        // Phase 2.3: 공간 인덱스 캐싱 (중복 생성 방지)
+        private readonly ConcurrentDictionary<string, object> _spatialIndexCache = new();
+
         public GeometryCheckProcessor(
             ILogger<GeometryCheckProcessor> logger,
             SpatialIndexService? spatialIndexService = null,
@@ -33,6 +36,16 @@ namespace SpatialCheckPro.Processors
             _highPerfValidator = highPerfValidator;
             _criteria = criteria ?? GeometryCriteria.CreateDefault();
             _ringClosureTolerance = _criteria.RingClosureTolerance;
+        }
+
+        /// <summary>
+        /// 공간 인덱스 캐시 정리
+        /// Phase 2.3: 메모리 관리를 위한 캐시 클리어
+        /// </summary>
+        public void ClearSpatialIndexCache()
+        {
+            _spatialIndexCache.Clear();
+            _logger.LogDebug("공간 인덱스 캐시 정리 완료");
         }
 
         /// <summary>

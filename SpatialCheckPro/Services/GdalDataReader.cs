@@ -820,7 +820,7 @@ namespace SpatialCheckPro.Services
                     featureData.CenterY = (envelope.MinY + envelope.MaxY) / 2.0;
 
                     // Envelope 저장
-                    featureData.Envelope = new SpatialEnvelope
+                    featureData.Envelope = new Models.SpatialEnvelope
                     {
                         MinX = envelope.MinX,
                         MaxX = envelope.MaxX,

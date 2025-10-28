@@ -877,13 +877,14 @@ namespace SpatialCheckPro.Services
         {
             try
             {
-                int year, month, day, hour, minute, second, tzFlag;
+                int year, month, day, hour, minute;
+                float second, tzFlag;
                 feature.GetFieldAsDateTime(fieldIndex, out year, out month, out day,
                                           out hour, out minute, out second, out tzFlag);
 
                 if (year > 0 && month > 0 && day > 0)
                 {
-                    return new DateTime(year, month, day, hour, minute, second);
+                    return new DateTime(year, month, day, hour, minute, (int)second);
                 }
             }
             catch

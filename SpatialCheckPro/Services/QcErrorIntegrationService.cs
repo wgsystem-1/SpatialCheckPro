@@ -79,27 +79,35 @@ namespace SpatialCheckPro.Services
                 // QC 오류 데이터 저장 (1/2/3단계)
                 var savedCount = await _dataService.BatchAppendQcErrorsAsync(outputGdbPath, qcErrors);
 
-                // === Stage 4/5 결과 저장 (REL/ATTR_REL) 추가 ===
-                if (validationResult.RelationCheckResult != null &&
-                    (validationResult.RelationCheckResult.ErrorCount > 0 || validationResult.RelationCheckResult.Errors.Count > 0))
-                {
-                    _logger.LogInformation("Stage 4/5 오류 변환 시작: {ErrorCount}개", validationResult.RelationCheckResult.Errors.Count);
+                // === Stage 4/5 결과 저장 (REL/ATTR_REL) ===
+                // Stage 4와 Stage 5가 있는지 확인
+                bool hasStage4 = validationResult.RelationCheckResult != null &&
+                                 validationResult.RelationCheckResult.Errors != null &&
+                                 validationResult.RelationCheckResult.Errors.Count > 0;
 
-                    // RelationCheckResult를 RelationValidationResult로 변환 (간단 매핑)
+                bool hasStage5 = validationResult.AttributeRelationCheckResult != null &&
+                                 validationResult.AttributeRelationCheckResult.Errors != null &&
+                                 validationResult.AttributeRelationCheckResult.Errors.Count > 0;
+
+                if (hasStage4 || hasStage5)
+                {
+                    _logger.LogInformation("Stage 4/5 오류 변환 시작: Stage 4={Stage4Count}개, Stage 5={Stage5Count}개",
+                        hasStage4 ? validationResult.RelationCheckResult!.Errors.Count : 0,
+                        hasStage5 ? validationResult.AttributeRelationCheckResult!.Errors.Count : 0);
+
                     var rel = new RelationValidationResult
                     {
                         ValidationId = validationResult.ValidationId,
                         StartedAt = validationResult.StartedAt,
                         CompletedAt = validationResult.CompletedAt ?? DateTime.UtcNow,
-                        IsValid = validationResult.RelationCheckResult.Status == CheckStatus.Passed
+                        IsValid = (!hasStage4 || validationResult.RelationCheckResult!.Status == CheckStatus.Passed) &&
+                                  (!hasStage5 || validationResult.AttributeRelationCheckResult!.Status == CheckStatus.Passed)
                     };
 
-                    // ValidationError를 SpatialRelationError/AttributeRelationError로 변환
-                    foreach (var error in validationResult.RelationCheckResult.Errors)
+                    // === Stage 4: 공간 관계 오류 변환 (REL) ===
+                    if (hasStage4)
                     {
-                        // ErrorCode 패턴으로 Stage 4(공간 관계) vs Stage 5(속성 관계) 구분
-                        // REL_로 시작하는 경우: Stage 4 공간 관계 오류
-                        if (!string.IsNullOrEmpty(error.ErrorCode) && error.ErrorCode.StartsWith("REL_", StringComparison.OrdinalIgnoreCase))
+                        foreach (var error in validationResult.RelationCheckResult!.Errors)
                         {
                             var spatialError = new SpatialRelationError
                             {
@@ -107,45 +115,7 @@ namespace SpatialCheckPro.Services
                                 SourceLayer = error.SourceTable ?? string.Empty,
                                 TargetLayer = error.RelatedTable ?? string.Empty,
                                 TargetObjectId = error.RelatedObjectId,
-                                ErrorType = error.ErrorCode,
-                                Severity = error.Severity,
-                                Message = error.Message ?? string.Empty,
-                                GeometryWKT = error.GeometryWKT ?? string.Empty,
-                                DetectedAt = DateTime.UtcNow,
-                                RelationType = Models.Enums.SpatialRelationType.Custom
-                            };
-
-                            rel.SpatialErrors.Add(spatialError);
-                        }
-                        // ATTR_로 시작하는 경우: Stage 5 속성 관계 오류
-                        else if (!string.IsNullOrEmpty(error.ErrorCode) && error.ErrorCode.StartsWith("ATTR_", StringComparison.OrdinalIgnoreCase))
-                        {
-                            var attrError = new AttributeRelationError
-                            {
-                                ObjectId = error.SourceObjectId ?? 0,
-                                TableName = error.SourceTable ?? string.Empty,
-                                FieldName = error.FieldName ?? string.Empty,
-                                RuleName = error.ErrorCode,
-                                Message = error.Message ?? string.Empty,
-                                Details = error.Description ?? string.Empty,
-                                Severity = error.Severity,
-                                RelatedTableName = error.RelatedTable ?? string.Empty,
-                                RelatedObjectId = error.RelatedObjectId,
-                                DetectedAt = DateTime.UtcNow
-                            };
-
-                            rel.AttributeErrors.Add(attrError);
-                        }
-                        // 기타 관계 오류는 기본적으로 공간 관계로 간주
-                        else
-                        {
-                            var spatialError = new SpatialRelationError
-                            {
-                                SourceObjectId = error.SourceObjectId ?? 0,
-                                SourceLayer = error.SourceTable ?? string.Empty,
-                                TargetLayer = error.RelatedTable ?? string.Empty,
-                                TargetObjectId = error.RelatedObjectId,
-                                ErrorType = error.ErrorCode ?? "UNKNOWN",
+                                ErrorType = error.ErrorCode ?? "REL_UNKNOWN",
                                 Severity = error.Severity,
                                 Message = error.Message ?? string.Empty,
                                 GeometryWKT = error.GeometryWKT ?? string.Empty,
@@ -157,13 +127,37 @@ namespace SpatialCheckPro.Services
                         }
                     }
 
+                    // === Stage 5: 속성 관계 오류 변환 (ATTR_REL) ===
+                    if (hasStage5)
+                    {
+                        foreach (var error in validationResult.AttributeRelationCheckResult!.Errors)
+                        {
+                            var attrError = new AttributeRelationError
+                            {
+                                ObjectId = error.SourceObjectId ?? 0,
+                                TableName = error.SourceTable ?? string.Empty,
+                                FieldName = error.FieldName ?? string.Empty,
+                                RuleName = error.ErrorCode ?? "ATTR_UNKNOWN",
+                                Message = error.Message ?? string.Empty,
+                                Details = error.Description ?? string.Empty,
+                                Severity = error.Severity,
+                                RelatedTableName = error.RelatedTable ?? string.Empty,
+                                RelatedObjectId = error.RelatedObjectId,
+                                DetectedAt = DateTime.UtcNow
+                            };
+
+                            rel.AttributeErrors.Add(attrError);
+                        }
+                    }
+
                     // 개수 업데이트
                     rel.SpatialErrorCount = rel.SpatialErrors.Count;
                     rel.AttributeErrorCount = rel.AttributeErrors.Count;
 
-                    _logger.LogInformation("오류 변환 완료: 공간 {SpatialCount}개, 속성 {AttrCount}개",
+                    _logger.LogInformation("오류 변환 완료: Stage 4 공간 {SpatialCount}개, Stage 5 속성 {AttrCount}개",
                         rel.SpatialErrorCount, rel.AttributeErrorCount);
 
+                    // RelationErrorsIntegrator를 통해 FGDB에 저장 (지오메트리 추출 포함)
                     var integrated = await _relationIntegrator.SaveRelationValidationResultAsync(
                         outputGdbPath,
                         rel,

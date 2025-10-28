@@ -123,11 +123,22 @@ namespace SpatialCheckPro.Services
                 }
 
                 // 2단계: 스키마 검수 결과 변환
-                if (validationResult.SchemaCheckResult?.SchemaResults != null)
+                // SchemaResults (구조적 검증)와 Errors (실제 오류) 모두 변환
+                if (validationResult.SchemaCheckResult != null)
                 {
-                    foreach (var schemaResult in validationResult.SchemaCheckResult.SchemaResults)
+                    // SchemaValidationItem 순회 (레거시 지원)
+                    if (validationResult.SchemaCheckResult.SchemaResults != null)
                     {
-                        qcErrors.AddRange(ConvertSchemaValidationItem(schemaResult, runId));
+                        foreach (var schemaResult in validationResult.SchemaCheckResult.SchemaResults)
+                        {
+                            qcErrors.AddRange(ConvertSchemaValidationItem(schemaResult, runId));
+                        }
+                    }
+
+                    // CheckResult.Errors 변환 (최신 구조)
+                    if (validationResult.SchemaCheckResult.Errors != null && validationResult.SchemaCheckResult.Errors.Count > 0)
+                    {
+                        qcErrors.AddRange(ToQcErrorsFromCheckResult(validationResult.SchemaCheckResult, "SCHEMA", runId.ToString()));
                     }
                 }
 
@@ -140,8 +151,8 @@ namespace SpatialCheckPro.Services
                     }
                 }
 
-                // 4단계: 관계 검수 결과 변환 (현재 미구현)
-                // 관계 검수 결과 구조가 정의되면 추가 구현 필요
+                // 4단계, 5단계: 관계 검수 결과는 RelationErrorsIntegrator에서 별도 처리
+                // (FGDB에서 지오메트리를 직접 추출하여 더 정확한 좌표 저장)
 
                 _logger.LogInformation("ValidationResult 변환 완료: {Count}개 QcError 생성", qcErrors.Count);
                 return qcErrors;

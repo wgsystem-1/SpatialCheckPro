@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using OSGeo.GDAL;
 using OSGeo.OGR;
+using SpatialCheckPro.Models;
 
 namespace SpatialCheckPro.Services
 {
@@ -697,6 +698,200 @@ namespace SpatialCheckPro.Services
             }
 
             _logger.LogDebug("피처 스트리밍 완료: {TableName} = {ProcessedCount}개 처리", tableName, processedCount);
+        }
+
+        /// <summary>
+        /// 피처를 FeatureData DTO로 변환하여 스트리밍 방식으로 조회합니다
+        /// Phase 1.1: Feature/Geometry Dispose 패턴 강화
+        /// - Feature를 직접 반환하지 않고 필요한 데이터만 추출하여 DTO로 반환
+        /// - 네이티브 메모리 누수 위험 제거 (Feature는 즉시 Dispose됨)
+        /// - 예상 효과: 500MB-1GB 메모리 절약, OOM 발생 가능성 대폭 감소
+        /// </summary>
+        public async IAsyncEnumerable<FeatureData> GetFeaturesDataStreamAsync(
+            string gdbPath,
+            string tableName,
+            bool includeGeometry = true,
+            bool includeAttributes = true,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            using var dataSource = await OpenDataSourceAsync(gdbPath);
+            if (dataSource == null)
+            {
+                _logger.LogWarning("데이터소스를 열 수 없습니다: {GdbPath}", gdbPath);
+                yield break;
+            }
+
+            using var layer = dataSource.GetLayerByName(tableName);
+            if (layer == null)
+            {
+                _logger.LogWarning("테이블을 찾을 수 없습니다: {TableName}", tableName);
+                yield break;
+            }
+
+            layer.ResetReading();
+            var processedCount = 0;
+
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                using var feature = layer.GetNextFeature();
+                if (feature == null)
+                    break;
+
+                // Feature에서 DTO로 변환 (Feature는 using 블록 끝에서 자동 Dispose됨)
+                var featureData = ExtractFeatureData(feature, tableName, includeGeometry, includeAttributes);
+
+                yield return featureData;
+                processedCount++;
+
+                // 메모리 관리
+                if (_memoryManager != null && processedCount % 1000 == 0)
+                {
+                    if (_memoryManager.IsMemoryPressureHigh())
+                    {
+                        _logger.LogDebug("메모리 압박 감지 - 자동 정리 수행 중 (처리된 피처: {ProcessedCount}개)", processedCount);
+                        await _memoryManager.TryReduceMemoryPressureAsync();
+                    }
+                }
+            }
+
+            _logger.LogDebug("피처 데이터 스트리밍 완료: {TableName} = {ProcessedCount}개 처리", tableName, processedCount);
+        }
+
+        /// <summary>
+        /// Feature에서 필요한 데이터를 추출하여 FeatureData DTO로 변환
+        /// 네이티브 메모리 누수를 방지하기 위해 Feature는 이 메서드 호출 후 즉시 Dispose되어야 함
+        /// </summary>
+        private FeatureData ExtractFeatureData(
+            Feature feature,
+            string tableName,
+            bool includeGeometry = true,
+            bool includeAttributes = true)
+        {
+            var featureData = new FeatureData
+            {
+                Fid = feature.GetFID(),
+                TableName = tableName
+            };
+
+            // ObjectId 추출
+            featureData.ObjectId = GetObjectId(feature);
+
+            // Geometry 정보 추출
+            if (includeGeometry)
+            {
+                var geometry = feature.GetGeometryRef();
+                if (geometry != null && !geometry.IsEmpty())
+                {
+                    // WKT 변환
+                    geometry.ExportToWkt(out string wkt);
+                    featureData.GeometryWkt = wkt;
+
+                    // Geometry 타입
+                    featureData.GeometryType = geometry.GetGeometryName();
+
+                    // GEOS 유효성 검사
+                    featureData.IsGeometryValid = geometry.IsValid();
+                    featureData.IsGeometrySimple = geometry.IsSimple();
+
+                    // 면적/길이
+                    var geomType = geometry.GetGeometryType();
+                    if (geomType == wkbGeometryType.wkbPolygon ||
+                        geomType == wkbGeometryType.wkbMultiPolygon ||
+                        geomType == wkbGeometryType.wkbPolygon25D ||
+                        geomType == wkbGeometryType.wkbMultiPolygon25D)
+                    {
+                        featureData.Area = geometry.Area();
+                        featureData.Length = geometry.Boundary()?.Length() ?? 0;
+                    }
+                    else if (geomType == wkbGeometryType.wkbLineString ||
+                             geomType == wkbGeometryType.wkbMultiLineString ||
+                             geomType == wkbGeometryType.wkbLineString25D ||
+                             geomType == wkbGeometryType.wkbMultiLineString25D)
+                    {
+                        featureData.Length = geometry.Length();
+                    }
+
+                    // 중심점 계산
+                    var envelope = new Envelope();
+                    geometry.GetEnvelope(envelope);
+                    featureData.CenterX = (envelope.MinX + envelope.MaxX) / 2.0;
+                    featureData.CenterY = (envelope.MinY + envelope.MaxY) / 2.0;
+
+                    // Envelope 저장
+                    featureData.Envelope = new SpatialEnvelope
+                    {
+                        MinX = envelope.MinX,
+                        MaxX = envelope.MaxX,
+                        MinY = envelope.MinY,
+                        MaxY = envelope.MaxY
+                    };
+
+                    // 정점 개수 (단순화된 계산)
+                    featureData.PointCount = geometry.GetPointCount();
+                }
+            }
+
+            // 속성 필드 추출
+            if (includeAttributes)
+            {
+                var featureDefn = feature.GetDefnRef();
+                var fieldCount = featureDefn.GetFieldCount();
+
+                for (int i = 0; i < fieldCount; i++)
+                {
+                    var fieldDefn = featureDefn.GetFieldDefn(i);
+                    var fieldName = fieldDefn.GetName();
+                    var fieldType = fieldDefn.GetFieldType();
+
+                    if (!feature.IsFieldSet(i))
+                    {
+                        featureData.Attributes[fieldName] = null;
+                        continue;
+                    }
+
+                    // 타입에 따라 값 추출
+                    object? fieldValue = fieldType switch
+                    {
+                        FieldType.OFTInteger => feature.GetFieldAsInteger(i),
+                        FieldType.OFTInteger64 => feature.GetFieldAsInteger64(i),
+                        FieldType.OFTReal => feature.GetFieldAsDouble(i),
+                        FieldType.OFTString => feature.GetFieldAsString(i),
+                        FieldType.OFTDate or FieldType.OFTDateTime or FieldType.OFTTime =>
+                            ExtractDateTimeField(feature, i),
+                        _ => feature.GetFieldAsString(i) // 기타 타입은 문자열로
+                    };
+
+                    featureData.Attributes[fieldName] = fieldValue;
+                }
+            }
+
+            return featureData;
+        }
+
+        /// <summary>
+        /// Feature에서 날짜/시간 필드 추출
+        /// </summary>
+        private DateTime? ExtractDateTimeField(Feature feature, int fieldIndex)
+        {
+            try
+            {
+                int year, month, day, hour, minute, second, tzFlag;
+                feature.GetFieldAsDateTime(fieldIndex, out year, out month, out day,
+                                          out hour, out minute, out second, out tzFlag);
+
+                if (year > 0 && month > 0 && day > 0)
+                {
+                    return new DateTime(year, month, day, hour, minute, second);
+                }
+            }
+            catch
+            {
+                // 날짜 변환 실패 시 null 반환
+            }
+
+            return null;
         }
 
         /// <summary>

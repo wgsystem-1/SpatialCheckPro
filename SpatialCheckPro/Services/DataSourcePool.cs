@@ -67,16 +67,31 @@ namespace SpatialCheckPro.Services
 
             lock (_lockObject)
             {
-                // 기존 DataSource가 있으면 재사용
+                // 기존 DataSource가 있으면 재사용 (단, Dispose되지 않은 경우만)
                 if (_pool.TryGetValue(normalizedPath, out var pooled))
                 {
-                    pooled.ReferenceCount++;
-                    pooled.LastAccessed = DateTime.Now;
-                    
-                    _logger.LogDebug("DataSource 풀 히트: {Path}, 참조 카운트: {RefCount}", 
-                        normalizedPath, pooled.ReferenceCount);
-                    
-                    return pooled.DataSource;
+                    // ⚠️ Dispose 여부 검사 (네이티브 핸들 확인)
+                    try
+                    {
+                        // DataSource가 유효한지 확인 (LayerCount 접근으로 테스트)
+                        var layerCount = pooled.DataSource.GetLayerCount();
+
+                        // 유효하면 재사용
+                        pooled.ReferenceCount++;
+                        pooled.LastAccessed = DateTime.Now;
+
+                        _logger.LogDebug("DataSource 풀 히트: {Path}, 참조 카운트: {RefCount}",
+                            normalizedPath, pooled.ReferenceCount);
+
+                        return pooled.DataSource;
+                    }
+                    catch (Exception ex)
+                    {
+                        // Dispose되었거나 손상된 DataSource - 풀에서 제거
+                        _logger.LogWarning(ex, "풀에 있는 DataSource가 유효하지 않음: {Path}, 재생성 중...", normalizedPath);
+                        _pool.TryRemove(normalizedPath, out _);
+                        // 아래에서 새로 생성됨
+                    }
                 }
 
                 // 풀 크기 제한 확인

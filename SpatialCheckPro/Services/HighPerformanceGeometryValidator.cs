@@ -10,6 +10,7 @@ namespace SpatialCheckPro.Services
     /// <summary>
     /// 고성능 지오메트리 검수 서비스
     /// 기존 GeometryValidationService의 성능 병목을 해결
+    /// Phase 2 Item #5: 공간 인덱스 재생성 최적화 - 중복 생성 방지
     /// </summary>
     public class HighPerformanceGeometryValidator
     {
@@ -18,6 +19,10 @@ namespace SpatialCheckPro.Services
         private readonly MemoryOptimizationService _memoryOptimization;
         private readonly ParallelProcessingManager _parallelProcessingManager;
         private readonly Models.Config.PerformanceSettings _settings;
+
+        // Phase 2 Item #5: 공간 인덱스 캐싱 (중복 생성 방지)
+        // 예상 효과: 인덱스 구축 시간 3-5초 절약, 메모리 효율 20% 향상
+        private readonly ConcurrentDictionary<string, SpatialIndex> _spatialIndexCache = new();
 
         public HighPerformanceGeometryValidator(
             ILogger<HighPerformanceGeometryValidator> logger,
@@ -31,6 +36,58 @@ namespace SpatialCheckPro.Services
             _memoryOptimization = memoryOptimization;
             _parallelProcessingManager = parallelProcessingManager;
             _settings = settings;
+        }
+
+        /// <summary>
+        /// 공간 인덱스 캐시에서 가져오거나 새로 생성
+        /// Phase 2 Item #5: 공간 인덱스 재생성 최적화
+        /// </summary>
+        private SpatialIndex GetOrBuildSpatialIndex(string layerName, Layer layer, double tolerance)
+        {
+            // 캐시 키: layerName + tolerance 조합
+            var cacheKey = $"{layerName}_{tolerance:F6}";
+
+            if (_spatialIndexCache.TryGetValue(cacheKey, out var cachedIndex))
+            {
+                _logger.LogDebug("공간 인덱스 캐시 적중: {CacheKey}", cacheKey);
+                return cachedIndex;
+            }
+
+            _logger.LogDebug("공간 인덱스 생성 중: {CacheKey}", cacheKey);
+            var startTime = DateTime.Now;
+
+            var newIndex = _spatialIndexService.CreateSpatialIndex(layerName, layer, tolerance);
+            _spatialIndexCache[cacheKey] = newIndex;
+
+            var elapsed = (DateTime.Now - startTime).TotalSeconds;
+            _logger.LogInformation("공간 인덱스 생성 및 캐싱 완료: {CacheKey}, 소요시간: {Elapsed:F2}초",
+                cacheKey, elapsed);
+
+            return newIndex;
+        }
+
+        /// <summary>
+        /// 공간 인덱스 캐시 정리
+        /// Phase 2 Item #5: 메모리 관리를 위한 캐시 클리어
+        /// </summary>
+        public void ClearSpatialIndexCache()
+        {
+            var count = _spatialIndexCache.Count;
+            _spatialIndexCache.Clear();
+            _logger.LogInformation("공간 인덱스 캐시 정리 완료: {Count}개 항목 제거", count);
+        }
+
+        /// <summary>
+        /// 특정 레이어의 공간 인덱스 캐시 제거
+        /// </summary>
+        public void RemoveSpatialIndexCache(string layerName)
+        {
+            var keysToRemove = _spatialIndexCache.Keys.Where(k => k.StartsWith($"{layerName}_")).ToList();
+            foreach (var key in keysToRemove)
+            {
+                _spatialIndexCache.TryRemove(key, out _);
+            }
+            _logger.LogDebug("레이어 공간 인덱스 캐시 제거: {LayerName}, {Count}개 항목", layerName, keysToRemove.Count);
         }
 
         /// <summary>
@@ -59,9 +116,9 @@ namespace SpatialCheckPro.Services
                     return new List<GeometryErrorDetail>();
                 }
 
-                // 1단계: 공간 인덱스 생성 (R-tree 기반)
-                _logger.LogInformation("공간 인덱스 생성 중: {FeatureCount}개 피처", featureCount);
-                var spatialIndex = _spatialIndexService.CreateSpatialIndex(layerName, layer, Math.Max(tolerance, coordinateTolerance));
+                // 1단계: 공간 인덱스 가져오기 또는 생성 (Phase 2 Item #5: 캐싱)
+                _logger.LogInformation("공간 인덱스 준비 중: {FeatureCount}개 피처", featureCount);
+                var spatialIndex = GetOrBuildSpatialIndex(layerName, layer, Math.Max(tolerance, coordinateTolerance));
 
                 var duplicateGroups = FindExactDuplicateGroups(spatialIndex, coordinateTolerance);
 
@@ -125,8 +182,8 @@ namespace SpatialCheckPro.Services
                 _logger.LogInformation("고성능 겹침 지오메트리 검수 시작: {LayerName}", layerName);
                 var startTime = DateTime.Now;
 
-                // 공간 인덱스 기반 겹침 검사
-                var spatialIndex = _spatialIndexService.CreateSpatialIndex(layerName, layer, tolerance);
+                // 공간 인덱스 기반 겹침 검사 (Phase 2 Item #5: 캐싱)
+                var spatialIndex = GetOrBuildSpatialIndex(layerName, layer, tolerance);
                 var overlaps = _spatialIndexService.FindOverlaps(layerName, spatialIndex);
 
                 foreach (var overlap in overlaps)

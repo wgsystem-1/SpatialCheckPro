@@ -26,6 +26,20 @@ namespace SpatialCheckPro.GUI.ViewModels
         private ValidationRunContext _currentContext = new();
         private OverallEtaResult _cachedOverallEta = new(null, 0, Array.Empty<StageEtaResult>());
 
+        // Phase 2 UI Metrics
+        private double _cpuUsagePercent;
+        private double _memoryPressurePercent;
+        private int _currentParallelism;
+        private int _maxParallelism;
+        private double _cacheHitRatio;
+        private int _cachedLayerCount;
+        private int _cachedSchemaCount;
+        private bool _streamingModeActive;
+        private int _streamedErrorCount;
+        private string _streamingFilePath = string.Empty;
+        private int _batchSize;
+        private int _batchThroughput;
+
         /// <summary>
         /// 단계 요약 목록
         /// </summary>
@@ -59,6 +73,79 @@ namespace SpatialCheckPro.GUI.ViewModels
         }
 
         public double RemainingEtaConfidence => _cachedOverallEta.Confidence;
+
+        // Phase 2 UI Properties
+        public double CpuUsagePercent
+        {
+            get => _cpuUsagePercent;
+            set { _cpuUsagePercent = value; OnPropertyChanged(nameof(CpuUsagePercent)); }
+        }
+
+        public double MemoryPressurePercent
+        {
+            get => _memoryPressurePercent;
+            set { _memoryPressurePercent = value; OnPropertyChanged(nameof(MemoryPressurePercent)); }
+        }
+
+        public int CurrentParallelism
+        {
+            get => _currentParallelism;
+            set { _currentParallelism = value; OnPropertyChanged(nameof(CurrentParallelism)); }
+        }
+
+        public int MaxParallelism
+        {
+            get => _maxParallelism;
+            set { _maxParallelism = value; OnPropertyChanged(nameof(MaxParallelism)); }
+        }
+
+        public double CacheHitRatio
+        {
+            get => _cacheHitRatio;
+            set { _cacheHitRatio = value; OnPropertyChanged(nameof(CacheHitRatio)); }
+        }
+
+        public int CachedLayerCount
+        {
+            get => _cachedLayerCount;
+            set { _cachedLayerCount = value; OnPropertyChanged(nameof(CachedLayerCount)); }
+        }
+
+        public int CachedSchemaCount
+        {
+            get => _cachedSchemaCount;
+            set { _cachedSchemaCount = value; OnPropertyChanged(nameof(CachedSchemaCount)); }
+        }
+
+        public bool StreamingModeActive
+        {
+            get => _streamingModeActive;
+            set { _streamingModeActive = value; OnPropertyChanged(nameof(StreamingModeActive)); }
+        }
+
+        public int StreamedErrorCount
+        {
+            get => _streamedErrorCount;
+            set { _streamedErrorCount = value; OnPropertyChanged(nameof(StreamedErrorCount)); }
+        }
+
+        public string StreamingFilePath
+        {
+            get => _streamingFilePath;
+            set { _streamingFilePath = value; OnPropertyChanged(nameof(StreamingFilePath)); }
+        }
+
+        public int BatchSize
+        {
+            get => _batchSize;
+            set { _batchSize = value; OnPropertyChanged(nameof(BatchSize)); }
+        }
+
+        public int BatchThroughput
+        {
+            get => _batchThroughput;
+            set { _batchThroughput = value; OnPropertyChanged(nameof(BatchThroughput)); }
+        }
 
         /// <summary>
         /// 수집 뷰모델 생성자

@@ -111,5 +111,89 @@ namespace SpatialCheckPro.Models
         /// 경고 목록
         /// </summary>
         public List<ValidationError> Warnings { get; set; } = new List<ValidationError>();
+
+        // Phase 2 Item #8: 예외 처리 표준화 - Factory Methods
+
+        /// <summary>
+        /// 파일을 찾을 수 없을 때의 ValidationResult 생성
+        /// </summary>
+        public static ValidationResult CreateFileNotFound(string filePath = "")
+        {
+            return new ValidationResult
+            {
+                IsValid = false,
+                Status = ValidationStatus.Failed,
+                Message = $"파일을 찾을 수 없습니다{(string.IsNullOrEmpty(filePath) ? "" : $": {filePath}")}",
+                TargetFile = filePath,
+                ErrorMessage = "파일을 찾을 수 없습니다",
+                StartedAt = DateTime.Now,
+                CompletedAt = DateTime.Now
+            };
+        }
+
+        /// <summary>
+        /// 작업이 취소되었을 때의 ValidationResult 생성
+        /// </summary>
+        public static ValidationResult CreateCancelled(string message = "작업이 사용자에 의해 취소되었습니다")
+        {
+            return new ValidationResult
+            {
+                IsValid = false,
+                Status = ValidationStatus.Cancelled,
+                Message = message,
+                ErrorMessage = message,
+                StartedAt = DateTime.Now,
+                CompletedAt = DateTime.Now
+            };
+        }
+
+        /// <summary>
+        /// 오류가 발생했을 때의 ValidationResult 생성
+        /// </summary>
+        public static ValidationResult CreateError(string message, Exception? exception = null)
+        {
+            var result = new ValidationResult
+            {
+                IsValid = false,
+                Status = ValidationStatus.Failed,
+                Message = message,
+                ErrorMessage = exception != null ? $"{message}: {exception.Message}" : message,
+                StartedAt = DateTime.Now,
+                CompletedAt = DateTime.Now
+            };
+
+            if (exception != null)
+            {
+                result.Errors.Add(new ValidationError
+                {
+                    ErrorCode = "SYSTEM_ERROR",
+                    Message = message,
+                    Severity = ErrorSeverity.Error,
+                    Metadata =
+                    {
+                        ["ExceptionType"] = exception.GetType().Name,
+                        ["ExceptionMessage"] = exception.Message,
+                        ["StackTrace"] = exception.StackTrace ?? string.Empty
+                    }
+                });
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 성공 결과 생성
+        /// </summary>
+        public static ValidationResult CreateSuccess(string message = "검수가 성공적으로 완료되었습니다")
+        {
+            return new ValidationResult
+            {
+                IsValid = true,
+                Status = ValidationStatus.Completed,
+                Message = message,
+                StartedAt = DateTime.Now,
+                CompletedAt = DateTime.Now
+            };
+        }
     }
 }

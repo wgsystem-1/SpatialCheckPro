@@ -41,11 +41,13 @@ namespace SpatialCheckPro.Services
                 var validationEntity = ValidationResultEntity.FromDomainModel(validationResult);
                 validationEntity.TargetFileId = spatialFileEntity.Id;
 
+                // Phase 2 Item #11: AsSplitQuery로 N+1 쿼리 최적화
                 // 기존 검수 결과가 있으면 업데이트, 없으면 추가
                 var existingEntity = await _context.ValidationResults
                     .Include(v => v.StageResults)
                         .ThenInclude(s => s.CheckResults)
                             .ThenInclude(c => c.Errors)
+                    .AsSplitQuery() // 카테시안 곱 방지 - 4개의 별도 쿼리로 분리
                     .FirstOrDefaultAsync(v => v.ValidationId == validationResult.ValidationId);
 
                 if (existingEntity != null)
@@ -77,11 +79,13 @@ namespace SpatialCheckPro.Services
             {
                 _logger.LogInformation("검수 결과를 조회합니다. ValidationId: {ValidationId}", validationId);
 
+                // Phase 2 Item #11: AsSplitQuery로 N+1 쿼리 최적화
                 var entity = await _context.ValidationResults
                     .Include(v => v.TargetFile)
                     .Include(v => v.StageResults)
                         .ThenInclude(s => s.CheckResults)
                             .ThenInclude(c => c.Errors)
+                    .AsSplitQuery() // 카테시안 곱 방지 - 5개의 별도 쿼리로 분리
                     .FirstOrDefaultAsync(v => v.ValidationId == validationId);
 
                 if (entity == null)
@@ -111,9 +115,11 @@ namespace SpatialCheckPro.Services
 
                 var totalCount = await _context.ValidationResults.CountAsync();
 
+                // Phase 2 Item #11: Include만 필요한 필드로 제한, AsSplitQuery 적용
                 var entities = await _context.ValidationResults
                     .Include(v => v.TargetFile)
-                    .Include(v => v.StageResults)
+                    .Include(v => v.StageResults) // CheckResults와 Errors는 목록 조회 시 불필요하므로 제외
+                    .AsSplitQuery() // 카테시안 곱 방지
                     .OrderByDescending(v => v.StartedAt)
                     .Skip((pageNumber - 1) * pageSize)
                     .Take(pageSize)
@@ -142,11 +148,13 @@ namespace SpatialCheckPro.Services
             {
                 _logger.LogInformation("파일별 검수 결과를 조회합니다. FilePath: {FilePath}", filePath);
 
+                // Phase 2 Item #11: AsSplitQuery로 N+1 쿼리 최적화
                 var entities = await _context.ValidationResults
                     .Include(v => v.TargetFile)
                     .Include(v => v.StageResults)
                         .ThenInclude(s => s.CheckResults)
                             .ThenInclude(c => c.Errors)
+                    .AsSplitQuery() // 카테시안 곱 방지
                     .Where(v => v.TargetFile.FilePath == filePath)
                     .OrderByDescending(v => v.StartedAt)
                     .ToListAsync();
@@ -337,9 +345,11 @@ namespace SpatialCheckPro.Services
             {
                 _logger.LogInformation("최근 검수 결과를 조회합니다. Count: {Count}", count);
 
+                // Phase 2 Item #11: AsSplitQuery 적용
                 var entities = await _context.ValidationResults
                     .Include(v => v.TargetFile)
                     .Include(v => v.StageResults)
+                    .AsSplitQuery() // 카테시안 곱 방지
                     .OrderByDescending(v => v.StartedAt)
                     .Take(count)
                     .ToListAsync();
@@ -366,9 +376,11 @@ namespace SpatialCheckPro.Services
             {
                 _logger.LogInformation("검수 결과를 검색합니다.");
 
+                // Phase 2 Item #11: AsSplitQuery 적용
                 var query = _context.ValidationResults
                     .Include(v => v.TargetFile)
                     .Include(v => v.StageResults)
+                    .AsSplitQuery() // 카테시안 곱 방지
                     .AsQueryable();
 
                 // 파일명 검색
@@ -425,6 +437,94 @@ namespace SpatialCheckPro.Services
             {
                 _logger.LogError(ex, "검수 결과 검색 중 오류가 발생했습니다. Error: {ErrorMessage}", ex.Message);
                 return new List<ValidationResult>();
+            }
+        }
+
+        /// <summary>
+        /// 검수 오류 배치 저장 (Phase 2 Item #12: 배치 삽입 최적화)
+        /// - 1000개 단위 배치 삽입
+        /// - 트랜잭션으로 원자성 보장
+        /// - ChangeTracker.Clear()로 메모리 압박 방지
+        /// </summary>
+        public async Task<bool> SaveValidationErrorsBatchAsync(List<ValidationError> errors, string validationId)
+        {
+            if (errors == null || errors.Count == 0)
+            {
+                _logger.LogWarning("저장할 오류가 없습니다. ValidationId: {ValidationId}", validationId);
+                return true;
+            }
+
+            const int BATCH_SIZE = 1000;
+
+            try
+            {
+                _logger.LogInformation("검수 오류 배치 저장 시작: ValidationId={ValidationId}, Count={Count}",
+                    validationId, errors.Count);
+
+                var startTime = DateTime.Now;
+
+                // 트랜잭션 시작
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    int totalSaved = 0;
+
+                    // 배치 단위로 삽입
+                    for (int i = 0; i < errors.Count; i += BATCH_SIZE)
+                    {
+                        var batch = errors.Skip(i).Take(BATCH_SIZE).ToList();
+
+                        // ValidationError를 Entity로 변환
+                        var errorEntities = batch.Select(e => new ValidationErrorEntity
+                        {
+                            ValidationId = validationId,
+                            ErrorCode = e.ErrorCode,
+                            Message = e.Message,
+                            TableName = e.TableName ?? string.Empty,
+                            FeatureId = e.FeatureId,
+                            Severity = e.Severity,
+                            ErrorType = e.ErrorType,
+                            X = e.X,
+                            Y = e.Y,
+                            GeometryWKT = e.GeometryWKT,
+                            OccurredAt = e.OccurredAt,
+                            IsResolved = e.IsResolved
+                        }).ToList();
+
+                        // 배치 추가
+                        _context.ValidationErrors.AddRange(errorEntities);
+                        await _context.SaveChangesAsync();
+
+                        totalSaved += batch.Count;
+
+                        // 메모리 압박 방지 - ChangeTracker 정리
+                        _context.ChangeTracker.Clear();
+
+                        _logger.LogDebug("배치 저장 진행: {Saved}/{Total} ({Progress:P1})",
+                            totalSaved, errors.Count, (double)totalSaved / errors.Count);
+                    }
+
+                    // 트랜잭션 커밋
+                    await transaction.CommitAsync();
+
+                    var elapsed = (DateTime.Now - startTime).TotalSeconds;
+                    _logger.LogInformation("검수 오류 배치 저장 완료: ValidationId={ValidationId}, Count={Count}, 소요시간={Elapsed:F2}초",
+                        validationId, totalSaved, elapsed);
+
+                    return true;
+                }
+                catch (Exception)
+                {
+                    // 트랜잭션 롤백
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "검수 오류 배치 저장 중 오류 발생: ValidationId={ValidationId}, Error={ErrorMessage}",
+                    validationId, ex.Message);
+                return false;
             }
         }
 

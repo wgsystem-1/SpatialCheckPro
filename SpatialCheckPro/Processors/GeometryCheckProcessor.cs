@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using NetTopologySuite.IO;
 using NetTopologySuite.Operation.Valid;
 using SpatialCheckPro.Utils;
+using System.IO;
 
 namespace SpatialCheckPro.Processors
 {
@@ -51,15 +52,24 @@ namespace SpatialCheckPro.Processors
         /// <summary>
         /// 전체 지오메트리 검수 (통합 실행)
         /// Phase 1.3: Feature 순회 중복 제거 - 단일 순회로 모든 검사 수행
-        /// - 예상 효과: Geometry 검수 시간 60-70% 단축, 메모리 사용량 40% 감소
+        /// Phase 2 Item #7: 대용량 Geometry 스트리밍 처리 - 메모리 누적 방지
+        /// - 예상 효과: Geometry 검수 시간 60-70% 단축, 메모리 사용량 40% 감소 (Phase 1.3)
+        /// - 예상 효과: 대용량 오류 처리 시 메모리 60% 감소 (Phase 2 Item #7)
         /// </summary>
-        public async Task<ValidationResult> ProcessAsync(string filePath, GeometryCheckConfig config, CancellationToken cancellationToken = default)
+        /// <param name="streamingOutputPath">스트리밍 출력 경로 (null이면 메모리에 누적, 경로 지정 시 디스크에 스트리밍)</param>
+        public async Task<ValidationResult> ProcessAsync(
+            string filePath,
+            GeometryCheckConfig config,
+            CancellationToken cancellationToken = default,
+            string? streamingOutputPath = null)
         {
             var result = new ValidationResult { IsValid = true };
+            IStreamingErrorWriter? errorWriter = null;
 
             try
             {
-                _logger.LogInformation("지오메트리 검수 시작 (단일 순회 최적화): {TableId} ({TableName})", config.TableId, config.TableName);
+                _logger.LogInformation("지오메트리 검수 시작 (단일 순회 최적화): {TableId} ({TableName}), 스트리밍 모드: {StreamingEnabled}",
+                    config.TableId, config.TableName, streamingOutputPath != null);
                 var startTime = DateTime.Now;
 
                 using var ds = Ogr.Open(filePath, 0);
@@ -78,11 +88,31 @@ namespace SpatialCheckPro.Processors
                 var featureCount = layer.GetFeatureCount(1);
                 _logger.LogInformation("검수 대상 피처: {Count}개", featureCount);
 
+                // Phase 2 Item #7: 스트리밍 모드 활성화
+                if (!string.IsNullOrEmpty(streamingOutputPath))
+                {
+                    errorWriter = new StreamingErrorWriter(streamingOutputPath,
+                        _logger as ILogger<StreamingErrorWriter> ??
+                        new LoggerFactory().CreateLogger<StreamingErrorWriter>());
+                }
+
                 // === Phase 1.3: 단일 순회 통합 검사 ===
                 // GEOS 유효성, 기본 속성, 고급 특징을 한 번의 순회로 모두 검사
-                var unifiedErrors = await CheckGeometryInSinglePassAsync(layer, config, cancellationToken);
-                result.Errors.AddRange(unifiedErrors);
-                result.ErrorCount += unifiedErrors.Count;
+                var unifiedErrors = await CheckGeometryInSinglePassAsync(layer, config, cancellationToken, errorWriter);
+
+                if (errorWriter == null)
+                {
+                    // 메모리 모드: 오류 리스트 누적
+                    result.Errors.AddRange(unifiedErrors);
+                    result.ErrorCount += unifiedErrors.Count;
+                }
+                else
+                {
+                    // 스트리밍 모드: 통계만 업데이트
+                    var stats = errorWriter.GetStatistics();
+                    result.ErrorCount += stats.TotalErrorCount;
+                    result.WarningCount += stats.TotalWarningCount;
+                }
 
                 // === 공간 인덱스 기반 검사 (중복, 겹침) - 별도 순회 필요 ===
                 if (_highPerfValidator != null)
@@ -90,17 +120,47 @@ namespace SpatialCheckPro.Processors
                     if (config.ShouldCheckDuplicate)
                     {
                         var duplicateErrors = await _highPerfValidator.CheckDuplicatesHighPerformanceAsync(layer);
-                        result.Errors.AddRange(ConvertToValidationErrors(duplicateErrors, config.TableId, "GEOM_DUPLICATE"));
-                        result.ErrorCount += duplicateErrors.Count;
+                        var validationErrors = ConvertToValidationErrors(duplicateErrors, config.TableId, "GEOM_DUPLICATE");
+
+                        if (errorWriter != null)
+                        {
+                            await errorWriter.WriteErrorsAsync(validationErrors);
+                        }
+                        else
+                        {
+                            result.Errors.AddRange(validationErrors);
+                        }
+                        result.ErrorCount += validationErrors.Count;
                     }
 
                     if (config.ShouldCheckOverlap)
                     {
                         var overlapErrors = await _highPerfValidator.CheckOverlapsHighPerformanceAsync(
                             layer, _criteria.OverlapTolerance);
-                        result.Errors.AddRange(ConvertToValidationErrors(overlapErrors, config.TableId, "GEOM_OVERLAP"));
-                        result.ErrorCount += overlapErrors.Count;
+                        var validationErrors = ConvertToValidationErrors(overlapErrors, config.TableId, "GEOM_OVERLAP");
+
+                        if (errorWriter != null)
+                        {
+                            await errorWriter.WriteErrorsAsync(validationErrors);
+                        }
+                        else
+                        {
+                            result.Errors.AddRange(validationErrors);
+                        }
+                        result.ErrorCount += validationErrors.Count;
                     }
+                }
+
+                // 스트리밍 완료 및 통계 업데이트
+                if (errorWriter != null)
+                {
+                    var finalStats = await errorWriter.FinalizeAsync();
+                    result.ErrorCount = finalStats.TotalErrorCount;
+                    result.WarningCount = finalStats.TotalWarningCount;
+                    result.Message = $"오류가 파일에 기록되었습니다: {streamingOutputPath}";
+
+                    _logger.LogInformation("스트리밍 모드 통계 - 오류: {ErrorCount}개, 경고: {WarningCount}개, 출력: {OutputPath}",
+                        finalStats.TotalErrorCount, finalStats.TotalWarningCount, streamingOutputPath);
                 }
 
                 result.IsValid = result.ErrorCount == 0;
@@ -116,23 +176,64 @@ namespace SpatialCheckPro.Processors
                 _logger.LogError(ex, "지오메트리 검수 실패: {TableId}", config.TableId);
                 return new ValidationResult { IsValid = false, Message = $"검수 중 오류 발생: {ex.Message}" };
             }
+            finally
+            {
+                // 스트리밍 리소스 정리
+                errorWriter?.Dispose();
+            }
         }
 
         /// <summary>
-        /// 단일 순회로 모든 Geometry 검사 수행 (Phase 1.3 최적화)
+        /// 단일 순회로 모든 Geometry 검사 수행 (Phase 1.3 최적화 + Phase 2 Item #7 스트리밍)
         /// - GEOS 유효성 검사 (IsValid, IsSimple)
         /// - 기본 기하 속성 검사 (짧은 객체, 작은 면적, 최소 정점)
         /// - 고급 기하 특징 검사 (슬리버, 스파이크)
+        /// - Phase 2 Item #7: 스트리밍 모드 - errorWriter가 제공되면 오류를 즉시 디스크에 기록
         /// </summary>
         private async Task<List<ValidationError>> CheckGeometryInSinglePassAsync(
             Layer layer,
             GeometryCheckConfig config,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            IStreamingErrorWriter? errorWriter = null)
         {
             var errors = new ConcurrentBag<ValidationError>();
+            var streamingMode = errorWriter != null;
+            var streamingBatchSize = 1000; // 1000개마다 디스크에 플러시
+            var pendingErrors = new List<ValidationError>(streamingBatchSize);
+            var pendingErrorsLock = new object();
 
-            _logger.LogInformation("단일 순회 통합 검사 시작 (GEOS + 기본속성 + 고급특징)");
+            _logger.LogInformation("단일 순회 통합 검사 시작 (GEOS + 기본속성 + 고급특징), 스트리밍 모드: {StreamingMode}",
+                streamingMode);
             var startTime = DateTime.Now;
+
+            // 오류 추가 헬퍼 (스트리밍 모드와 메모리 모드 모두 지원)
+            Action<ValidationError> addError = (error) =>
+            {
+                if (streamingMode)
+                {
+                    lock (pendingErrorsLock)
+                    {
+                        pendingErrors.Add(error);
+
+                        // 배치 크기 도달 시 비동기로 플러시
+                        if (pendingErrors.Count >= streamingBatchSize)
+                        {
+                            var errorsToWrite = new List<ValidationError>(pendingErrors);
+                            pendingErrors.Clear();
+
+                            // 비동기 작업을 동기적으로 대기 (Task.Run 내부이므로 허용)
+                            Task.Run(async () =>
+                            {
+                                await errorWriter!.WriteErrorsAsync(errorsToWrite);
+                            }).Wait();
+                        }
+                    }
+                }
+                else
+                {
+                    errors.Add(error);
+                }
+            };
 
             await Task.Run(() =>
             {
@@ -183,7 +284,7 @@ namespace SpatialCheckPro.Processors
                                         (errorX, errorY) = GeometryCoordinateExtractor.GetEnvelopeCenter(geometryRef);
                                     }
 
-                                    errors.Add(new ValidationError
+                                    addError(new ValidationError
                                     {
                                         ErrorCode = "GEOM_INVALID",
                                         Message = validationError != null ? $"{errorTypeName}: {validationError.Message}" : "지오메트리 유효성 오류",
@@ -203,7 +304,7 @@ namespace SpatialCheckPro.Processors
                                 // IsSimple() 검사 (자기교차)
                                 if (!geometryRef.IsSimple())
                                 {
-                                    errors.Add(new ValidationError
+                                    addError(new ValidationError
                                     {
                                         ErrorCode = "GEOM_NOT_SIMPLE",
                                         Message = "자기 교차 오류 (Self-intersection)",
@@ -249,7 +350,7 @@ namespace SpatialCheckPro.Processors
 
                                             workingGeometry.ExportToWkt(out string wkt);
 
-                                            errors.Add(new ValidationError
+                                            addError(new ValidationError
                                             {
                                                 ErrorCode = "GEOM_SHORT_LINE",
                                                 Message = $"선이 너무 짧습니다: {length:F3}m (최소: {_criteria.MinLineLength}m)",
@@ -279,7 +380,7 @@ namespace SpatialCheckPro.Processors
 
                                             workingGeometry.ExportToWkt(out string wkt);
 
-                                            errors.Add(new ValidationError
+                                            addError(new ValidationError
                                             {
                                                 ErrorCode = "GEOM_SMALL_AREA",
                                                 Message = $"면적이 너무 작습니다: {area:F2}㎡ (최소: {_criteria.MinPolygonArea}㎡)",
@@ -322,7 +423,7 @@ namespace SpatialCheckPro.Processors
 
                                             workingGeometry.ExportToWkt(out string wkt);
 
-                                            errors.Add(new ValidationError
+                                            addError(new ValidationError
                                             {
                                                 ErrorCode = "GEOM_MIN_VERTEX",
                                                 Message = $"정점 수가 부족합니다: {minVertexCheck.ObservedVertices}개 (최소: {minVertexCheck.RequiredVertices}개){detail}",
@@ -370,7 +471,7 @@ namespace SpatialCheckPro.Processors
                                             }
                                             geometryRef.ExportToWkt(out string wkt);
 
-                                            errors.Add(new ValidationError
+                                            addError(new ValidationError
                                             {
                                                 ErrorCode = "GEOM_SLIVER",
                                                 Message = sliverMessage,
@@ -393,7 +494,7 @@ namespace SpatialCheckPro.Processors
                                         if (HasSpike(geometryRef, out string spikeMessage, out double spikeX, out double spikeY))
                                         {
                                             geometryRef.ExportToWkt(out string wkt);
-                                            errors.Add(new ValidationError
+                                            addError(new ValidationError
                                             {
                                                 ErrorCode = "GEOM_SPIKE",
                                                 Message = spikeMessage,
@@ -434,11 +535,35 @@ namespace SpatialCheckPro.Processors
                 }
             }, cancellationToken);
 
-            var elapsed = (DateTime.Now - startTime).TotalSeconds;
-            _logger.LogInformation("단일 순회 통합 검사 완료: {ErrorCount}개 오류, 소요시간: {Elapsed:F2}초",
-                errors.Count, elapsed);
+            // 스트리밍 모드: 남은 오류 플러시
+            if (streamingMode && pendingErrors.Count > 0)
+            {
+                lock (pendingErrorsLock)
+                {
+                    if (pendingErrors.Count > 0)
+                    {
+                        await errorWriter!.WriteErrorsAsync(pendingErrors);
+                        pendingErrors.Clear();
+                        _logger.LogDebug("스트리밍 모드: 최종 배치 플러시 완료");
+                    }
+                }
+            }
 
-            return errors.ToList();
+            var elapsed = (DateTime.Now - startTime).TotalSeconds;
+
+            if (streamingMode)
+            {
+                var stats = errorWriter!.GetStatistics();
+                _logger.LogInformation("단일 순회 통합 검사 완료 (스트리밍 모드): {ErrorCount}개 오류, 소요시간: {Elapsed:F2}초",
+                    stats.TotalErrorCount, elapsed);
+                return new List<ValidationError>(); // 스트리밍 모드에서는 빈 리스트 반환
+            }
+            else
+            {
+                _logger.LogInformation("단일 순회 통합 검사 완료: {ErrorCount}개 오류, 소요시간: {Elapsed:F2}초",
+                    errors.Count, elapsed);
+                return errors.ToList();
+            }
         }
 
         public async Task<ValidationResult> CheckDuplicateGeometriesAsync(string filePath, GeometryCheckConfig config, CancellationToken cancellationToken = default)

@@ -133,7 +133,450 @@
                     </Grid>
                 </Grid>
             </Border>
-            
+
+            <!-- Phase 2 Item #14: 시스템 리소스 모니터링 카드 -->
+            <Border Style="{StaticResource ModernCard}" Margin="0,0,0,24">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- 카드 헤더 -->
+                    <Grid Grid.Row="0" Margin="0,0,0,20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="⚡ 시스템 리소스 &amp; 병렬도 조정" Style="{StaticResource HeadingMedium}"/>
+                            <TextBlock Text="실시간 리소스 사용량 및 동적 병렬도 최적화"
+                                      Style="{StaticResource CaptionText}" Margin="0,4,0,0"/>
+                        </StackPanel>
+
+                        <!-- 병렬도 조정 상태 배지 -->
+                        <Border Grid.Column="1"
+                               Background="#DCFCE7"
+                               CornerRadius="6"
+                               Padding="12,6"
+                               VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="✓"
+                                          Foreground="#16A34A"
+                                          FontWeight="Bold"
+                                          FontSize="14"
+                                          Margin="0,0,6,0"/>
+                                <TextBlock x:Name="ParallelismStatusText"
+                                          Text="자동 조정 활성"
+                                          Foreground="#16A34A"
+                                          FontWeight="SemiBold"
+                                          FontSize="12"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <!-- 리소스 통계 그리드 -->
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- CPU 사용률 -->
+                        <Border Grid.Column="0"
+                               Background="#F8FAFC"
+                               CornerRadius="8"
+                               Padding="16"
+                               Margin="0,0,8,0">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <TextBlock Text="💻" FontSize="20" Margin="0,0,8,0"/>
+                                    <TextBlock Text="CPU 사용률"
+                                              Style="{StaticResource CaptionText}"
+                                              FontWeight="SemiBold"
+                                              VerticalAlignment="Center"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <TextBlock x:Name="CpuUsageText"
+                                              Text="65"
+                                              FontSize="36"
+                                              FontWeight="Bold"
+                                              Foreground="#22C55E"/>
+                                    <TextBlock Text="%"
+                                              FontSize="24"
+                                              FontWeight="Medium"
+                                              Foreground="#64748B"
+                                              VerticalAlignment="Bottom"
+                                              Margin="2,0,0,4"/>
+                                    <Ellipse x:Name="CpuIndicator"
+                                            Width="16" Height="16"
+                                            Fill="#22C55E"
+                                            VerticalAlignment="Center"
+                                            Margin="12,0,0,4"/>
+                                </StackPanel>
+
+                                <ProgressBar x:Name="CpuProgressBar"
+                                            Value="65"
+                                            Maximum="100"
+                                            Height="6"
+                                            Margin="0,0,0,8"
+                                            Style="{StaticResource ModernProgressBar}"/>
+
+                                <TextBlock x:Name="CpuStatusText"
+                                          Text="적정 범위 (50-70%)"
+                                          Style="{StaticResource CaptionText}"
+                                          Foreground="#64748B"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 메모리 압박률 -->
+                        <Border Grid.Column="1"
+                               Background="#F8FAFC"
+                               CornerRadius="8"
+                               Padding="16"
+                               Margin="4,0,4,0">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <TextBlock Text="🧠" FontSize="20" Margin="0,0,8,0"/>
+                                    <TextBlock Text="메모리 압박률"
+                                              Style="{StaticResource CaptionText}"
+                                              FontWeight="SemiBold"
+                                              VerticalAlignment="Center"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <TextBlock x:Name="MemoryPressureText"
+                                              Text="45"
+                                              FontSize="36"
+                                              FontWeight="Bold"
+                                              Foreground="#22C55E"/>
+                                    <TextBlock Text="%"
+                                              FontSize="24"
+                                              FontWeight="Medium"
+                                              Foreground="#64748B"
+                                              VerticalAlignment="Bottom"
+                                              Margin="2,0,0,4"/>
+                                    <Ellipse x:Name="MemoryIndicator"
+                                            Width="16" Height="16"
+                                            Fill="#22C55E"
+                                            VerticalAlignment="Center"
+                                            Margin="12,0,0,4"/>
+                                </StackPanel>
+
+                                <ProgressBar x:Name="MemoryPressureBar"
+                                            Value="45"
+                                            Maximum="100"
+                                            Height="6"
+                                            Margin="0,0,0,8"
+                                            Style="{StaticResource ModernProgressBar}"/>
+
+                                <TextBlock x:Name="MemoryStatusText"
+                                          Text="안정적 (&lt; 80%)"
+                                          Style="{StaticResource CaptionText}"
+                                          Foreground="#64748B"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 현재 병렬도 -->
+                        <Border Grid.Column="2"
+                               Background="#F8FAFC"
+                               CornerRadius="8"
+                               Padding="16"
+                               Margin="8,0,0,0">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <TextBlock Text="⚡" FontSize="20" Margin="0,0,8,0"/>
+                                    <TextBlock Text="현재 병렬도"
+                                              Style="{StaticResource CaptionText}"
+                                              FontWeight="SemiBold"
+                                              VerticalAlignment="Center"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <TextBlock x:Name="ParallelismCurrentText"
+                                              Text="6"
+                                              FontSize="36"
+                                              FontWeight="Bold"
+                                              Foreground="#3B82F6"/>
+                                    <TextBlock Text=" / "
+                                              FontSize="28"
+                                              FontWeight="Medium"
+                                              Foreground="#94A3B8"
+                                              VerticalAlignment="Bottom"
+                                              Margin="4,0,4,4"/>
+                                    <TextBlock x:Name="ParallelismMaxText"
+                                              Text="8"
+                                              FontSize="28"
+                                              FontWeight="Medium"
+                                              Foreground="#64748B"
+                                              VerticalAlignment="Bottom"
+                                              Margin="0,0,0,4"/>
+                                </StackPanel>
+
+                                <!-- 병렬도 변경 히스토리 미니 차트 (간단한 표시) -->
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Rectangle Width="8" Height="20" Fill="#E2E8F0" RadiusX="2" RadiusY="2" Margin="2,0"/>
+                                    <Rectangle Width="8" Height="28" Fill="#CBD5E1" RadiusX="2" RadiusY="2" Margin="2,0"/>
+                                    <Rectangle Width="8" Height="32" Fill="#94A3B8" RadiusX="2" RadiusY="2" Margin="2,0"/>
+                                    <Rectangle Width="8" Height="40" Fill="#3B82F6" RadiusX="2" RadiusY="2" Margin="2,0"/>
+                                </StackPanel>
+
+                                <TextBlock x:Name="ParallelismAdjustmentText"
+                                          Text="↑ 2단계 증가 (30초 전)"
+                                          Style="{StaticResource CaptionText}"
+                                          Foreground="#3B82F6"
+                                          FontWeight="Medium"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- Phase 2 Items #7, #10, #11, #12: 성능 최적화 상태 카드 -->
+            <Border Style="{StaticResource ModernCard}" Margin="0,0,0,24">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- 카드 헤더 -->
+                    <StackPanel Grid.Row="0" Margin="0,0,0,20">
+                        <TextBlock Text="🚀 성능 최적화 상태" Style="{StaticResource HeadingMedium}"/>
+                        <TextBlock Text="캐싱, 스트리밍, 배치 처리 등의 최적화 메트릭"
+                                  Style="{StaticResource CaptionText}" Margin="0,4,0,0"/>
+                    </StackPanel>
+
+                    <!-- 최적화 통계 그리드 -->
+                    <Grid Grid.Row="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- 상단 행: 캐시 & 스트리밍 -->
+                        <Grid Grid.Row="0" Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- 캐시 히트율 (Phase 2 Item #10) -->
+                            <Border Grid.Column="0"
+                                   Background="#FEF3C7"
+                                   CornerRadius="8"
+                                   Padding="16"
+                                   Margin="0,0,6,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border Grid.Column="0"
+                                           Width="48" Height="48"
+                                           CornerRadius="24"
+                                           Background="#FBBF24"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,16,0">
+                                        <TextBlock Text="🗂️"
+                                                  FontSize="24"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                                    </Border>
+
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="캐시 히트율"
+                                                  FontSize="12"
+                                                  Foreground="#92400E"
+                                                  FontWeight="Medium"
+                                                  Margin="0,0,0,4"/>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock x:Name="CacheHitRatioText"
+                                                      Text="87"
+                                                      FontSize="28"
+                                                      FontWeight="Bold"
+                                                      Foreground="#92400E"/>
+                                            <TextBlock Text="%"
+                                                      FontSize="20"
+                                                      FontWeight="Medium"
+                                                      Foreground="#92400E"
+                                                      VerticalAlignment="Bottom"
+                                                      Margin="2,0,0,2"/>
+                                        </StackPanel>
+                                        <TextBlock x:Name="CachedItemsText"
+                                                  Text="Layer: 23개 | Schema: 12개"
+                                                  FontSize="11"
+                                                  Foreground="#78350F"
+                                                  Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- 스트리밍 모드 (Phase 2 Item #7) -->
+                            <Border Grid.Column="1"
+                                   Background="#DBEAFE"
+                                   CornerRadius="8"
+                                   Padding="16"
+                                   Margin="6,0,0,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border Grid.Column="0"
+                                           Width="48" Height="48"
+                                           CornerRadius="24"
+                                           Background="#3B82F6"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,16,0">
+                                        <TextBlock Text="💾"
+                                                  FontSize="24"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                                    </Border>
+
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                            <TextBlock Text="스트리밍 모드"
+                                                      FontSize="12"
+                                                      Foreground="#1E3A8A"
+                                                      FontWeight="Medium"/>
+                                            <Border Background="#22C55E"
+                                                   CornerRadius="4"
+                                                   Padding="6,2"
+                                                   Margin="8,0,0,0">
+                                                <TextBlock x:Name="StreamingStatusText"
+                                                          Text="활성"
+                                                          FontSize="10"
+                                                          Foreground="White"
+                                                          FontWeight="Bold"/>
+                                            </Border>
+                                        </StackPanel>
+                                        <TextBlock x:Name="StreamedErrorCountText"
+                                                  Text="1,234개 오류 기록됨"
+                                                  FontSize="16"
+                                                  FontWeight="Bold"
+                                                  Foreground="#1E3A8A"
+                                                  Margin="0,0,0,4"/>
+                                        <TextBlock x:Name="StreamingPathText"
+                                                  Text="errors_20250129.jsonl"
+                                                  FontSize="11"
+                                                  Foreground="#1E40AF"
+                                                  TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </Grid>
+
+                        <!-- 하단 행: 배치 처리 & EF Core -->
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- 배치 처리 (Phase 1.3 & Item #12) -->
+                            <Border Grid.Column="0"
+                                   Background="#E0E7FF"
+                                   CornerRadius="8"
+                                   Padding="16"
+                                   Margin="0,0,6,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border Grid.Column="0"
+                                           Width="48" Height="48"
+                                           CornerRadius="24"
+                                           Background="#6366F1"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,16,0">
+                                        <TextBlock Text="📦"
+                                                  FontSize="24"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                                    </Border>
+
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="배치 처리"
+                                                  FontSize="12"
+                                                  Foreground="#312E81"
+                                                  FontWeight="Medium"
+                                                  Margin="0,0,0,4"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                            <TextBlock x:Name="BatchSizeText"
+                                                      Text="5,000"
+                                                      FontSize="20"
+                                                      FontWeight="Bold"
+                                                      Foreground="#312E81"/>
+                                            <TextBlock Text="개/배치"
+                                                      FontSize="12"
+                                                      Foreground="#4338CA"
+                                                      VerticalAlignment="Bottom"
+                                                      Margin="4,0,0,2"/>
+                                        </StackPanel>
+                                        <TextBlock x:Name="ThroughputText"
+                                                  Text="⚡ 1,234 features/sec"
+                                                  FontSize="11"
+                                                  Foreground="#4338CA"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- EF Core 쿼리 최적화 (Phase 2 Item #11) -->
+                            <Border Grid.Column="1"
+                                   Background="#D1FAE5"
+                                   CornerRadius="8"
+                                   Padding="16"
+                                   Margin="6,0,0,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border Grid.Column="0"
+                                           Width="48" Height="48"
+                                           CornerRadius="24"
+                                           Background="#10B981"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,16,0">
+                                        <TextBlock Text="🗃️"
+                                                  FontSize="24"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                                    </Border>
+
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="EF Core 쿼리"
+                                                  FontSize="12"
+                                                  Foreground="#064E3B"
+                                                  FontWeight="Medium"
+                                                  Margin="0,0,0,4"/>
+                                        <TextBlock Text="AsSplitQuery()"
+                                                  FontSize="16"
+                                                  FontWeight="Bold"
+                                                  Foreground="#064E3B"
+                                                  Margin="0,0,0,4"/>
+                                        <TextBlock x:Name="QueryOptimizationText"
+                                                  Text="✓ N+1 방지 | ✓ 카테시안 곱 제거"
+                                                  FontSize="11"
+                                                  Foreground="#047857"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </Border>
+
             <!-- 단계별 진행 상황 -->
             <Border Style="{StaticResource ModernCard}" Margin="0,0,0,24">
                 <Grid>

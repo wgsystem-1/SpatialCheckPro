@@ -36,16 +36,23 @@ namespace SpatialCheckPro.Services
 
                 _logger.LogDebug("새로운 리소스 분석 시작");
                 
+                var cpuUsage = GetCpuUsage();
+                var memoryUsage = GetMemoryUsage();
+                var availableMemoryGB = GetAvailableMemoryGB();
+                var totalMemoryGB = GetTotalMemoryGB();
+
                 var info = new SystemResourceInfo
                 {
                     ProcessorCount = Environment.ProcessorCount,
-                    AvailableMemoryGB = GetAvailableMemoryGB(),
-                    TotalMemoryGB = GetTotalMemoryGB(),
+                    AvailableMemoryGB = availableMemoryGB,
+                    TotalMemoryGB = totalMemoryGB,
                     CurrentProcessMemoryMB = GetCurrentProcessMemoryMB(),
                     RecommendedMaxParallelism = CalculateRecommendedMaxParallelism(),
                     RecommendedBatchSize = CalculateRecommendedBatchSize(),
                     RecommendedMaxMemoryUsageMB = CalculateRecommendedMaxMemoryUsageMB(),
-                    SystemLoadLevel = GetSystemLoadLevel()
+                    SystemLoadLevel = GetSystemLoadLevel(),
+                    CpuUsagePercent = cpuUsage,
+                    MemoryPressureRatio = memoryUsage / 100.0 // Convert percentage to ratio
                 };
 
                 // 캐시 업데이트
@@ -316,7 +323,9 @@ namespace SpatialCheckPro.Services
                 RecommendedMaxParallelism = Math.Max(1, Environment.ProcessorCount / 2),
                 RecommendedBatchSize = 1000,
                 RecommendedMaxMemoryUsageMB = 1024,
-                SystemLoadLevel = SystemLoadLevel.Medium
+                SystemLoadLevel = SystemLoadLevel.Medium,
+                CpuUsagePercent = 30.0,
+                MemoryPressureRatio = 0.5
             };
         }
     }

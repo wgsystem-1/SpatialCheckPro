@@ -16,6 +16,7 @@ namespace SpatialCheckPro.GUI.Views
         public event EventHandler? ValidationStopRequested;
         private StageSummaryCollectionViewModel _stageSummaries;
         private DispatcherTimer? _elapsedTimer;
+        private DispatcherTimer? _resourceMonitorTimer;
         private DateTime _startTime;
         
         public ValidationProgressView()
@@ -24,6 +25,7 @@ namespace SpatialCheckPro.GUI.Views
             DataContextChanged += OnDataContextChanged;
             _stageSummaries = EnsureStageSummaryViewModel();
             InitializeElapsedTimer();
+            InitializeResourceMonitorTimer();
             ResetHeader();
         }
 
@@ -163,6 +165,106 @@ namespace SpatialCheckPro.GUI.Views
         public void UpdateElapsedTime(TimeSpan elapsed)
         {
             ElapsedTimeText.Text = elapsed.ToString("hh\\:mm\\:ss");
+        }
+
+        /// <summary>
+        /// 리소스 모니터링 타이머 초기화
+        /// </summary>
+        private void InitializeResourceMonitorTimer()
+        {
+            _resourceMonitorTimer?.Stop();
+            _resourceMonitorTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(2) // 2초마다 업데이트
+            };
+            _resourceMonitorTimer.Tick += (_, __) => UpdateResourceMetrics();
+            _resourceMonitorTimer.Start();
+        }
+
+        /// <summary>
+        /// 리소스 메트릭 업데이트 (Phase 2 UI)
+        /// </summary>
+        private void UpdateResourceMetrics()
+        {
+            try
+            {
+                // CPU 사용률 업데이트
+                var cpuUsage = _stageSummaries.CpuUsagePercent;
+                CpuUsageText.Text = cpuUsage.ToString("F0");
+                CpuProgressBar.Value = cpuUsage;
+
+                // CPU 상태 색상 업데이트
+                if (cpuUsage > 80)
+                {
+                    CpuIndicator.Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xEF, 0x44, 0x44)); // Red
+                    CpuStatusText.Text = "높음 (80% 이상)";
+                }
+                else if (cpuUsage > 70)
+                {
+                    CpuIndicator.Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF9, 0x73, 0x16)); // Orange
+                    CpuStatusText.Text = "보통 (70-80%)";
+                }
+                else
+                {
+                    CpuIndicator.Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x22, 0xC5, 0x5E)); // Green
+                    CpuStatusText.Text = "적정 범위 (50-70%)";
+                }
+
+                // 메모리 압박 업데이트
+                var memoryPressure = _stageSummaries.MemoryPressurePercent;
+                MemoryPressureText.Text = memoryPressure.ToString("F0");
+                MemoryProgressBar.Value = memoryPressure;
+
+                // 메모리 상태 색상 업데이트
+                if (memoryPressure > 80)
+                {
+                    MemoryIndicator.Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xEF, 0x44, 0x44)); // Red
+                    MemoryStatusText.Text = "높음 (80% 이상)";
+                }
+                else if (memoryPressure > 60)
+                {
+                    MemoryIndicator.Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF9, 0x73, 0x16)); // Orange
+                    MemoryStatusText.Text = "보통 (60-80%)";
+                }
+                else
+                {
+                    MemoryIndicator.Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x22, 0xC5, 0x5E)); // Green
+                    MemoryStatusText.Text = "낮음 (60% 미만)";
+                }
+
+                // 병렬도 업데이트
+                ParallelismCurrentText.Text = _stageSummaries.CurrentParallelism.ToString();
+                ParallelismMaxText.Text = _stageSummaries.MaxParallelism.ToString();
+
+                // 캐시 히트율 업데이트
+                var cacheHitRatio = _stageSummaries.CacheHitRatio * 100;
+                CacheHitRatioText.Text = cacheHitRatio.ToString("F0");
+                CachedItemsText.Text = $"Layer: {_stageSummaries.CachedLayerCount}개 | Schema: {_stageSummaries.CachedSchemaCount}개";
+
+                // 스트리밍 모드 업데이트
+                if (_stageSummaries.StreamingModeActive)
+                {
+                    StreamingStatusBadge.Content = "활성";
+                    StreamingStatusBadge.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x22, 0xC5, 0x5E)); // Green
+                    StreamedErrorCountText.Text = _stageSummaries.StreamedErrorCount.ToString("N0");
+                    StreamingFilePathText.Text = System.IO.Path.GetFileName(_stageSummaries.StreamingFilePath);
+                }
+                else
+                {
+                    StreamingStatusBadge.Content = "비활성";
+                    StreamingStatusBadge.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x94, 0xA3, 0xB8)); // Gray
+                    StreamedErrorCountText.Text = "0";
+                    StreamingFilePathText.Text = "없음";
+                }
+
+                // 배치 처리 업데이트
+                BatchSizeText.Text = _stageSummaries.BatchSize.ToString("N0");
+                BatchThroughputText.Text = _stageSummaries.BatchThroughput.ToString("N0");
+            }
+            catch (Exception)
+            {
+                // UI 업데이트 실패는 무시 (요소가 아직 로드되지 않았을 수 있음)
+            }
         }
 
         // 기존 단계별 UI 메서드 제거됨

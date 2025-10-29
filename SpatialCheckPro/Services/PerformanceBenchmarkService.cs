@@ -101,7 +101,9 @@ namespace SpatialCheckPro.Services
                     RecommendedMaxParallelism = recommendedParallelism,
                     RecommendedBatchSize = recommendedBatchSize,
                     RecommendedMaxMemoryUsageMB = (int)(availableMemoryGB * 1024 * 0.8),
-                    SystemLoadLevel = SystemLoadLevel.Medium
+                    SystemLoadLevel = SystemLoadLevel.Medium,
+                    CpuUsagePercent = 30.0,
+                    MemoryPressureRatio = 0.3
                 };
 
                 _performanceMonitor.UpdateProgress(operationId, 1, 1);
@@ -498,6 +500,17 @@ namespace SpatialCheckPro.Services
         public int RecommendedBatchSize { get; set; }
         public int RecommendedMaxMemoryUsageMB { get; set; }
         public SystemLoadLevel SystemLoadLevel { get; set; }
+
+        // Phase 2 Item #14: 동적 병렬도 조정 - 실시간 메트릭
+        /// <summary>
+        /// CPU 사용률 (0-100%)
+        /// </summary>
+        public double CpuUsagePercent { get; set; }
+
+        /// <summary>
+        /// 메모리 압박 비율 (0.0-1.0)
+        /// </summary>
+        public double MemoryPressureRatio { get; set; }
     }
 
     /// <summary>

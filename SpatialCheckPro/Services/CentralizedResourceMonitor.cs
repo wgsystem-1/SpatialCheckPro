@@ -246,7 +246,9 @@ namespace SpatialCheckPro.Services
                 RecommendedMaxParallelism = Math.Max(1, Environment.ProcessorCount / 2),
                 RecommendedBatchSize = 1000,
                 RecommendedMaxMemoryUsageMB = 2048,
-                SystemLoadLevel = SystemLoadLevel.Medium
+                SystemLoadLevel = SystemLoadLevel.Medium,
+                CpuUsagePercent = 30.0,
+                MemoryPressureRatio = 0.5
             };
         }
 

@@ -478,7 +478,7 @@ namespace SpatialCheckPro.Services
                         var errorEntities = batch.Select(e =>
                         {
                             var entity = ValidationErrorEntity.FromDomainModel(e);
-                            entity.CheckResultId = validationId;
+                            entity.CheckResultId = int.Parse(validationId);
                             return entity;
                         }).ToList();
 

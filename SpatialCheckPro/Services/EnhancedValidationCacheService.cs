@@ -313,7 +313,6 @@ namespace SpatialCheckPro.Services
             {
                 HitCount = hitCount,
                 MissCount = missCount,
-                TotalRequests = totalRequests,
                 HitRatio = totalRequests > 0 ? (double)hitCount / totalRequests : 0.0
             };
         }

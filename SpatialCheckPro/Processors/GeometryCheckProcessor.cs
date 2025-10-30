@@ -538,14 +538,17 @@ namespace SpatialCheckPro.Processors
             // 스트리밍 모드: 남은 오류 플러시
             if (streamingMode && pendingErrors.Count > 0)
             {
+                List<ValidationError> errorsToFlush;
                 lock (pendingErrorsLock)
                 {
-                    if (pendingErrors.Count > 0)
-                    {
-                        await errorWriter!.WriteErrorsAsync(pendingErrors);
-                        pendingErrors.Clear();
-                        _logger.LogDebug("스트리밍 모드: 최종 배치 플러시 완료");
-                    }
+                    errorsToFlush = new List<ValidationError>(pendingErrors);
+                    pendingErrors.Clear();
+                }
+
+                if (errorsToFlush.Count > 0)
+                {
+                    await errorWriter!.WriteErrorsAsync(errorsToFlush);
+                    _logger.LogDebug("스트리밍 모드: 최종 배치 플러시 완료");
                 }
             }
 

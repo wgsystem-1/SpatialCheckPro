@@ -475,20 +475,11 @@ namespace SpatialCheckPro.Services
                         var batch = errors.Skip(i).Take(BATCH_SIZE).ToList();
 
                         // ValidationError를 Entity로 변환
-                        var errorEntities = batch.Select(e => new ValidationErrorEntity
+                        var errorEntities = batch.Select(e =>
                         {
-                            ValidationId = validationId,
-                            ErrorCode = e.ErrorCode,
-                            Message = e.Message,
-                            TableName = e.TableName ?? string.Empty,
-                            FeatureId = e.FeatureId,
-                            Severity = e.Severity,
-                            ErrorType = e.ErrorType,
-                            X = e.X,
-                            Y = e.Y,
-                            GeometryWKT = e.GeometryWKT,
-                            OccurredAt = e.OccurredAt,
-                            IsResolved = e.IsResolved
+                            var entity = ValidationErrorEntity.FromDomainModel(e);
+                            entity.CheckResultId = validationId;
+                            return entity;
                         }).ToList();
 
                         // 배치 추가

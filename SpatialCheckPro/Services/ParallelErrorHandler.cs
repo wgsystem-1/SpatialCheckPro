@@ -234,12 +234,12 @@ namespace SpatialCheckPro.Services
         /// <summary>
         /// 오류 통계 가져오기
         /// </summary>
-        public ErrorStatistics GetErrorStatistics()
+        public ParallelErrorStatistics GetErrorStatistics()
         {
             var errors = _errorQueue.ToList();
             var contexts = _errorContexts.Values.ToList();
-            
-            return new ErrorStatistics
+
+            return new ParallelErrorStatistics
             {
                 TotalErrors = errors.Count,
                 UniqueOperations = errors.Select(e => e.OperationId).Distinct().Count(),
@@ -396,9 +396,9 @@ namespace SpatialCheckPro.Services
     }
 
     /// <summary>
-    /// 오류 통계
+    /// 병렬 처리 오류 통계
     /// </summary>
-    public class ErrorStatistics
+    public class ParallelErrorStatistics
     {
         public int TotalErrors { get; set; }
         public int UniqueOperations { get; set; }

@@ -15,8 +15,9 @@ namespace SpatialCheckPro.Processors
         /// <param name="filePath">검수할 파일 경로</param>
         /// <param name="config">지오메트리 검수 설정</param>
         /// <param name="cancellationToken">취소 토큰</param>
+        /// <param name="streamingOutputPath">스트리밍 출력 경로 (null이면 메모리에 누적)</param>
         /// <returns>검수 결과</returns>
-        Task<ValidationResult> ProcessAsync(string filePath, GeometryCheckConfig config, CancellationToken cancellationToken = default);
+        Task<ValidationResult> ProcessAsync(string filePath, GeometryCheckConfig config, CancellationToken cancellationToken = default, string? streamingOutputPath = null);
 
         /// <summary>
         /// 중복 지오메트리 검수를 수행합니다

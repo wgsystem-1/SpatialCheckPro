@@ -381,29 +381,4 @@ namespace SpatialCheckPro.Services
         public bool Nullable { get; set; } = true;
     }
 
-    /// <summary>
-    /// 공간 Envelope (BBOX)
-    /// </summary>
-    public class SpatialEnvelope
-    {
-        public double MinX { get; set; }
-        public double MinY { get; set; }
-        public double MaxX { get; set; }
-        public double MaxY { get; set; }
-
-        public double Width => MaxX - MinX;
-        public double Height => MaxY - MinY;
-        public double Area => Width * Height;
-    }
-
-    /// <summary>
-    /// 캐시 통계 정보
-    /// </summary>
-    public class CacheStatistics
-    {
-        public int HitCount { get; set; }
-        public int MissCount { get; set; }
-        public int TotalRequests { get; set; }
-        public double HitRatio { get; set; }
-    }
 }

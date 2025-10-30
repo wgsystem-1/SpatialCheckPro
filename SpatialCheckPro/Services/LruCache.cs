@@ -376,45 +376,4 @@ namespace SpatialCheckPro.Services
         /// </summary>
         CacheStatistics GetStatistics();
     }
-
-    /// <summary>
-    /// 캐시 통계 정보
-    /// </summary>
-    public class CacheStatistics
-    {
-        /// <summary>
-        /// 최대 용량
-        /// </summary>
-        public int MaxCapacity { get; set; }
-
-        /// <summary>
-        /// 현재 크기
-        /// </summary>
-        public int CurrentSize { get; set; }
-
-        /// <summary>
-        /// 캐시 히트 수
-        /// </summary>
-        public long HitCount { get; set; }
-
-        /// <summary>
-        /// 캐시 미스 수
-        /// </summary>
-        public long MissCount { get; set; }
-
-        /// <summary>
-        /// 캐시 히트율 (0.0 ~ 1.0)
-        /// </summary>
-        public double HitRatio { get; set; }
-
-        /// <summary>
-        /// 캐시 사용률 (0.0 ~ 1.0)
-        /// </summary>
-        public double UtilizationRatio { get; set; }
-
-        /// <summary>
-        /// 총 요청 수
-        /// </summary>
-        public long TotalRequests => HitCount + MissCount;
-    }
 }

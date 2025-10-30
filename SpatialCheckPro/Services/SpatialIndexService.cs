@@ -809,54 +809,6 @@ namespace SpatialCheckPro.Services
     }
 
     /// <summary>
-    /// 지오메트리 엔벨로프
-    /// </summary>
-    public class SpatialEnvelope
-    {
-        public double MinX { get; set; }
-        public double MinY { get; set; }
-        public double MaxX { get; set; }
-        public double MaxY { get; set; }
-
-        public SpatialEnvelope(double minX, double minY, double maxX, double maxY)
-        {
-            MinX = minX;
-            MinY = minY;
-            MaxX = maxX;
-            MaxY = maxY;
-        }
-
-        /// <summary>
-        /// 엔벨로프 너비
-        /// </summary>
-        public double Width => MaxX - MinX;
-
-        /// <summary>
-        /// 엔벨로프 높이
-        /// </summary>
-        public double Height => MaxY - MinY;
-
-        /// <summary>
-        /// 엔벨로프 중심 X 좌표
-        /// </summary>
-        public double CenterX => (MinX + MaxX) / 2.0;
-
-        /// <summary>
-        /// 엔벨로프 중심 Y 좌표
-        /// </summary>
-        public double CenterY => (MinY + MaxY) / 2.0;
-
-        /// <summary>
-        /// 다른 엔벨로프와 교차하는지 확인
-        /// </summary>
-        public bool Intersects(SpatialEnvelope other)
-        {
-            return !(MaxX < other.MinX || MinX > other.MaxX ||
-                     MaxY < other.MinY || MinY > other.MaxY);
-        }
-    }
-
-    /// <summary>
     /// 겹침 검사 결과
     /// </summary>
     public class OverlapResult

@@ -395,16 +395,4 @@ namespace SpatialCheckPro.Services
         public double ProgressPercentage => TotalItems > 0 ? (double)ProcessedItems / TotalItems * 100 : 0;
     }
 
-    /// <summary>
-    /// 오류 통계
-    /// </summary>
-    public class ErrorStatistics
-    {
-        public int TotalErrors { get; set; }
-        public int UniqueOperations { get; set; }
-        public Dictionary<string, int> ErrorsByType { get; set; } = new();
-        public double AverageRetryAttempts { get; set; }
-        public int RecentErrors { get; set; }
-        public int ActiveErrorContexts { get; set; }
-    }
 }

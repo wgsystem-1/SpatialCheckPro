@@ -52,23 +52,24 @@ namespace SpatialCheckPro.Processors
         /// <summary>
         /// 전체 지오메트리 검수 (통합 실행)
         /// Phase 1.3: Feature 순회 중복 제거 - 단일 순회로 모든 검사 수행
-        /// - 예상 효과: Geometry 검수 시간 60-70% 단축, 메모리 사용량 40% 감소
+        /// Phase 2 Item #7: 대용량 Geometry 스트리밍 처리 - 메모리 누적 방지
+        /// - 예상 효과: Geometry 검수 시간 60-70% 단축, 메모리 사용량 40% 감소 (Phase 1.3)
+        /// - 예상 효과: 대용량 오류 처리 시 메모리 60% 감소 (Phase 2 Item #7)
         /// </summary>
-        /// <param name="filePath">검수할 파일 경로</param>
-        /// <param name="config">지오메트리 검수 설정</param>
-        /// <param name="cancellationToken">취소 토큰</param>
-        /// <returns>검수 결과</returns>
+        /// <param name="streamingOutputPath">스트리밍 출력 경로 (null이면 메모리에 누적, 경로 지정 시 디스크에 스트리밍)</param>
         public async Task<ValidationResult> ProcessAsync(
             string filePath,
             GeometryCheckConfig config,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            string? streamingOutputPath = null)
         {
             var result = new ValidationResult { IsValid = true };
+            IStreamingErrorWriter? errorWriter = null;
 
             try
             {
-                _logger.LogInformation("지오메트리 검수 시작 (단일 순회 최적화): {TableId} ({TableName})",
-                    config.TableId, config.TableName);
+                _logger.LogInformation("지오메트리 검수 시작 (단일 순회 최적화): {TableId} ({TableName}), 스트리밍 모드: {StreamingEnabled}",
+                    config.TableId, config.TableName, streamingOutputPath != null);
                 var startTime = DateTime.Now;
 
                 using var ds = Ogr.Open(filePath, 0);
@@ -87,11 +88,31 @@ namespace SpatialCheckPro.Processors
                 var featureCount = layer.GetFeatureCount(1);
                 _logger.LogInformation("검수 대상 피처: {Count}개", featureCount);
 
+                // Phase 2 Item #7: 스트리밍 모드 활성화
+                if (!string.IsNullOrEmpty(streamingOutputPath))
+                {
+                    errorWriter = new StreamingErrorWriter(streamingOutputPath,
+                        _logger as ILogger<StreamingErrorWriter> ??
+                        new LoggerFactory().CreateLogger<StreamingErrorWriter>());
+                }
+
                 // === Phase 1.3: 단일 순회 통합 검사 ===
                 // GEOS 유효성, 기본 속성, 고급 특징을 한 번의 순회로 모두 검사
-                var unifiedErrors = await CheckGeometryInSinglePassAsync(layer, config, cancellationToken, null);
-                result.Errors.AddRange(unifiedErrors);
-                result.ErrorCount += unifiedErrors.Count;
+                var unifiedErrors = await CheckGeometryInSinglePassAsync(layer, config, cancellationToken, errorWriter);
+
+                if (errorWriter == null)
+                {
+                    // 메모리 모드: 오류 리스트 누적
+                    result.Errors.AddRange(unifiedErrors);
+                    result.ErrorCount += unifiedErrors.Count;
+                }
+                else
+                {
+                    // 스트리밍 모드: 통계만 업데이트
+                    var stats = errorWriter.GetStatistics();
+                    result.ErrorCount += stats.TotalErrorCount;
+                    result.WarningCount += stats.TotalWarningCount;
+                }
 
                 // === 공간 인덱스 기반 검사 (중복, 겹침) - 별도 순회 필요 ===
                 if (_highPerfValidator != null)
@@ -100,7 +121,15 @@ namespace SpatialCheckPro.Processors
                     {
                         var duplicateErrors = await _highPerfValidator.CheckDuplicatesHighPerformanceAsync(layer);
                         var validationErrors = ConvertToValidationErrors(duplicateErrors, config.TableId, "GEOM_DUPLICATE");
-                        result.Errors.AddRange(validationErrors);
+
+                        if (errorWriter != null)
+                        {
+                            await errorWriter.WriteErrorsAsync(validationErrors);
+                        }
+                        else
+                        {
+                            result.Errors.AddRange(validationErrors);
+                        }
                         result.ErrorCount += validationErrors.Count;
                     }
 
@@ -109,9 +138,29 @@ namespace SpatialCheckPro.Processors
                         var overlapErrors = await _highPerfValidator.CheckOverlapsHighPerformanceAsync(
                             layer, _criteria.OverlapTolerance);
                         var validationErrors = ConvertToValidationErrors(overlapErrors, config.TableId, "GEOM_OVERLAP");
-                        result.Errors.AddRange(validationErrors);
+
+                        if (errorWriter != null)
+                        {
+                            await errorWriter.WriteErrorsAsync(validationErrors);
+                        }
+                        else
+                        {
+                            result.Errors.AddRange(validationErrors);
+                        }
                         result.ErrorCount += validationErrors.Count;
                     }
+                }
+
+                // 스트리밍 완료 및 통계 업데이트
+                if (errorWriter != null)
+                {
+                    var finalStats = await errorWriter.FinalizeAsync();
+                    result.ErrorCount = finalStats.TotalErrorCount;
+                    result.WarningCount = finalStats.TotalWarningCount;
+                    result.Message = $"오류가 파일에 기록되었습니다: {streamingOutputPath}";
+
+                    _logger.LogInformation("스트리밍 모드 통계 - 오류: {ErrorCount}개, 경고: {WarningCount}개, 출력: {OutputPath}",
+                        finalStats.TotalErrorCount, finalStats.TotalWarningCount, streamingOutputPath);
                 }
 
                 result.IsValid = result.ErrorCount == 0;
@@ -126,6 +175,11 @@ namespace SpatialCheckPro.Processors
             {
                 _logger.LogError(ex, "지오메트리 검수 실패: {TableId}", config.TableId);
                 return new ValidationResult { IsValid = false, Message = $"검수 중 오류 발생: {ex.Message}" };
+            }
+            finally
+            {
+                // 스트리밍 리소스 정리
+                errorWriter?.Dispose();
             }
         }
 

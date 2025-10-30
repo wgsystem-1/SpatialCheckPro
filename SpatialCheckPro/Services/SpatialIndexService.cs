@@ -808,6 +808,7 @@ namespace SpatialCheckPro.Services
         public Geometry DuplicateGeometry { get; set; } = null!;
     }
 
+
     /// <summary>
     /// 겹침 검사 결과
     /// </summary>

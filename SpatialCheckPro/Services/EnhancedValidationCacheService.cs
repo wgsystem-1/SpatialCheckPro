@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using SpatialCheckPro.Extensions;
+using SpatialCheckPro.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading;

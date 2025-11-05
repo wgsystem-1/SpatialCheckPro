@@ -98,7 +98,7 @@ namespace SpatialCheckPro.Utils
             try
             {
                 var simpleOp = new NetTopologySuite.Operation.Valid.IsSimpleOp(ntsGeometry);
-                if (!simpleOp.IsSimple)
+                if (!simpleOp.IsSimple())
                 {
                     var nonSimple = simpleOp.NonSimpleLocation;
                     if (nonSimple != null)

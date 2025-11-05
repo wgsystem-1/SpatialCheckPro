@@ -176,16 +176,16 @@ namespace SpatialCheckPro.Services
                 _logger.LogDebug("QC_Runs 테이블 생성 중...");
                 await CreateQcRunsTableAsync(dataSource);
 
-                // QC_Errors Feature Classes 생성 (Point만 생성)
+                // QC_Errors Feature Classes 생성 (Point + NoGeom)
                 _logger.LogDebug("QC_Errors Point Feature Class 생성 중...");
                 await CreateQcErrorsFeatureClassAsync(dataSource, QC_ERRORS_POINT, wkbGeometryType.wkbPoint, spatialRef);
-                
-                // 불필요한 레이어들 강제 삭제 (기존에 생성된 경우)
+
+                _logger.LogDebug("QC_Errors_NoGeom 테이블 생성 중...");
+                await CreateQcErrorsNoGeomTableAsync(dataSource);
+
+                // 불필요한 레이어들(Line/Polygon) 강제 삭제 (기존 생성된 경우)
                 _logger.LogDebug("불필요한 레이어들 삭제 중...");
                 await DeleteUnnecessaryLayersAsync(dataSource);
-                
-                // 불필요한 레이어들은 생성하지 않음 (단순화)
-                _logger.LogInformation("단순화된 스키마: Point 레이어만 생성, Line/Polygon/NoGeom 레이어는 생성하지 않음");
 
                 // 인덱스 생성
                 _logger.LogDebug("인덱스 생성 중...");
@@ -290,7 +290,8 @@ namespace SpatialCheckPro.Services
         /// </summary>
         private async Task DeleteUnnecessaryLayersAsync(DataSource dataSource)
         {
-            string[] unnecessaryLayers = { QC_ERRORS_LINE, QC_ERRORS_POLYGON, QC_ERRORS_NOGEOM };
+            // Point 레이어와 NoGeom 테이블을 남기고 나머지(Line, Polygon)만 삭제 대상
+            string[] unnecessaryLayers = { QC_ERRORS_LINE, QC_ERRORS_POLYGON }; // QC_ERRORS_NOGEOM 제외
             
             foreach (var layerName in unnecessaryLayers)
             {
@@ -374,8 +375,41 @@ namespace SpatialCheckPro.Services
         /// </summary>
         private async Task CreateQcErrorsNoGeomTableAsync(DataSource dataSource)
         {
-            // 단순화된 스키마에서는 NoGeom 테이블을 사용하지 않음
-            _logger.LogInformation("단순화된 스키마: QC_Errors_NoGeom 테이블은 생성하지 않음");
+            var existingLayer = dataSource.GetLayerByName(QC_ERRORS_NOGEOM);
+            if (existingLayer != null)
+            {
+                _logger.LogInformation("QC_Errors_NoGeom 테이블이 이미 존재합니다. 기존 테이블을 삭제 후 재생성합니다.");
+                for (int i = 0; i < dataSource.GetLayerCount(); i++)
+                {
+                    var lyr = dataSource.GetLayerByIndex(i);
+                    if (lyr != null && lyr.GetName() == QC_ERRORS_NOGEOM)
+                    {
+                        dataSource.DeleteLayer(i);
+                        break;
+                    }
+                }
+            }
+
+            var layer = dataSource.CreateLayer(QC_ERRORS_NOGEOM, null, wkbGeometryType.wkbNone, null);
+            if (layer == null) throw new InvalidOperationException("QC_Errors_NoGeom 테이블 생성 실패");
+
+            var fields = new[]
+            {
+                new { Name = "ErrCode", Type = FieldType.OFTString, Width = 32 },
+                new { Name = "TableId", Type = FieldType.OFTString, Width = 128 },
+                new { Name = "TableName", Type = FieldType.OFTString, Width = 128 },
+                new { Name = "SourceOID", Type = FieldType.OFTInteger, Width = 0 },
+                new { Name = "Message", Type = FieldType.OFTString, Width = 1024 }
+            };
+
+            foreach (var f in fields)
+            {
+                var fd = new FieldDefn(f.Name, f.Type);
+                if (f.Width > 0) fd.SetWidth(f.Width);
+                layer.CreateField(fd, 1);
+                fd.Dispose();
+            }
+
             await Task.CompletedTask;
         }
 

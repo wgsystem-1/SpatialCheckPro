@@ -127,7 +127,7 @@ namespace SpatialCheckPro.GUI.Views
                 sb.AppendLine("## 1단계 테이블 검수 결과");
                 sb.AppendLine();
                 sb.AppendLine("┌─────────────────────────────┬─────────────────────────────┬──────────────┬──────────────┬──────────────┐");
-                sb.AppendLine("│ 테이블ID                    │ 테이블명                    │ 피처객체수   │ 피처타입     │ 피처타입확인 │");
+                sb.AppendLine("│ TableId                     │ TableName                   │ FeatureCount │ ExpectedType │ TypeMatch    │");
                 sb.AppendLine("├─────────────────────────────┼─────────────────────────────┼──────────────┼──────────────┼──────────────┤");
 
                 foreach (var table in _currentValidationResult.TableCheckResult.TableResults)
@@ -150,7 +150,7 @@ namespace SpatialCheckPro.GUI.Views
             if (_currentValidationResult.GeometryCheckResult != null && _currentValidationResult.GeometryCheckResult.GeometryResults != null && _currentValidationResult.GeometryCheckResult.GeometryResults.Any())
             {
                 sb.AppendLine("## 3단계 지오메트리 검수 결과");
-                sb.AppendLine("테이블ID,검수항목,총객체수,처리객체수,오류객체수,검수결과,메시지");
+                sb.AppendLine("TableId,CheckType,TotalFeatures,ProcessedFeatures,ErrorFeatures,Result,Message");
                 foreach (var g in _currentValidationResult.GeometryCheckResult.GeometryResults)
                 {
                     sb.AppendLine($"{g.TableId},{g.CheckType},{g.TotalFeatureCount},{g.ProcessedFeatureCount},{g.TotalErrorCount},{g.ValidationStatus},{g.ErrorMessage}");
@@ -536,13 +536,13 @@ namespace SpatialCheckPro.GUI.Views
                 html.AppendLine("        <table id='tbl-stage1' class='table-results' data-sort-dir='asc'>");
                 html.AppendLine("            <thead>");
                 html.AppendLine("                <tr>");
-                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage1',0,'text')\">테이블ID</th>");
-                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage1',1,'text')\">테이블명</th>");
-                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage1',2,'num')\">피처객체수</th>");
-                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage1',3,'text')\">예상피처타입</th>");
-                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage1',4,'text')\">실제피처타입</th>");
-                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage1',5,'text')\">피처타입확인</th>");
-                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage1',6,'text')\">실제FeatureClass명</th>");
+                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage1',0,'text')\">TableId</th>");
+                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage1',1,'text')\">TableName</th>");
+                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage1',2,'num')\">FeatureCount</th>");
+                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage1',3,'text')\">ExpectedType</th>");
+                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage1',4,'text')\">ActualType</th>");
+                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage1',5,'text')\">TypeMatch</th>");
+                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage1',6,'text')\">ActualFeatureClass</th>");
                 html.AppendLine("                </tr>");
                 html.AppendLine("            </thead>");
                 html.AppendLine("            <tbody>");
@@ -612,14 +612,14 @@ namespace SpatialCheckPro.GUI.Views
                 html.AppendLine("        <table id='tbl-stage2' class='table-results' data-sort-dir='asc'>");
                 html.AppendLine("            <thead>");
                 html.AppendLine("                <tr>");
-                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage2',0,'text')\">테이블ID</th>");
-                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage2',1,'text')\">컬럼명</th>");
-                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage2',2,'text')\">컬럼한글명</th>");
-                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage2',3,'text')\">예상타입</th>");
-                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage2',4,'text')\">실제타입</th>");
-                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage2',5,'text')\">길이일치</th>");
-                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage2',6,'text')\">NN일치</th>");
-                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage2',7,'text')\">검수결과</th>");
+                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage2',0,'text')\">TableId</th>");
+                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage2',1,'text')\">FieldName</th>");
+                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage2',2,'text')\">FieldAlias</th>");
+                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage2',3,'text')\">ExpectedType</th>");
+                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage2',4,'text')\">ActualType</th>");
+                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage2',5,'text')\">LengthMatch</th>");
+                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage2',6,'text')\">NotNullMatch</th>");
+                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage2',7,'text')\">Result</th>");
                 html.AppendLine("                </tr>");
                 html.AppendLine("            </thead>");
                 html.AppendLine("            <tbody>");
@@ -698,13 +698,13 @@ namespace SpatialCheckPro.GUI.Views
                 html.AppendLine("        <table id='tbl-stage3' class='table-results' data-sort-dir='asc'>");
                 html.AppendLine("            <thead>");
                 html.AppendLine("                <tr>");
-                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage3',0,'text')\">테이블ID</th>");
-                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage3',1,'text')\">검수항목</th>");
-                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage3',2,'num')\">총객체수</th>");
-                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage3',3,'num')\">처리객체수</th>");
-                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage3',4,'num')\">오류객체수</th>");
-                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage3',5,'text')\">검수결과</th>");
-                html.AppendLine("                    <th>메시지</th>");
+                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage3',0,'text')\">TableId</th>");
+                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage3',1,'text')\">CheckType</th>");
+                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage3',2,'num')\">TotalFeatures</th>");
+                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage3',3,'num')\">ProcessedFeatures</th>");
+                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage3',4,'num')\">ErrorFeatures</th>");
+                html.AppendLine("                    <th class='th-sort' onclick=\"sortTable('tbl-stage3',5,'text')\">Result</th>");
+                html.AppendLine("                    <th>Message</th>");
                 html.AppendLine("                </tr>");
                 html.AppendLine("            </thead>");
                 html.AppendLine("            <tbody>");

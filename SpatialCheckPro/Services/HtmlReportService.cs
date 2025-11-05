@@ -213,14 +213,14 @@ namespace SpatialCheckPro.Services
                     html.AppendLine("    <h3>Domain 및 FK 관계 검수 결과</h3>");
                     html.AppendLine("    <table>");
                     html.AppendLine("        <tr>");
-                    html.AppendLine("            <th>테이블ID</th>");
-                    html.AppendLine("            <th>컬럼명</th>");
-                    html.AppendLine("            <th>컬럼한글명</th>");
-                    html.AppendLine("            <th>Domain 검증</th>");
-                    html.AppendLine("            <th>FK 관계 검증</th>");
-                    html.AppendLine("            <th>참조테이블</th>");
-                    html.AppendLine("            <th>참조컬럼</th>");
-                    html.AppendLine("            <th>위반값 예시</th>");
+                    html.AppendLine("            <th>Table Id</th>");
+                    html.AppendLine("            <th>Field Name</th>");
+                    html.AppendLine("            <th>Field Alias</th>");
+                    html.AppendLine("            <th>Domain Check</th>");
+                    html.AppendLine("            <th>FK Check</th>");
+                    html.AppendLine("            <th>Ref Table</th>");
+                    html.AppendLine("            <th>Ref Column</th>");
+                    html.AppendLine("            <th>Invalid Samples</th>");
                     html.AppendLine("        </tr>");
                     
                     foreach (var schemaResult in domainFkResults)
@@ -246,13 +246,13 @@ namespace SpatialCheckPro.Services
                 html.AppendLine("    <h2>3단계: 지오메트리 검수 결과</h2>");
                 html.AppendLine("    <table>");
                 html.AppendLine("        <tr>");
-                html.AppendLine("            <th>테이블ID</th>");
-                html.AppendLine("            <th>검수항목</th>");
-                html.AppendLine("            <th>총객체수</th>");
-                html.AppendLine("            <th>처리객체수</th>");
-                html.AppendLine("            <th>오류객체수</th>");
-                html.AppendLine("            <th>검수결과</th>");
-                html.AppendLine("            <th>메시지</th>");
+                html.AppendLine("            <th>Table Id</th>");
+                html.AppendLine("            <th>Check Item</th>");
+                html.AppendLine("            <th>Total</th>");
+                html.AppendLine("            <th>Processed</th>");
+                html.AppendLine("            <th>Error Count</th>");
+                html.AppendLine("            <th>Result</th>");
+                html.AppendLine("            <th>Message</th>");
                 html.AppendLine("        </tr>");
                 
                 foreach (var geometryResult in result.GeometryCheckResult.GeometryResults)

@@ -962,7 +962,7 @@ namespace SpatialCheckPro.GUI.Views
                 
                 // 테이블 헤더
                 text.AppendLine("┌─────────────────────┬─────────────────────┬──────────┬──────────────┬──────────────┬──────────────┬─────────────────────┐");
-                text.AppendLine("│ 테이블ID            │ 테이블명            │ 객체수   │ 예상피처타입 │ 실제피처타입 │ 피처타입확인 │ 실제FeatureClass명  │");
+                text.AppendLine("│ TableId             │ TableName           │ Count    │ ExpectedType  │ ActualType    │ TypeMatch     │ ActualFeatureClass  │");
                 text.AppendLine("├─────────────────────┼─────────────────────┼──────────┼──────────────┼──────────────┼──────────────┼─────────────────────┤");
 
                 foreach (var table in _currentValidationResult.TableCheckResult.TableResults)
@@ -1025,7 +1025,7 @@ namespace SpatialCheckPro.GUI.Views
                 
                 // 스키마 헤더
                 text.AppendLine("┌─────────────────────┬─────────────────────┬─────────────────────┬──────────────┬──────────────┬──────────────┬──────────────┬──────────────┐");
-                text.AppendLine("│ 테이블ID            │ 컬럼명              │ 컬럼한글명          │ 예상타입     │ 실제타입     │ 길이일치     │ NN일치       │ 검수결과     │");
+                text.AppendLine("│ TableId             │ FieldName           │ FieldAlias          │ ExpectedType │ ActualType   │ LengthMatch  │ NotNullMatch │ Result       │");
                 text.AppendLine("├─────────────────────┼─────────────────────┼─────────────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┤");
 
                 foreach (var schema in _currentValidationResult.SchemaCheckResult.SchemaResults)

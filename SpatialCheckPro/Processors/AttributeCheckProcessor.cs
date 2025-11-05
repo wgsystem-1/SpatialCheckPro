@@ -23,6 +23,27 @@ namespace SpatialCheckPro.Processors
         }
 
         /// <summary>
+        /// Feature의 지오메트리에서 중심점 좌표를 추출합니다
+        /// </summary>
+        private (double X, double Y) ExtractCentroid(Feature feature)
+        {
+            try
+            {
+                var geometry = feature.GetGeometryRef();
+                if (geometry == null)
+                    return (0, 0);
+
+                var envelope = new Envelope();
+                geometry.GetEnvelope(envelope);
+                return ((envelope.MinX + envelope.MaxX) / 2.0, (envelope.MinY + envelope.MaxY) / 2.0);
+            }
+            catch
+            {
+                return (0, 0);
+            }
+        }
+
+        /// <summary>
         /// 코드리스트 파일을 로드합니다.
         /// </summary>
         public void LoadCodelist(string? codelistPath)
@@ -207,6 +228,7 @@ namespace SpatialCheckPro.Processors
                                 
                                 if (violation)
                                 {
+                                    var (x, y) = ExtractCentroid(f);
                                     errors.Add(new ValidationError
                                     {
                                         ErrorCode = rule.CheckType,
@@ -214,7 +236,10 @@ namespace SpatialCheckPro.Processors
                                         TableName = rule.TableId,
                                         FeatureId = fid,
                                         FieldName = rule.FieldName,
-                                        Severity = ParseSeverity(rule.Severity)
+                                        Severity = ParseSeverity(rule.Severity),
+                                        X = x,
+                                        Y = y,
+                                        GeometryWKT = QcError.CreatePointWKT(x, y)
                                     });
                                 }
                             }
@@ -256,6 +281,7 @@ namespace SpatialCheckPro.Processors
                                 
                                 if (violation)
                                 {
+                                    var (x, y) = ExtractCentroid(f);
                                     errors.Add(new ValidationError
                                     {
                                         ErrorCode = rule.CheckType,
@@ -263,7 +289,10 @@ namespace SpatialCheckPro.Processors
                                         TableName = rule.TableId,
                                         FeatureId = fid,
                                         FieldName = rule.FieldName,
-                                        Severity = ParseSeverity(rule.Severity)
+                                        Severity = ParseSeverity(rule.Severity),
+                                        X = x,
+                                        Y = y,
+                                        GeometryWKT = QcError.CreatePointWKT(x, y)
                                     });
                                 }
                             }
@@ -406,6 +435,8 @@ namespace SpatialCheckPro.Processors
                                         {
                                             _logger.LogWarning("IfCodeThenNull 오류 발견: {CodeField}={Code}인 경우 {TargetField}는 NULL이어야 함. 현재값: '{Value}'", 
                                                 codeField, code, targetField, targetValue);
+                                            
+                                            var (x, y) = ExtractCentroid(f);
                                             errors.Add(new ValidationError
                                             {
                                                 ErrorCode = rule.CheckType,
@@ -415,7 +446,10 @@ namespace SpatialCheckPro.Processors
                                                 FieldName = targetField,
                                                 Severity = ParseSeverity(rule.Severity),
                                                 ActualValue = targetValue ?? "NULL",
-                                                ExpectedValue = "NULL"
+                                                ExpectedValue = "NULL",
+                                                X = x,
+                                                Y = y,
+                                                GeometryWKT = QcError.CreatePointWKT(x, y)
                                             });
                                         }
                                     }
@@ -472,6 +506,8 @@ namespace SpatialCheckPro.Processors
                                                     
                                                     _logger.LogWarning("IfCodeThenNotNullAll 오류 발견: {CodeField}={Code}인 경우 {Field}는 필수값이어야 함. 현재값: {DisplayValue}", 
                                                         codeField, code, fld, displayValue);
+                                                    
+                                                    var (x, y) = ExtractCentroid(f);
                                                     errors.Add(new ValidationError
                                                     {
                                                         ErrorCode = rule.CheckType,
@@ -481,7 +517,10 @@ namespace SpatialCheckPro.Processors
                                                         FieldName = fld,
                                                         Severity = ParseSeverity(rule.Severity),
                                                         ActualValue = displayValue,
-                                                        ExpectedValue = "NOT NULL AND NOT BLANK"
+                                                        ExpectedValue = "NOT NULL AND NOT BLANK",
+                                                        X = x,
+                                                        Y = y,
+                                                        GeometryWKT = QcError.CreatePointWKT(x, y)
                                                     });
                                                 }
                                             }
@@ -498,6 +537,7 @@ namespace SpatialCheckPro.Processors
 
                         if (!CheckValue(rule, value, _codelistCache))
                         {
+                            var (x, y) = ExtractCentroid(f);
                             errors.Add(new ValidationError
                             {
                                 ErrorCode = rule.CheckType,
@@ -505,7 +545,10 @@ namespace SpatialCheckPro.Processors
                                 TableName = rule.TableId,
                                 FeatureId = fid,
                                 FieldName = rule.FieldName,
-                                Severity = ParseSeverity(rule.Severity)
+                                Severity = ParseSeverity(rule.Severity),
+                                X = x,
+                                Y = y,
+                                GeometryWKT = QcError.CreatePointWKT(x, y)
                             });
                         }
                     }
@@ -562,6 +605,7 @@ namespace SpatialCheckPro.Processors
 
                     if (!CheckValue(rule, value, _codelistCache))
                     {
+                        var (x, y) = ExtractCentroid(feature);
                         errors.Add(new ValidationError
                         {
                             ErrorCode = rule.CheckType,
@@ -569,7 +613,10 @@ namespace SpatialCheckPro.Processors
                             TableName = rule.TableId,
                             FeatureId = fid.ToString(),
                             FieldName = rule.FieldName,
-                            Severity = ParseSeverity(rule.Severity)
+                            Severity = ParseSeverity(rule.Severity),
+                            X = x,
+                            Y = y,
+                            GeometryWKT = QcError.CreatePointWKT(x, y)
                         });
                     }
 

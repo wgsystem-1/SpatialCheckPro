@@ -11,28 +11,28 @@ namespace SpatialCheckPro.Models.Config
         /// <summary>
         /// 테이블 ID (고유 식별자)
         /// </summary>
-        [Name("테이블ID")]
+        [Name("TableId")]
         [Required(ErrorMessage = "테이블ID는 필수 입력값입니다.")]
         public string TableId { get; set; } = string.Empty;
 
         /// <summary>
         /// 테이블 명칭 (한글명)
         /// </summary>
-        [Name("테이블명칭")]
+        [Name("TableName")]
         [Required(ErrorMessage = "테이블명칭은 필수 입력값입니다.")]
         public string TableName { get; set; } = string.Empty;
 
         /// <summary>
         /// 지오메트리 타입 (POINT, LINESTRING, POLYGON)
         /// </summary>
-        [Name("지오메트리타입")]
+        [Name("GeometryType")]
         [Required(ErrorMessage = "지오메트리타입은 필수 입력값입니다.")]
         public string GeometryType { get; set; } = string.Empty;
 
         /// <summary>
         /// 좌표계 정보 (EPSG 코드)
         /// </summary>
-        [Name("좌표계")]
+        [Name("CRS")]
         [Required(ErrorMessage = "좌표계는 필수 입력값입니다.")]
         public string CoordinateSystem { get; set; } = string.Empty;
 

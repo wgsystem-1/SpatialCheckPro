@@ -474,7 +474,10 @@ namespace SpatialCheckPro.GUI
 
                 for (int i = 1; i < lines.Length; i++)
                 {
-                    var parts = lines[i].Split(',');
+                    var line = lines[i].Trim();
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+                    
+                    var parts = line.Split(',');
                     if (parts.Length >= 2)
                     {
                         var item = parts[0].Trim();
@@ -482,29 +485,41 @@ namespace SpatialCheckPro.GUI
 
                         switch (item)
                         {
-                            case "짧은객체":
-                                MinLengthTextBox.Text = value;
+                            case "최소선길이":
+                                if (MinLengthTextBox != null) MinLengthTextBox.Text = value;
                                 break;
-                            case "작은면적객체":
-                                MinAreaTextBox.Text = value;
+                            case "최소폴리곤면적":
+                                if (MinAreaTextBox != null) MinAreaTextBox.Text = value;
                                 break;
                             case "슬리버면적":
-                                SliverAreaTextBox.Text = value;
+                                if (SliverAreaTextBox != null) SliverAreaTextBox.Text = value;
                                 break;
                             case "슬리버형태지수":
-                                SliverShapeIndexTextBox.Text = value;
+                                if (SliverShapeIndexTextBox != null) SliverShapeIndexTextBox.Text = value;
                                 break;
                             case "슬리버신장률":
-                                SliverElongationTextBox.Text = value;
+                                if (SliverElongationTextBox != null) SliverElongationTextBox.Text = value;
                                 break;
-                            case "중복허용거리":
-                                DuplicateToleranceTextBox.Text = value;
+                            case "중복검사허용오차":
+                                if (DuplicateToleranceTextBox != null) DuplicateToleranceTextBox.Text = value;
                                 break;
                             case "겹침허용면적":
-                                OverlapToleranceTextBox.Text = value;
+                                if (OverlapToleranceTextBox != null) OverlapToleranceTextBox.Text = value;
                                 break;
                             case "자체꼬임허용각도":
-                                SelfIntersectionAngleTextBox.Text = value;
+                                if (SelfIntersectionAngleTextBox != null) SelfIntersectionAngleTextBox.Text = value;
+                                break;
+                            case "폴리곤내폴리곤최소거리":
+                                if (PolygonInPolygonDistanceTextBox != null) PolygonInPolygonDistanceTextBox.Text = value;
+                                break;
+                            case "스파이크각도임계값":
+                                if (SpikeAngleTextBox != null) SpikeAngleTextBox.Text = value;
+                                break;
+                            case "링폐합오차":
+                                if (RingClosureToleranceTextBox != null) RingClosureToleranceTextBox.Text = value;
+                                break;
+                            case "네트워크탐색거리":
+                                if (NetworkSearchDistanceTextBox != null) NetworkSearchDistanceTextBox.Text = value;
                                 break;
                         }
                     }
@@ -512,7 +527,9 @@ namespace SpatialCheckPro.GUI
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"지오메트리 검수 기준 로드 실패: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                // 생성자에서 호출되므로 MessageBox 대신 로깅 (UI 초기화 전에 MessageBox 표시 방지)
+                System.Diagnostics.Debug.WriteLine($"지오메트리 검수 기준 로드 실패: {ex.Message}");
+                // 기본값으로 계속 진행
             }
         }
 
@@ -525,16 +542,19 @@ namespace SpatialCheckPro.GUI
             {
                 var lines = new[]
                 {
-                    "검수항목,기준값,단위,설명",
-                    $"짧은객체,{MinLengthTextBox.Text},미터,선형 객체의 최소 길이 기준",
-                    $"작은면적객체,{MinAreaTextBox.Text},제곱미터,면형 객체의 최소 면적 기준",
-                    $"슬리버면적,{SliverAreaTextBox.Text},제곱미터,슬리버 폴리곤의 최대 면적 기준",
-                    $"슬리버형태지수,{SliverShapeIndexTextBox.Text},비율,슬리버 폴리곤의 형태지수 기준 (4π×면적/둘레²)",
-                    $"슬리버신장률,{SliverElongationTextBox.Text},배,슬리버 폴리곤의 신장률 기준 (가로/세로 비율)",
-                    $"중복허용거리,{DuplicateToleranceTextBox.Text},미터,객체 중복 허용 거리",
-                    $"겹침허용면적,{OverlapToleranceTextBox.Text},제곱미터,객체 겹침 허용 면적",
-                    $"자체꼬임허용각도,{SelfIntersectionAngleTextBox.Text},도,자체 꼬임 허용 각도",
-                    "폴리곤내폴리곤최소거리,0.1,미터,폴리곤 내부 폴리곤 최소 거리"
+                    "항목명,값,단위,설명",
+                    $"겹침허용면적,{OverlapToleranceTextBox?.Text ?? "0.001"},제곱미터,폴리곤 겹침 허용 면적",
+                    $"최소선길이,{MinLengthTextBox?.Text ?? "0.01"},미터,짧은 선 객체 판정 기준",
+                    $"최소폴리곤면적,{MinAreaTextBox?.Text ?? "1.0"},제곱미터,작은 면적 객체 판정 기준",
+                    $"자체꼬임허용각도,{SelfIntersectionAngleTextBox?.Text ?? "1.0"},도,자체 교차 허용 각도",
+                    $"폴리곤내폴리곤최소거리,{PolygonInPolygonDistanceTextBox?.Text ?? "0.1"},미터,폴리곤 내부 폴리곤 최소 거리",
+                    $"슬리버면적,{SliverAreaTextBox?.Text ?? "2.0"},제곱미터,슬리버폴리곤 면적 기준",
+                    $"슬리버형태지수,{SliverShapeIndexTextBox?.Text ?? "0.1"},무차원,슬리버폴리곤 형태지수 기준",
+                    $"슬리버신장률,{SliverElongationTextBox?.Text ?? "10.0"},무차원,슬리버폴리곤 신장률 기준",
+                    $"스파이크각도임계값,{SpikeAngleTextBox?.Text ?? "10.0"},도,스파이크 검출 각도 임계값",
+                    $"링폐합오차,{RingClosureToleranceTextBox?.Text ?? "1e-8"},미터,링 폐합 허용 오차",
+                    $"네트워크탐색거리,{NetworkSearchDistanceTextBox?.Text ?? "0.1"},미터,언더슛/오버슛 탐색 거리",
+                    $"중복검사허용오차,{DuplicateToleranceTextBox?.Text ?? "0.001"},미터,중복 지오메트리 판정 허용 오차"
                 };
 
                 File.WriteAllLines(GeometryCriteriaPath, lines, System.Text.Encoding.UTF8);
@@ -603,15 +623,20 @@ namespace SpatialCheckPro.GUI
             {
                 InitializeDefaultPaths();
                 
-                // 지오메트리 검수 기준 기본값 설정
-                MinLengthTextBox.Text = "1.0";
-                MinAreaTextBox.Text = "1.0";
-                SliverAreaTextBox.Text = "2.0";
-                SliverShapeIndexTextBox.Text = "0.1";
-                SliverElongationTextBox.Text = "10.0";
-                DuplicateToleranceTextBox.Text = "0.001";
-                OverlapToleranceTextBox.Text = "0.001";
-                SelfIntersectionAngleTextBox.Text = "1.0";
+                // 지오메트리 검수 기준 기본값 설정 - GeometryCriteria.CreateDefault() 사용
+                var defaultCriteria = SpatialCheckPro.Models.GeometryCriteria.CreateDefault();
+                if (MinLengthTextBox != null) MinLengthTextBox.Text = defaultCriteria.MinLineLength.ToString();
+                if (MinAreaTextBox != null) MinAreaTextBox.Text = defaultCriteria.MinPolygonArea.ToString();
+                if (SliverAreaTextBox != null) SliverAreaTextBox.Text = defaultCriteria.SliverArea.ToString();
+                if (SliverShapeIndexTextBox != null) SliverShapeIndexTextBox.Text = defaultCriteria.SliverShapeIndex.ToString();
+                if (SliverElongationTextBox != null) SliverElongationTextBox.Text = defaultCriteria.SliverElongation.ToString();
+                if (DuplicateToleranceTextBox != null) DuplicateToleranceTextBox.Text = defaultCriteria.DuplicateCheckTolerance.ToString();
+                if (OverlapToleranceTextBox != null) OverlapToleranceTextBox.Text = defaultCriteria.OverlapTolerance.ToString();
+                if (SelfIntersectionAngleTextBox != null) SelfIntersectionAngleTextBox.Text = defaultCriteria.SelfIntersectionAngle.ToString();
+                if (PolygonInPolygonDistanceTextBox != null) PolygonInPolygonDistanceTextBox.Text = defaultCriteria.PolygonInPolygonDistance.ToString();
+                if (SpikeAngleTextBox != null) SpikeAngleTextBox.Text = defaultCriteria.SpikeAngleThresholdDegrees.ToString();
+                if (RingClosureToleranceTextBox != null) RingClosureToleranceTextBox.Text = defaultCriteria.RingClosureTolerance.ToString("G");
+                if (NetworkSearchDistanceTextBox != null) NetworkSearchDistanceTextBox.Text = defaultCriteria.NetworkSearchDistance.ToString();
                 
                 UpdateUI();
                 MessageBox.Show("기본값으로 복원되었습니다.", "완료", MessageBoxButton.OK, MessageBoxImage.Information);

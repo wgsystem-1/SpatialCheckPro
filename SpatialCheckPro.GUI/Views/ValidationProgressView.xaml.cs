@@ -213,7 +213,8 @@ namespace SpatialCheckPro.GUI.Views
                 // 메모리 압박 업데이트
                 var memoryPressure = _stageSummaries.MemoryPressurePercent;
                 MemoryPressureText.Text = memoryPressure.ToString("F0");
-                MemoryProgressBar.Value = memoryPressure;
+                if (FindName("MemoryProgressBar") is System.Windows.Controls.ProgressBar memBar)
+                    memBar.Value = memoryPressure;
 
                 // 메모리 상태 색상 업데이트
                 if (memoryPressure > 80)
@@ -244,22 +245,31 @@ namespace SpatialCheckPro.GUI.Views
                 // 스트리밍 모드 업데이트
                 if (_stageSummaries.StreamingModeActive)
                 {
-                    StreamingStatusBadge.Content = "활성";
-                    StreamingStatusBadge.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x22, 0xC5, 0x5E)); // Green
+                    if (FindName("StreamingStatusBadge") is System.Windows.Controls.ContentControl badge)
+                    {
+                        badge.Content = "활성";
+                        badge.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x22, 0xC5, 0x5E)); // Green
+                    }
                     StreamedErrorCountText.Text = _stageSummaries.StreamedErrorCount.ToString("N0");
-                    StreamingFilePathText.Text = System.IO.Path.GetFileName(_stageSummaries.StreamingFilePath);
+                    if (FindName("StreamingFilePathText") is System.Windows.Controls.TextBlock pathText)
+                        pathText.Text = System.IO.Path.GetFileName(_stageSummaries.StreamingFilePath);
                 }
                 else
                 {
-                    StreamingStatusBadge.Content = "비활성";
-                    StreamingStatusBadge.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x94, 0xA3, 0xB8)); // Gray
+                    if (FindName("StreamingStatusBadge") is System.Windows.Controls.ContentControl badge)
+                    {
+                        badge.Content = "비활성";
+                        badge.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x94, 0xA3, 0xB8)); // Gray
+                    }
                     StreamedErrorCountText.Text = "0";
-                    StreamingFilePathText.Text = "없음";
+                    if (FindName("StreamingFilePathText") is System.Windows.Controls.TextBlock pathText)
+                        pathText.Text = "없음";
                 }
 
                 // 배치 처리 업데이트
                 BatchSizeText.Text = _stageSummaries.BatchSize.ToString("N0");
-                BatchThroughputText.Text = _stageSummaries.BatchThroughput.ToString("N0");
+                if (FindName("BatchThroughputText") is System.Windows.Controls.TextBlock throughputText)
+                    throughputText.Text = _stageSummaries.BatchThroughput.ToString("N0");
             }
             catch (Exception)
             {

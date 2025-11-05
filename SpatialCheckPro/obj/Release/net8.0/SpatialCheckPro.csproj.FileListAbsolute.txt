@@ -8,8 +8,8 @@ G:\SpatialCheckPro\SpatialCheckPro\obj\Release\net8.0\SpatialCheckPro.AssemblyIn
 G:\SpatialCheckPro\SpatialCheckPro\obj\Release\net8.0\SpatialCheckPro.AssemblyInfo.cs
 G:\SpatialCheckPro\SpatialCheckPro\obj\Release\net8.0\SpatialCheckPro.csproj.CoreCompileInputs.cache
 G:\SpatialCheckPro\SpatialCheckPro\obj\Release\net8.0\EFCoreSqliteNetTopologySuite.cs
+G:\SpatialCheckPro\SpatialCheckPro\obj\Release\net8.0\SpatialCheckPro.sourcelink.json
 G:\SpatialCheckPro\SpatialCheckPro\obj\Release\net8.0\SpatialCheckPro.dll
 G:\SpatialCheckPro\SpatialCheckPro\obj\Release\net8.0\refint\SpatialCheckPro.dll
 G:\SpatialCheckPro\SpatialCheckPro\obj\Release\net8.0\SpatialCheckPro.pdb
 G:\SpatialCheckPro\SpatialCheckPro\obj\Release\net8.0\ref\SpatialCheckPro.dll
-G:\SpatialCheckPro\SpatialCheckPro\obj\Release\net8.0\SpatialCheckPro.sourcelink.json

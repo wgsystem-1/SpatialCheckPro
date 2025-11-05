@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
@@ -74,6 +75,63 @@ namespace SpatialCheckPro.GUI.Services
             {
                 var factory = serviceProvider.GetRequiredService<IConfigurationFactory>();
                 return factory.CreateDefaultPerformanceSettings();
+            });
+            
+            // 지오메트리 검수 기준 등록 (CSV 파일에서 로드)
+            services.AddSingleton<SpatialCheckPro.Models.GeometryCriteria>(serviceProvider =>
+            {
+                string diLog = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "di_criteria.log");
+                
+                try
+                {
+                    System.IO.File.AppendAllText(diLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] GeometryCriteria 등록 시작\n");
+                    
+                    var logger = serviceProvider.GetRequiredService<ILogger<SpatialCheckPro.Models.GeometryCriteria>>();
+                    System.IO.File.AppendAllText(diLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] Logger 획득 완료\n");
+                    
+                    // Config 디렉토리에서 geometry_criteria.csv 로드
+                    var configPath = System.IO.Path.Combine(
+                        AppDomain.CurrentDomain.BaseDirectory,
+                        "Config",
+                        "geometry_criteria.csv");
+                    
+                    System.IO.File.AppendAllText(diLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 파일 경로: {configPath}\n");
+                    System.IO.File.AppendAllText(diLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 파일 존재: {System.IO.File.Exists(configPath)}\n");
+                    
+                    if (System.IO.File.Exists(configPath))
+                    {
+                        System.IO.File.AppendAllText(diLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] LoadFromCsvAsync 호출 시작\n");
+                        
+                        // 동기적 로드로 변경 (데드락 방지)
+                        var criteria = System.Threading.Tasks.Task.Run(async () => 
+                            await SpatialCheckPro.Models.GeometryCriteria.LoadFromCsvAsync(configPath)
+                        ).GetAwaiter().GetResult();
+                        
+                        System.IO.File.AppendAllText(diLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] LoadFromCsvAsync 완료\n");
+                        
+                        logger.LogInformation("지오메트리 검수 기준 로드 완료: {Path}", configPath);
+                        return criteria;
+                    }
+                    else
+                    {
+                        System.IO.File.AppendAllText(diLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 파일 없음, 기본값 사용\n");
+                        logger.LogWarning("지오메트리 검수 기준 파일을 찾을 수 없습니다. 기본값 사용: {Path}", configPath);
+                        return SpatialCheckPro.Models.GeometryCriteria.CreateDefault();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.IO.File.AppendAllText(diLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 예외 발생: {ex.Message}\n{ex.StackTrace}\n");
+                    
+                    try
+                    {
+                        var logger = serviceProvider.GetRequiredService<ILogger<SpatialCheckPro.Models.GeometryCriteria>>();
+                        logger.LogError(ex, "지오메트리 검수 기준 로드 실패. 기본값 사용");
+                    }
+                    catch { }
+                    
+                    return SpatialCheckPro.Models.GeometryCriteria.CreateDefault();
+                }
             });
         }
 

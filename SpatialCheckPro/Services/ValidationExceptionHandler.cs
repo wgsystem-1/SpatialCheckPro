@@ -52,7 +52,7 @@ namespace SpatialCheckPro.Services
                     operationName);
                 return ValidationResult.CreateError("파일 접근 권한이 없습니다", ex);
             }
-            catch (OperationCanceledException ex)
+            catch (OperationCanceledException)
             {
                 _logger.LogInformation("{OperationName}이 취소되었습니다", operationName);
                 return ValidationResult.CreateCancelled($"{operationName}이 취소되었습니다");
@@ -152,7 +152,7 @@ namespace SpatialCheckPro.Services
                     operationName);
                 return ValidationResult.CreateError("파일 접근 권한이 없습니다", ex);
             }
-            catch (OperationCanceledException ex)
+            catch (OperationCanceledException)
             {
                 _logger.LogInformation("{OperationName}이 취소되었습니다", operationName);
                 return ValidationResult.CreateCancelled($"{operationName}이 취소되었습니다");

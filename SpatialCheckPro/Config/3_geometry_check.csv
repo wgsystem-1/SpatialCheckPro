@@ -1,4 +1,4 @@
-﻿테이블ID,테이블명칭,지오메트리타입,객체중복,객체간겹침,자체꼬임,슬리버,짧은객체,작은면적객체,홀 폴리곤 오류,최소정점개수,스파이크,자기중첩,언더슛,오버슛
+﻿TableId,TableName,GeometryType,객체중복,객체간겹침,자체꼬임,슬리버,짧은객체,작은면적객체,홀 폴리곤 오류,최소정점개수,스파이크,자기중첩,언더슛,오버슛
 tn_ctprvn_bndry,시도구역경계,MULTIPOLYGON,Y,Y,Y,Y,N,Y,Y,Y,Y,Y,N,N
 tn_signgu_bndry,시군구구역경계,MULTIPOLYGON,Y,Y,Y,Y,N,Y,Y,Y,Y,Y,N,N
 tn_emd_bndry,읍면동구역경계,MULTIPOLYGON,Y,Y,Y,Y,N,Y,Y,Y,Y,Y,N,N

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using OSGeo.OGR;
+using SpatialCheckPro.Models;
 
 namespace SpatialCheckPro.Services
 {
@@ -15,14 +16,17 @@ namespace SpatialCheckPro.Services
         private readonly ILogger<StreamingGeometryProcessor> _logger;
         private readonly int _batchSize;
         private readonly int _maxMemoryMB;
+        private readonly GeometryCriteria _criteria;
         private bool _disposed = false;
 
         public StreamingGeometryProcessor(
             ILogger<StreamingGeometryProcessor> logger,
+            GeometryCriteria? criteria = null,
             int batchSize = 1000,
             int maxMemoryMB = 512)
         {
             _logger = logger;
+            _criteria = criteria ?? GeometryCriteria.CreateDefault();
             _batchSize = batchSize;
             _maxMemoryMB = maxMemoryMB;
         }
@@ -124,17 +128,19 @@ namespace SpatialCheckPro.Services
         /// 스트리밍 방식으로 중복 지오메트리 검사
         /// </summary>
         /// <param name="layer">레이어</param>
-        /// <param name="tolerance">허용 오차</param>
+        /// <param name="tolerance">허용 오차 (null이면 GeometryCriteria.DuplicateCheckTolerance 사용)</param>
         /// <param name="progress">진행률 콜백</param>
         /// <returns>중복 검사 결과</returns>
         public List<DuplicateResult> FindDuplicatesStreaming(
             Layer layer, 
-            double tolerance = 0.001, 
+            double? tolerance = null, 
             IProgress<StreamingProcessingProgress>? progress = null)
         {
             try
             {
-                _logger.LogInformation("스트리밍 중복 지오메트리 검사 시작 (허용오차: {Tolerance}m)", tolerance);
+                // tolerance가 지정되지 않으면 GeometryCriteria 값 사용
+                var actualTolerance = tolerance ?? _criteria.DuplicateCheckTolerance;
+                _logger.LogInformation("스트리밍 중복 지오메트리 검사 시작 (허용오차: {Tolerance}m)", actualTolerance);
                 var startTime = DateTime.Now;
 
                 var duplicates = new List<DuplicateResult>();
@@ -151,14 +157,14 @@ namespace SpatialCheckPro.Services
                     var batchGeometries = ProcessBatchWithIds(layer, batch.Start, batch.Count);
                     
                     // 배치 내 중복 검사
-                    var batchDuplicates = FindDuplicatesInBatch(batchGeometries, tolerance, processedObjects);
+                    var batchDuplicates = FindDuplicatesInBatch(batchGeometries, actualTolerance, processedObjects);
                     duplicates.AddRange(batchDuplicates);
 
                     // 배치 간 중복 검사 (이전 배치와 비교)
                     if (duplicates.Count > 0)
                     {
                         var crossBatchDuplicates = FindCrossBatchDuplicates(
-                            batchGeometries, duplicates, tolerance, processedObjects);
+                            batchGeometries, duplicates, actualTolerance, processedObjects);
                         duplicates.AddRange(crossBatchDuplicates);
                     }
 

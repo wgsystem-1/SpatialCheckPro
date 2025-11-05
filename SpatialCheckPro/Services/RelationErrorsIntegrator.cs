@@ -102,25 +102,42 @@ namespace SpatialCheckPro.Services
         }
 
         /// <summary>
-        /// 공간 관계 오류를 QcError로 변환합니다 (원본 FGDB에서 지오메트리 추출)
+        /// 공간 관계 오류를 QcError로 변환합니다 (오류 위치 좌표 우선 사용)
         /// </summary>
         private async Task<QcError> ConvertSpatialRelationErrorToQcErrorAsync(
             SpatialRelationError spatialError,
             string runId,
             string sourceGdbPath)
         {
-            // 원본 FGDB에서 지오메트리 추출 (로컬 메서드 사용)
-            var (geometry, x, y, geometryType) = await ExtractGeometryFromSourceAsync(
-                sourceGdbPath,
-                spatialError.SourceLayer,
-                spatialError.SourceObjectId.ToString()
-            );
+            // 1순위: spatialError에 이미 저장된 오류 위치 좌표 사용
+            double errorX = spatialError.ErrorLocationX;
+            double errorY = spatialError.ErrorLocationY;
+            string? pointWkt = null;
 
-            // WKT 변환
-            string? extractedWkt = null;
-            if (geometry != null)
+            // 오류 위치가 설정되어 있으면 Point WKT 생성
+            if (errorX != 0 || errorY != 0)
             {
-                try { geometry.ExportToWkt(out extractedWkt); } catch { extractedWkt = null; }
+                pointWkt = QcError.CreatePointWKT(errorX, errorY);
+                _logger.LogDebug("공간관계 오류 위치 사용: ({X:F6}, {Y:F6})", errorX, errorY);
+            }
+            else
+            {
+                // 2순위 (fallback): 원본 FGDB에서 Feature 중심점 추출
+                var (geometry, x, y, _) = await ExtractGeometryFromSourceAsync(
+                    sourceGdbPath,
+                    spatialError.SourceLayer,
+                    spatialError.SourceObjectId.ToString()
+                );
+
+                if (x != 0 || y != 0)
+                {
+                    errorX = x;
+                    errorY = y;
+                    pointWkt = QcError.CreatePointWKT(errorX, errorY);
+                    _logger.LogDebug("FGDB에서 Feature 중심점 추출: ({X:F6}, {Y:F6})", errorX, errorY);
+                }
+
+                geometry?.Dispose();
             }
 
             var qcError = new QcError
@@ -134,11 +151,11 @@ namespace SpatialCheckPro.Services
                 SourceClass = spatialError.SourceLayer,
                 SourceOID = spatialError.SourceObjectId,
                 SourceGlobalID = null,
-                X = (x != 0 || y != 0) ? x : spatialError.ErrorLocationX,
-                Y = (x != 0 || y != 0) ? y : spatialError.ErrorLocationY,
-                Geometry = geometry?.Clone(),
-                GeometryWKT = extractedWkt ?? spatialError.GeometryWKT,
-                GeometryType = (geometryType != "Unknown") ? geometryType : DetermineGeometryTypeFromWKT(spatialError.GeometryWKT).ToUpperInvariant(),
+                X = errorX,
+                Y = errorY,
+                Geometry = null, // Point 지오메트리는 WKT에서 생성됨
+                GeometryWKT = pointWkt ?? spatialError.GeometryWKT,
+                GeometryType = "Point",  // 오류 위치는 항상 Point
                 ErrorValue = spatialError.TargetObjectId?.ToString() ?? "",
                 ThresholdValue = spatialError.TargetLayer,
                 Message = spatialError.Message,
@@ -158,17 +175,15 @@ namespace SpatialCheckPro.Services
                 ["TargetObjectId"] = spatialError.TargetObjectId,
                 ["DetectedAt"] = spatialError.DetectedAt,
                 ["Properties"] = spatialError.Properties,
-                ["GeometryExtracted"] = geometry != null
+                ["OriginalGeometryWKT"] = spatialError.GeometryWKT  // 원본 지오메트리 보존
             };
             qcError.DetailsJSON = JsonSerializer.Serialize(detailsDict);
-
-            geometry?.Dispose();
 
             return qcError;
         }
 
         /// <summary>
-        /// 속성 관계 오류를 QcError로 변환합니다
+        /// 속성 관계 오류를 QcError로 변환합니다 (Feature 중심점을 Point로 저장)
         /// </summary>
         /// <param name="attributeError">속성 관계 오류</param>
         /// <param name="runId">검수 실행 ID</param>
@@ -178,17 +193,20 @@ namespace SpatialCheckPro.Services
             string runId,
             string sourceGdbPath)
         {
-            var (geometry, x, y, geometryType) = await ExtractGeometryFromSourceAsync(
+            // FGDB에서 Feature 중심점 추출
+            var (geometry, x, y, _) = await ExtractGeometryFromSourceAsync(
                 sourceGdbPath,
                 attributeError.TableName,
                 attributeError.ObjectId.ToString());
 
-            // WKT 변환
-            string? extractedWkt = null;
-            if (geometry != null)
+            string? pointWkt = null;
+            if (x != 0 || y != 0)
             {
-                try { geometry.ExportToWkt(out extractedWkt); } catch { extractedWkt = null; }
+                pointWkt = QcError.CreatePointWKT(x, y);
+                _logger.LogDebug("속성관계 오류: Feature 중심점 ({X:F6}, {Y:F6})", x, y);
             }
+
+            geometry?.Dispose();
 
             var qcError = new QcError
             {
@@ -203,9 +221,9 @@ namespace SpatialCheckPro.Services
                 SourceGlobalID = null,
                 X = x,
                 Y = y,
-                Geometry = geometry?.Clone(),
-                GeometryWKT = extractedWkt,
-                GeometryType = (geometryType != "Unknown") ? geometryType : "NoGeometry",
+                Geometry = null,  // Point 지오메트리는 WKT에서 생성됨
+                GeometryWKT = pointWkt,
+                GeometryType = "Point",  // 오류 위치는 항상 Point
                 ErrorValue = attributeError.ActualValue,
                 ThresholdValue = attributeError.ExpectedValue,
                 Message = attributeError.Message,
@@ -226,12 +244,9 @@ namespace SpatialCheckPro.Services
                 ["RelatedTableName"] = attributeError.RelatedTableName ?? "",
                 ["RelatedObjectId"] = attributeError.RelatedObjectId,
                 ["DetectedAt"] = attributeError.DetectedAt,
-                ["Properties"] = attributeError.Properties,
-                ["GeometryExtracted"] = geometry != null
+                ["Properties"] = attributeError.Properties
             };
             qcError.DetailsJSON = JsonSerializer.Serialize(detailsDict);
-
-            geometry?.Dispose();
 
             return qcError;
         }

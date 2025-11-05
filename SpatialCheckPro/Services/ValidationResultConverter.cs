@@ -151,10 +151,21 @@ namespace SpatialCheckPro.Services
                     }
                 }
 
-                // 4단계, 5단계: 관계 검수 결과는 RelationErrorsIntegrator에서 별도 처리
-                // (FGDB에서 지오메트리를 직접 추출하여 더 정확한 좌표 저장)
+                // 4단계: 공간관계 검수 결과 변환
+                if (validationResult.RelationCheckResult != null && validationResult.RelationCheckResult.Errors != null && validationResult.RelationCheckResult.Errors.Count > 0)
+                {
+                    _logger.LogDebug("4단계 공간관계 오류 변환 시작: {Count}개", validationResult.RelationCheckResult.Errors.Count);
+                    qcErrors.AddRange(ToQcErrorsFromCheckResult(validationResult.RelationCheckResult, "REL", runId.ToString()));
+                }
 
-                _logger.LogInformation("ValidationResult 변환 완료: {Count}개 QcError 생성", qcErrors.Count);
+                // 5단계: 속성관계 검수 결과 변환
+                if (validationResult.AttributeRelationCheckResult != null && validationResult.AttributeRelationCheckResult.Errors != null && validationResult.AttributeRelationCheckResult.Errors.Count > 0)
+                {
+                    _logger.LogDebug("5단계 속성관계 오류 변환 시작: {Count}개", validationResult.AttributeRelationCheckResult.Errors.Count);
+                    qcErrors.AddRange(ToQcErrorsFromCheckResult(validationResult.AttributeRelationCheckResult, "ATTR_REL", runId.ToString()));
+                }
+
+                _logger.LogInformation("ValidationResult 변환 완료: {Count}개 QcError 생성 (1-5단계 전체)", qcErrors.Count);
                 return qcErrors;
             }
             catch (Exception ex)

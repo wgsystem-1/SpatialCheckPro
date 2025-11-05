@@ -240,6 +240,14 @@ namespace SpatialCheckPro.Models
         }
 
         /// <summary>
+        /// 좌표로부터 Point WKT 생성
+        /// </summary>
+        public static string CreatePointWKT(double x, double y)
+        {
+            return $"POINT ({x:F6} {y:F6})";
+        }
+
+        /// <summary>
         /// GeometryErrorDetail에서 QcError로 변환
         /// </summary>
         public static QcError FromGeometryErrorDetail(GeometryErrorDetail detail, string sourceClass, long sourceOid, string runId)
@@ -256,19 +264,21 @@ namespace SpatialCheckPro.Models
                 RunID = runId,
                 X = detail.X,
                 Y = detail.Y,
-                GeometryWKT = detail.GeometryWkt,
+                // 오류 발생 위치를 Point로 저장 (원본 지오메트리 대신)
+                GeometryWKT = CreatePointWKT(detail.X, detail.Y),
                 ErrorValue = detail.ErrorValue,
                 ThresholdValue = detail.ThresholdValue,
-                GeometryType = DetermineGeometryType(detail.GeometryWkt)
+                GeometryType = "Point"  // 오류 위치는 항상 Point
             };
 
-            // DetailsJSON 생성
+            // DetailsJSON에 원본 지오메트리 정보 포함
             var detailsDict = new Dictionary<string, object>
             {
                 ["ObjectId"] = detail.ObjectId,
                 ["ErrorType"] = detail.ErrorType,
                 ["Location"] = detail.Location,
-                ["DetailMessage"] = detail.DetailMessage
+                ["DetailMessage"] = detail.DetailMessage,
+                ["OriginalGeometryWKT"] = detail.GeometryWkt ?? ""  // 원본 지오메트리는 상세정보에 저장
             };
 
             qcError.DetailsJSON = System.Text.Json.JsonSerializer.Serialize(detailsDict);

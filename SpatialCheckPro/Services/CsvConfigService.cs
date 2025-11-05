@@ -34,10 +34,10 @@ namespace SpatialCheckPro.Services
                 var config = new ValidationConfig();
                 var filePaths = new ConfigFilePaths
                 {
-                    TableCheckFile = System.IO.Path.Combine(configDirectory, "table_check.csv"),
-                    SchemaCheckFile = System.IO.Path.Combine(configDirectory, "schema_check.csv"),
-                    GeometryCheckFile = System.IO.Path.Combine(configDirectory, "geometry_check.csv"),
-                    RelationCheckFile = System.IO.Path.Combine(configDirectory, "relation_check.csv")
+                    TableCheckFile = System.IO.Path.Combine(configDirectory, "1_table_check.csv"),
+                    SchemaCheckFile = System.IO.Path.Combine(configDirectory, "2_schema_check.csv"),
+                    GeometryCheckFile = System.IO.Path.Combine(configDirectory, "3_geometry_check.csv"),
+                    RelationCheckFile = System.IO.Path.Combine(configDirectory, "5_relation_check.csv")
                 };
 
                 config.FilePaths = filePaths;

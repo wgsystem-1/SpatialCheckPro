@@ -11,34 +11,34 @@ namespace SpatialCheckPro.Models.Config
         /// <summary>
         /// 테이블 ID
         /// </summary>
-        [Name("테이블ID")]
+        [Name("TableId")]
         [Required(ErrorMessage = "테이블ID는 필수 입력값입니다.")]
         public string TableId { get; set; } = string.Empty;
 
         /// <summary>
         /// 컬럼명칭 (영문)
         /// </summary>
-        [Name("컬럼명칭")]
+        [Name("FieldName")]
         [Required(ErrorMessage = "컬럼명칭은 필수 입력값입니다.")]
         public string ColumnName { get; set; } = string.Empty;
 
         /// <summary>
         /// 컬럼한글명
         /// </summary>
-        [Name("컬럼한글명")]
+        [Name("FieldAlias")]
         public string ColumnKoreanName { get; set; } = string.Empty;
 
         /// <summary>
         /// 데이터 타입 (INTEGER, TEXT, NUMERIC, CHAR)
         /// </summary>
-        [Name("타입")]
+        [Name("DataType")]
         [Required(ErrorMessage = "타입은 필수 입력값입니다.")]
         public string DataType { get; set; } = string.Empty;
 
         /// <summary>
         /// 컬럼 길이 (문자열 또는 "길이,소수점" 형태)
         /// </summary>
-        [Name("길이")]
+        [Name("Length")]
         public string Length { get; set; } = string.Empty;
 
         /// <summary>

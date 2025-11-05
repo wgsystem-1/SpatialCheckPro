@@ -81,21 +81,40 @@ namespace SpatialCheckPro.Utils
         }
 
         /// <summary>
-        /// NTS ValidationError에서 좌표 추출, 없으면 Envelope 중심 반환
+        /// NTS ValidationError에서 좌표 추출, 없으면 IsSimpleOp의 비단순 위치, 최종 폴백은 Envelope 중심
         /// </summary>
         public static (double X, double Y) GetValidationErrorLocation(NetTopologySuite.Geometries.Geometry ntsGeometry, TopologyValidationError? validationError)
         {
+            // 1) ValidationError 가 좌표를 제공하는 경우
             if (validationError?.Coordinate != null)
             {
                 return (validationError.Coordinate.X, validationError.Coordinate.Y);
             }
-            else if (ntsGeometry != null)
+
+            if (ntsGeometry == null || ntsGeometry.IsEmpty)
+                return (0, 0);
+
+            // 2) 단순성 검사(Self-intersection 등)에서 비단순 위치 추출
+            try
             {
-                var envelope = ntsGeometry.EnvelopeInternal;
-                return (envelope.Centre.X, envelope.Centre.Y);
+                var simpleOp = new NetTopologySuite.Operation.Valid.IsSimpleOp(ntsGeometry);
+                if (!simpleOp.IsSimple)
+                {
+                    var nonSimple = simpleOp.NonSimpleLocation;
+                    if (nonSimple != null)
+                    {
+                        return (nonSimple.X, nonSimple.Y);
+                    }
+                }
+            }
+            catch
+            {
+                // NTS 예외 무시하고 폴백
             }
 
-            return (0, 0);
+            // 3) 최종 폴백: Envelope 중심
+            var env = ntsGeometry.EnvelopeInternal;
+            return ((env.MinX + env.MaxX) / 2.0, (env.MinY + env.MaxY) / 2.0);
         }
 
         /// <summary>

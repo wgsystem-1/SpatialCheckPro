@@ -1,4 +1,4 @@
-﻿테이블ID,컬럼명칭,컬럼한글명,타입,길이,UK,FK,NN,참조테이블,참조컬럼
+﻿TableId,FieldName,FieldAlias,DataType,Length,UK,FK,NN,RefTable,RefColumn
 tn_alpt,objectid,시스템고유아이디,Integer,,,,Y,,
 tn_alpt,ncid,변동정보관리아이디,String,20,Y,,,,
 tn_alpt,nf_id,국가기본도고유식별자아이디,String,17,Y,,,,

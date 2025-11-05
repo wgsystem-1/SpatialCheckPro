@@ -37,15 +37,18 @@ namespace SpatialCheckPro.GUI.Services
         private readonly ILogger<GeometryValidationService> _logger;
         private readonly GdalDataAnalysisService _gdalService;
         private readonly HighPerformanceGeometryValidator _hpValidator;
+        private readonly GeometryCriteria _criteria;
 
         public GeometryValidationService(
             ILogger<GeometryValidationService> logger, 
             GdalDataAnalysisService gdalService,
-            HighPerformanceGeometryValidator hpValidator)
+            HighPerformanceGeometryValidator hpValidator,
+            GeometryCriteria criteria)
         {
             _logger = logger;
             _gdalService = gdalService;
             _hpValidator = hpValidator;
+            _criteria = criteria ?? throw new ArgumentNullException(nameof(criteria));
         }
 
         /// <summary>
@@ -93,16 +96,16 @@ namespace SpatialCheckPro.GUI.Services
                     item.BasicValidationErrorCount = basicErrors.Count;
                     item.ErrorDetails!.AddRange(basicErrors);
 
-                    // 중복/겹침은 고성능 검사기로 위임
+                    // 중복/겹침은 고성능 검사기로 위임 (GeometryCriteria의 허용오차 사용)
                     if (config.ShouldCheckDuplicate)
                     {
-                        var dup = await _hpValidator.CheckDuplicatesHighPerformanceAsync(layer, 0.001);
+                        var dup = await _hpValidator.CheckDuplicatesHighPerformanceAsync(layer, _criteria.DuplicateCheckTolerance);
                         item.DuplicateCount = dup.Count;
                         item.ErrorDetails!.AddRange(dup);
                     }
                     if (config.ShouldCheckOverlap)
                     {
-                        var ov = await _hpValidator.CheckOverlapsHighPerformanceAsync(layer, 0.001);
+                        var ov = await _hpValidator.CheckOverlapsHighPerformanceAsync(layer, _criteria.OverlapTolerance);
                         item.OverlapCount = ov.Count;
                         item.ErrorDetails!.AddRange(ov);
                     }
@@ -370,7 +373,7 @@ namespace SpatialCheckPro.GUI.Services
                                     var p1 = new double[3]; var p2 = new double[3]; var p3 = new double[3];
                                     ring.GetPoint(k, p1); ring.GetPoint(k + 1, p2); ring.GetPoint(k + 2, p3);
                                     double angle = CalculateAngle(p1, p2, p3);
-                                    if (angle < 10.0) // 기본값, 실제 기준은 geometry_criteria.csv에서 로드
+                                    if (angle < _criteria.SpikeAngleThresholdDegrees)
                                     {
                                         // 좌표 및 WKT 보강
                                         geometry.ExportToWkt(out string wkt3);
@@ -490,7 +493,7 @@ namespace SpatialCheckPro.GUI.Services
 
                 if (lines.Count < 2) return details;
 
-                double searchDistance = 0.1; // 실제 기준은 geometry_criteria.csv에서 로드
+                double searchDistance = _criteria.NetworkSearchDistance;
 
                 for (int i = 0; i < lines.Count; i++)
                 {
@@ -656,7 +659,7 @@ namespace SpatialCheckPro.GUI.Services
             }
         }
 
-        private static string? EvaluatePolygonVertexMessage(Geometry geometry)
+        private string? EvaluatePolygonVertexMessage(Geometry geometry)
         {
             return geometry.GetGeometryType() switch
             {
@@ -666,7 +669,7 @@ namespace SpatialCheckPro.GUI.Services
             };
         }
 
-        private static string? EvaluateMultiPolygon(Geometry multiPolygon)
+        private string? EvaluateMultiPolygon(Geometry multiPolygon)
         {
             var polygonCount = multiPolygon.GetGeometryCount();
             if (polygonCount == 0)
@@ -693,7 +696,7 @@ namespace SpatialCheckPro.GUI.Services
             return null;
         }
 
-        private static string? EvaluatePolygonRings(Geometry polygon)
+        private string? EvaluatePolygonRings(Geometry polygon)
         {
             var ringCount = polygon.GetGeometryCount();
             if (ringCount == 0)
@@ -725,9 +728,9 @@ namespace SpatialCheckPro.GUI.Services
             return null;
         }
 
-        private static int GetUniquePointCount(Geometry ring)
+        private int GetUniquePointCount(Geometry ring)
         {
-            var tolerance = RingClosureTolerance;
+            var tolerance = _criteria.RingClosureTolerance;
             var scale = 1.0 / tolerance;
             var unique = new HashSet<(long X, long Y)>();
             var coordinate = new double[3];
@@ -753,13 +756,13 @@ namespace SpatialCheckPro.GUI.Services
             return unique.Count;
         }
 
-        private static bool RingIsClosed(Geometry ring)
+        private bool RingIsClosed(Geometry ring)
         {
             var first = new double[3];
             var last = new double[3];
             ring.GetPoint(0, first);
             ring.GetPoint(ring.GetPointCount() - 1, last);
-            return ArePointsClose(first, last, RingClosureTolerance);
+            return ArePointsClose(first, last, _criteria.RingClosureTolerance);
         }
 
         private static bool ArePointsClose(double[] p1, double[] p2, double tolerance)
@@ -769,8 +772,6 @@ namespace SpatialCheckPro.GUI.Services
             var distanceSquared = (dx * dx) + (dy * dy);
             return distanceSquared <= tolerance * tolerance;
         }
-
-        private const double RingClosureTolerance = 1e-8;
 
         private static string GetObjectId(Feature feature)
         {

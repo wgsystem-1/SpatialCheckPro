@@ -493,6 +493,50 @@
                                     <TextBox x:Name="SelfIntersectionAngleTextBox" Grid.Column="1" Text="1.0" Padding="3" Margin="0,0,5,0"/>
                                     <TextBlock Grid.Column="2" Text="°" VerticalAlignment="Center"/>
                                 </Grid>
+                                
+                                <Grid Margin="0,0,0,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="폴리곤내거리:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBox x:Name="PolygonInPolygonDistanceTextBox" Grid.Column="1" Text="0.1" Padding="3" Margin="0,0,5,0"/>
+                                    <TextBlock Grid.Column="2" Text="m" VerticalAlignment="Center"/>
+                                </Grid>
+                                
+                                <Grid Margin="0,0,0,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="스파이크 각도:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBox x:Name="SpikeAngleTextBox" Grid.Column="1" Text="10.0" Padding="3" Margin="0,0,5,0"/>
+                                    <TextBlock Grid.Column="2" Text="°" VerticalAlignment="Center"/>
+                                </Grid>
+                                
+                                <Grid Margin="0,0,0,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="링 폐합 오차:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBox x:Name="RingClosureToleranceTextBox" Grid.Column="1" Text="1e-8" Padding="3" Margin="0,0,5,0"/>
+                                    <TextBlock Grid.Column="2" Text="m" VerticalAlignment="Center"/>
+                                </Grid>
+                                
+                                <Grid Margin="0,0,0,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="네트워크 거리:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBox x:Name="NetworkSearchDistanceTextBox" Grid.Column="1" Text="0.1" Padding="3" Margin="0,0,5,0"/>
+                                    <TextBlock Grid.Column="2" Text="m" VerticalAlignment="Center"/>
+                                </Grid>
                             </StackPanel>
                         </Grid>
                     </Grid>

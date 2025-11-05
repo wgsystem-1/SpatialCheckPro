@@ -291,12 +291,16 @@ namespace SpatialCheckPro.Processors
                                         TableName = config.TableId,
                                         FeatureId = fid.ToString(),
                                         Severity = Models.Enums.ErrorSeverity.Error,
+                                        X = errorX,
+                                        Y = errorY,
+                                        GeometryWKT = QcError.CreatePointWKT(errorX, errorY),
                                         Metadata =
                                         {
                                             ["X"] = errorX.ToString(),
                                             ["Y"] = errorY.ToString(),
                                             ["GeometryWkt"] = wkt,
-                                            ["ErrorType"] = errorTypeName
+                                            ["ErrorType"] = errorTypeName,
+                                            ["OriginalGeometryWKT"] = wkt
                                         }
                                     });
                                 }
@@ -304,14 +308,58 @@ namespace SpatialCheckPro.Processors
                                 // IsSimple() 검사 (자기교차)
                                 if (!geometryRef.IsSimple())
                                 {
-                                    addError(new ValidationError
+                                    geometryRef.ExportToWkt(out string wkt);
+                                    // 자기교차 지점을 찾기 위해 NTS 사용
+                                    try
                                     {
-                                        ErrorCode = "GEOM_NOT_SIMPLE",
-                                        Message = "자기 교차 오류 (Self-intersection)",
-                                        TableName = config.TableId,
-                                        FeatureId = fid.ToString(),
-                                        Severity = Models.Enums.ErrorSeverity.Error
-                                    });
+                                        var reader = new WKTReader();
+                                        var ntsGeom = reader.Read(wkt);
+                                        var validator = new IsValidOp(ntsGeom);
+                                        var validationError = validator.ValidationError;
+                                        
+                                        double errorX = 0, errorY = 0;
+                                        if (validationError != null)
+                                        {
+                                            (errorX, errorY) = GeometryCoordinateExtractor.GetValidationErrorLocation(ntsGeom, validationError);
+                                        }
+                                        else
+                                        {
+                                            (errorX, errorY) = GeometryCoordinateExtractor.GetEnvelopeCenter(geometryRef);
+                                        }
+
+                                        addError(new ValidationError
+                                        {
+                                            ErrorCode = "GEOM_NOT_SIMPLE",
+                                            Message = "자기 교차 오류 (Self-intersection)",
+                                            TableName = config.TableId,
+                                            FeatureId = fid.ToString(),
+                                            Severity = Models.Enums.ErrorSeverity.Error,
+                                            X = errorX,
+                                            Y = errorY,
+                                            GeometryWKT = QcError.CreatePointWKT(errorX, errorY),
+                                            Metadata =
+                                            {
+                                                ["X"] = errorX.ToString(),
+                                                ["Y"] = errorY.ToString(),
+                                                ["OriginalGeometryWKT"] = wkt
+                                            }
+                                        });
+                                    }
+                                    catch
+                                    {
+                                        var (centerX, centerY) = GeometryCoordinateExtractor.GetEnvelopeCenter(geometryRef);
+                                        addError(new ValidationError
+                                        {
+                                            ErrorCode = "GEOM_NOT_SIMPLE",
+                                            Message = "자기 교차 오류 (Self-intersection)",
+                                            TableName = config.TableId,
+                                            FeatureId = fid.ToString(),
+                                            Severity = Models.Enums.ErrorSeverity.Error,
+                                            X = centerX,
+                                            Y = centerY,
+                                            GeometryWKT = QcError.CreatePointWKT(centerX, centerY)
+                                        });
+                                    }
                                 }
                             }
 
@@ -501,11 +549,15 @@ namespace SpatialCheckPro.Processors
                                                 TableName = config.TableId,
                                                 FeatureId = fid.ToString(),
                                                 Severity = Models.Enums.ErrorSeverity.Warning,
+                                                X = spikeX,
+                                                Y = spikeY,
+                                                GeometryWKT = QcError.CreatePointWKT(spikeX, spikeY),
                                                 Metadata =
                                                 {
                                                     ["X"] = spikeX.ToString(),
                                                     ["Y"] = spikeY.ToString(),
-                                                    ["GeometryWkt"] = wkt
+                                                    ["GeometryWkt"] = wkt,
+                                                    ["OriginalGeometryWKT"] = wkt
                                                 }
                                             });
                                         }
@@ -689,12 +741,16 @@ namespace SpatialCheckPro.Processors
                                 TableName = config.TableId,
                                 FeatureId = fid.ToString(),
                                 Severity = Models.Enums.ErrorSeverity.Error,
+                                X = errorX,
+                                Y = errorY,
+                                GeometryWKT = QcError.CreatePointWKT(errorX, errorY),
                                 Metadata =
                                 {
                                     ["X"] = errorX.ToString(),
                                     ["Y"] = errorY.ToString(),
                                     ["GeometryWkt"] = wkt,
-                                    ["ErrorType"] = errorTypeName
+                                    ["ErrorType"] = errorTypeName,
+                                    ["OriginalGeometryWKT"] = wkt
                                 }
                             });
                         }
@@ -702,14 +758,58 @@ namespace SpatialCheckPro.Processors
                         // IsSimple() 검사 (자기교차)
                         if (!geometry.IsSimple())
                         {
-                            errors.Add(new ValidationError
+                            geometry.ExportToWkt(out string simpleWkt);
+                            // 자기교차 지점을 찾기 위해 NTS 사용
+                            try
                             {
-                                ErrorCode = "GEOM_NOT_SIMPLE",
-                                Message = "자기 교차 오류 (Self-intersection)",
-                                TableName = config.TableId,
-                                FeatureId = fid.ToString(),
-                                Severity = Models.Enums.ErrorSeverity.Error
-                            });
+                                var reader = new WKTReader();
+                                var ntsGeom = reader.Read(simpleWkt);
+                                var validator = new IsValidOp(ntsGeom);
+                                var validationError = validator.ValidationError;
+                                
+                                double errorX = 0, errorY = 0;
+                                if (validationError != null)
+                                {
+                                    (errorX, errorY) = GeometryCoordinateExtractor.GetValidationErrorLocation(ntsGeom, validationError);
+                                }
+                                else
+                                {
+                                    (errorX, errorY) = GeometryCoordinateExtractor.GetEnvelopeCenter(geometry);
+                                }
+
+                                errors.Add(new ValidationError
+                                {
+                                    ErrorCode = "GEOM_NOT_SIMPLE",
+                                    Message = "자기 교차 오류 (Self-intersection)",
+                                    TableName = config.TableId,
+                                    FeatureId = fid.ToString(),
+                                    Severity = Models.Enums.ErrorSeverity.Error,
+                                    X = errorX,
+                                    Y = errorY,
+                                    GeometryWKT = QcError.CreatePointWKT(errorX, errorY),
+                                    Metadata =
+                                    {
+                                        ["X"] = errorX.ToString(),
+                                        ["Y"] = errorY.ToString(),
+                                        ["OriginalGeometryWKT"] = simpleWkt
+                                    }
+                                });
+                            }
+                            catch
+                            {
+                                var (centerX, centerY) = GeometryCoordinateExtractor.GetEnvelopeCenter(geometry);
+                                errors.Add(new ValidationError
+                                {
+                                    ErrorCode = "GEOM_NOT_SIMPLE",
+                                    Message = "자기 교차 오류 (Self-intersection)",
+                                    TableName = config.TableId,
+                                    FeatureId = fid.ToString(),
+                                    Severity = Models.Enums.ErrorSeverity.Error,
+                                    X = centerX,
+                                    Y = centerY,
+                                    GeometryWKT = QcError.CreatePointWKT(centerX, centerY)
+                                });
+                            }
                         }
 
                         if (processedCount % 100 == 0)
@@ -966,11 +1066,15 @@ namespace SpatialCheckPro.Processors
                                     TableName = config.TableId,
                                     FeatureId = fid.ToString(),
                                     Severity = Models.Enums.ErrorSeverity.Warning,
+                                    X = centerX,
+                                    Y = centerY,
+                                    GeometryWKT = QcError.CreatePointWKT(centerX, centerY),
                                     Metadata =
                                     {
                                         ["X"] = centerX.ToString(),
                                         ["Y"] = centerY.ToString(),
-                                        ["GeometryWkt"] = wkt
+                                        ["GeometryWkt"] = wkt,
+                                        ["OriginalGeometryWKT"] = wkt
                                     }
                                 });
                             }
@@ -989,11 +1093,15 @@ namespace SpatialCheckPro.Processors
                                     TableName = config.TableId,
                                     FeatureId = fid.ToString(),
                                     Severity = Models.Enums.ErrorSeverity.Warning,
+                                    X = spikeX,
+                                    Y = spikeY,
+                                    GeometryWKT = QcError.CreatePointWKT(spikeX, spikeY),
                                     Metadata =
                                     {
                                         ["X"] = spikeX.ToString(),
                                         ["Y"] = spikeY.ToString(),
-                                        ["GeometryWkt"] = wkt
+                                        ["GeometryWkt"] = wkt,
+                                        ["OriginalGeometryWKT"] = wkt
                                     }
                                 });
                             }

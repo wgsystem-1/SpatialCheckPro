@@ -22,6 +22,7 @@ namespace SpatialCheckPro.Processors
         private readonly ParallelProcessingManager? _parallelProcessingManager;
         private readonly SpatialCheckPro.Models.Config.PerformanceSettings _performanceSettings;
         private readonly StreamingGeometryProcessor? _streamingProcessor;
+        private readonly SpatialCheckPro.Models.GeometryCriteria _geometryCriteria;
         
         /// <summary>
         /// Union 지오메트리 캐시 (성능 최적화)
@@ -40,11 +41,13 @@ namespace SpatialCheckPro.Processors
         private const int PROGRESS_UPDATE_INTERVAL_MS = 200; // 200ms
 
         public RelationCheckProcessor(ILogger<RelationCheckProcessor> logger, 
+            SpatialCheckPro.Models.GeometryCriteria geometryCriteria,
             ParallelProcessingManager? parallelProcessingManager = null,
             SpatialCheckPro.Models.Config.PerformanceSettings? performanceSettings = null,
             StreamingGeometryProcessor? streamingProcessor = null)
         {
             _logger = logger;
+            _geometryCriteria = geometryCriteria ?? SpatialCheckPro.Models.GeometryCriteria.CreateDefault();
             _parallelProcessingManager = parallelProcessingManager;
             _performanceSettings = performanceSettings ?? new SpatialCheckPro.Models.Config.PerformanceSettings();
             _streamingProcessor = streamingProcessor;
@@ -128,17 +131,17 @@ namespace SpatialCheckPro.Processors
             }
             else if (caseType.Equals("LineWithinPolygon", StringComparison.OrdinalIgnoreCase))
             {
-                var tol = config.Tolerance ?? 0.0;
+                var tol = config.Tolerance ?? _geometryCriteria.LineWithinPolygonTolerance;
                 await Task.Run(() => EvaluateCenterlineInRoadBoundary(ds, FindLayer, overall, tol, fieldFilter, cancellationToken, config), cancellationToken);
             }
             else if (caseType.Equals("PolygonNotWithinPolygon", StringComparison.OrdinalIgnoreCase))
             {
-                var tol = config.Tolerance ?? 0.001;
+                var tol = config.Tolerance ?? _geometryCriteria.PolygonNotWithinPolygonTolerance;
                 await Task.Run(() => EvaluateArrfcMustBeInsideBoundary(ds, FindLayer, overall, fieldFilter, tol, cancellationToken, config), cancellationToken);
             }
             else if (caseType.Equals("LineConnectivity", StringComparison.OrdinalIgnoreCase))
             {
-                var tol = config.Tolerance ?? 1.0; // 기본 1m
+                var tol = config.Tolerance ?? _geometryCriteria.LineConnectivityTolerance;
                 await Task.Run(() => EvaluateLineConnectivity(ds, FindLayer, overall, tol, fieldFilter, cancellationToken, config), cancellationToken);
             }
             else if (caseType.Equals("PolygonMissingLine", StringComparison.OrdinalIgnoreCase))
@@ -185,6 +188,8 @@ namespace SpatialCheckPro.Processors
         {
             result.IsValid = false;
             result.ErrorCount += 1;
+            
+            var (x, y) = ExtractCentroid(geometry);
             result.Errors.Add(new ValidationError
             {
                 ErrorCode = errType,
@@ -194,7 +199,9 @@ namespace SpatialCheckPro.Processors
                 SourceTable = table,
                 SourceObjectId = long.TryParse(objectId, NumberStyles.Any, CultureInfo.InvariantCulture, out var oid) ? oid : null,
                 Severity = Models.Enums.ErrorSeverity.Error,
-                GeometryWKT = ExtractWktFromGeometry(geometry)
+                X = x,
+                Y = y,
+                GeometryWKT = QcError.CreatePointWKT(x, y)
             });
         }
 
@@ -207,6 +214,7 @@ namespace SpatialCheckPro.Processors
             result.ErrorCount += 1;
             
             var fullMessage = string.IsNullOrWhiteSpace(additionalInfo) ? message : $"{message} ({additionalInfo})";
+            var (x, y) = ExtractCentroid(geometry);
             
             result.Errors.Add(new ValidationError
             {
@@ -217,8 +225,62 @@ namespace SpatialCheckPro.Processors
                 SourceTable = table,
                 SourceObjectId = long.TryParse(objectId, NumberStyles.Any, CultureInfo.InvariantCulture, out var oid) ? oid : null,
                 Severity = Models.Enums.ErrorSeverity.Error,
-                GeometryWKT = ExtractWktFromGeometry(geometry)
+                X = x,
+                Y = y,
+                GeometryWKT = QcError.CreatePointWKT(x, y)
             });
+        }
+
+        /// <summary>
+        /// 지오메트리에서 중심점 좌표를 추출합니다
+        /// </summary>
+        private static (double X, double Y) ExtractCentroid(Geometry? geometry)
+        {
+            if (geometry == null)
+                return (0, 0);
+
+            try
+            {
+                var envelope = new Envelope();
+                geometry.GetEnvelope(envelope);
+                return ((envelope.MinX + envelope.MaxX) / 2.0, (envelope.MinY + envelope.MaxY) / 2.0);
+            }
+            catch
+            {
+                return (0, 0);
+            }
+        }
+
+        /// <summary>
+        /// 레이어에서 OID로 Feature를 조회하여 Geometry를 반환합니다
+        /// </summary>
+        private static Geometry? GetGeometryByOID(Layer? layer, long oid)
+        {
+            if (layer == null)
+                return null;
+
+            try
+            {
+                layer.SetAttributeFilter($"OBJECTID = {oid}");
+                layer.ResetReading();
+                var feature = layer.GetNextFeature();
+                layer.SetAttributeFilter(null);
+
+                if (feature != null)
+                {
+                    using (feature)
+                    {
+                        var geometry = feature.GetGeometryRef();
+                        return geometry?.Clone();
+                    }
+                }
+            }
+            catch
+            {
+                layer.SetAttributeFilter(null);
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -340,17 +402,21 @@ namespace SpatialCheckPro.Processors
             
             foreach (var bldOid in buildingsWithoutPoints)
             {
+                var geometry = GetGeometryByOID(buld, bldOid);
                 AddError(result, "REL_BULD_CTPT_MISSING", 
                     "건물 내 건물중심점이 없습니다", 
-                    config.MainTableId, bldOid.ToString(CultureInfo.InvariantCulture));
+                    config.MainTableId, bldOid.ToString(CultureInfo.InvariantCulture), geometry);
+                geometry?.Dispose();
             }
             
             // 4단계: 건물 밖 점 오류 추가
             foreach (var ptOid in pointsOutsideBuildings)
             {
+                var geometry = GetGeometryByOID(ctpt, ptOid);
                 AddError(result, "REL_CTPT_OUTSIDE_BULD", 
                     "건물 외부에 건물중심점이 존재합니다", 
-                    config.RelatedTableId, ptOid.ToString(CultureInfo.InvariantCulture));
+                    config.RelatedTableId, ptOid.ToString(CultureInfo.InvariantCulture), geometry);
+                geometry?.Dispose();
             }
             
             var elapsed = (DateTime.Now - startTime).TotalSeconds;
@@ -464,7 +530,7 @@ namespace SpatialCheckPro.Processors
                         AddDetailedError(result, "REL_CTLN_OUTSIDE_BNDRY", 
                             "도로중심선이 도로경계면을 허용오차를 초과하여 벗어났습니다", 
                             config.RelatedTableId, oid, 
-                            $"ROAD_SE={roadSe}, 허용오차={tolerance}m");
+                            $"ROAD_SE={roadSe}, 허용오차={tolerance}m", lg);
                     }
                     else
                     {
@@ -565,7 +631,7 @@ namespace SpatialCheckPro.Processors
                         AddDetailedError(result, "REL_ARRFC_VERTEX_MISMATCH", 
                             $"면형도로시설의 버텍스가 도로경계면의 버텍스와 일치하지 않습니다", 
                             config.MainTableId, oid, 
-                            $"PG_RDFC_SE={code}, 허용오차={tolerance}m");
+                            $"PG_RDFC_SE={code}, 허용오차={tolerance}m", pg);
                     }
                 }
             }
@@ -696,9 +762,15 @@ namespace SpatialCheckPro.Processors
         /// <summary>
         /// 폴리곤의 모든 버텍스와 엣지가 경계면 위에 정확히 있는지 검증 (구버전)
         /// </summary>
-        private bool IsPolygonStrictlyOnBoundary(Geometry polygon, Geometry boundary, double tolerance = 0.001)
+        /// <remarks>
+        /// 현재 미사용 메서드이나 향후 사용을 대비하여 tolerance 기본값을 GeometryCriteria에서 가져오도록 수정
+        /// </remarks>
+        private bool IsPolygonStrictlyOnBoundary(Geometry polygon, Geometry boundary, double? tolerance = null)
         {
             // 유지: 다른 케이스에서 사용할 수 있으니 남겨두되, 현재 Case3에서는 사용하지 않음
+            // tolerance가 지정되지 않으면 GeometryCriteria의 PolygonNotWithinPolygonTolerance 사용
+            var actualTolerance = tolerance ?? _geometryCriteria.PolygonNotWithinPolygonTolerance;
+            
             var exteriorRing = polygon.GetBoundary();
             if (exteriorRing == null) return false;
 
@@ -710,7 +782,7 @@ namespace SpatialCheckPro.Processors
                 using var point = new Geometry(wkbGeometryType.wkbPoint);
                 point.AddPoint(x, y, 0);
                 var distance = point.Distance(boundary);
-                if (distance > tolerance) return false;
+                if (distance > actualTolerance) return false;
             }
 
             return true;
@@ -1308,7 +1380,7 @@ namespace SpatialCheckPro.Processors
                     {
                         AddDetailedError(result, "REL_CTLN_END_SHORT", 
                             $"도로중심선 끝점이 {tolerance}m 이내 타 선과 근접하나 스냅되지 않음(엔더숏)", 
-                            config.MainTableId, oid.ToString(CultureInfo.InvariantCulture));
+                            config.MainTableId, oid.ToString(CultureInfo.InvariantCulture), "", segment.Geom);
                     }
                     else
                     {
@@ -1317,7 +1389,7 @@ namespace SpatialCheckPro.Processors
                             : ((startNearAnyLine && !startConnected) ? "시작점" : "끝점");
                         AddDetailedError(result, "REL_CTLN_DANGLING", 
                             $"도로중심선 {which}이(가) {tolerance}m 이내 타 선과 근접하나 연결되지 않음", 
-                            config.MainTableId, oid.ToString(CultureInfo.InvariantCulture));
+                            config.MainTableId, oid.ToString(CultureInfo.InvariantCulture), "", segment.Geom);
                     }
                 }
             }
@@ -1366,7 +1438,7 @@ namespace SpatialCheckPro.Processors
                     if (!hasAny)
                     {
                         var oid = bf.GetFID().ToString(CultureInfo.InvariantCulture);
-                        AddDetailedError(result, "REL_BNDRY_CENTERLINE_MISSING", "도로경계면에 도로중심선이 누락됨", config.MainTableId, oid);
+                        AddDetailedError(result, "REL_BNDRY_CENTERLINE_MISSING", "도로경계면에 도로중심선이 누락됨", config.MainTableId, oid, "", bg);
                     }
                 }
             }
@@ -1426,7 +1498,7 @@ namespace SpatialCheckPro.Processors
                     if (overlapped)
                     {
                         var oid = fa.GetFID().ToString(CultureInfo.InvariantCulture);
-                        AddDetailedError(result, "REL_BULD_OVERLAP", $"{config.MainTableName}(이)가 {config.RelatedTableName}(을)를 침범함", config.MainTableId, oid);
+                        AddDetailedError(result, "REL_BULD_OVERLAP", $"{config.MainTableName}(이)가 {config.RelatedTableName}(을)를 침범함", config.MainTableId, oid, "", ga);
                     }
                 }
             }
@@ -1474,7 +1546,7 @@ namespace SpatialCheckPro.Processors
                     if (hasCross)
                     {
                         var oid = bf.GetFID().ToString(CultureInfo.InvariantCulture);
-                        AddDetailedError(result, "REL_BULD_INTERSECT_LINE", $"{config.MainTableName}(이)가 {config.RelatedTableName}(을)를 침범함", config.MainTableId, oid);
+                        AddDetailedError(result, "REL_BULD_INTERSECT_LINE", $"{config.MainTableName}(이)가 {config.RelatedTableName}(을)를 침범함", config.MainTableId, oid, "", pg);
                     }
                 }
             }
@@ -1512,7 +1584,7 @@ namespace SpatialCheckPro.Processors
                     if (hasInside)
                     {
                         var oid = pf.GetFID().ToString(CultureInfo.InvariantCulture);
-                        AddDetailedError(result, "REL_POLY_CONTAIN_POINT", $"{config.MainTableName}(이) {config.RelatedTableName}을 포함함", config.MainTableId, oid);
+                        AddDetailedError(result, "REL_POLY_CONTAIN_POINT", $"{config.MainTableName}(이) {config.RelatedTableName}을 포함함", config.MainTableId, oid, "", pg);
                     }
                 }
             }

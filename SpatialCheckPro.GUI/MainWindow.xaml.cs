@@ -93,6 +93,8 @@ namespace SpatialCheckPro.GUI
             
             try
             {
+                File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 어셈블리 정보 로드 시작\n");
+                
                 // 어셈블리 정보의 InformationalVersion에 포함된 빌드 시각을 표시
                 try
                 {
@@ -103,41 +105,54 @@ namespace SpatialCheckPro.GUI
                     {
                         info = ((System.Reflection.AssemblyInformationalVersionAttribute)attrs[0]).InformationalVersion;
                     }
-                    if (!string.IsNullOrWhiteSpace(info))
+                    if (!string.IsNullOrWhiteSpace(info) && VersionText != null)
                     {
                         VersionText.Text = info;
                     }
+                    File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 어셈블리 정보 로드 완료\n");
                 }
-                catch { /* 빌드 정보가 없을 경우 무시 */ }
+                catch (Exception ex)
+                {
+                    File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 어셈블리 정보 로드 실패: {ex.Message}\n");
+                }
 
                 _logger?.LogInformation("DI를 통한 서비스 초기화 완료");
                 File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] DI 서비스 초기화 성공\n");
                 
+                File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 타이머 시작\n");
                 _timer = new DispatcherTimer();
                 _timer.Interval = TimeSpan.FromSeconds(1);
                 _timer.Tick += Timer_Tick;
                 _timer.Start();
                 
+                File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] ValidationSettingsView 초기화 시작\n");
                 // ValidationSettingsView 이벤트 구독
                 InitializeValidationSettingsView();
                 
+                File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 기본 설정 파일 경로 초기화 시작\n");
                 // 기본 설정 파일 경로 설정
                 InitializeDefaultConfigPaths();
                 
+                File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 상태 업데이트 시작\n");
                 UpdateStatus("국가기본도 DB 검수 시스템이 시작되었습니다.");
 
+                File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] ValidationSettingsViewModel 생성 시작\n");
                 _validationSettingsViewModel = new ValidationSettingsViewModel();
                 // ValidationSettingsView가 아직 로드되지 않았을 수 있으므로 안전하게 처리
                 if (_validationSettingsView != null)
                 {
+                    File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] ValidationSettingsView DataContext 설정\n");
                     // 즉시 바인딩 가능 시 바로 적용
                     _validationSettingsView.DataContext = _validationSettingsViewModel;
                 }
                 else
                 {
+                    File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] Loaded 이벤트에 핸들러 등록\n");
                     // 로드 이후에 뷰를 찾아 데이터컨텍스트를 설정 (1회성)
                     this.Loaded += MainWindow_SetSettingsDataContextOnceOnLoaded;
                 }
+                
+                File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] MainWindow 생성자 완료\n");
             }
             catch (Exception ex)
             {

@@ -27,10 +27,13 @@ namespace SpatialCheckPro.Services
         /// </summary>
         /// <param name="layerName">레이어 이름</param>
         /// <param name="layer">GDAL 레이어</param>
-        /// <param name="tolerance">검색 허용 오차</param>
+        /// <param name="tolerance">검색 허용 오차 (기본값: 0.001)</param>
         /// <param name="timeoutMinutes">타임아웃(분), 0이면 무제한</param>
         /// <param name="validationErrors">사전 검증 오류를 수집할 리스트</param>
         /// <returns>공간 인덱스</returns>
+        /// <remarks>
+        /// tolerance 기본값은 GeometryCriteria.DuplicateCheckTolerance와 동일하게 설정됨
+        /// </remarks>
         public SpatialIndex CreateSpatialIndex(string layerName, Layer layer, double tolerance = 0.001, int timeoutMinutes = 5, List<Models.ValidationError> validationErrors = null)
         {
             try

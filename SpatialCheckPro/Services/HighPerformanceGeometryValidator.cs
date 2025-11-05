@@ -19,6 +19,7 @@ namespace SpatialCheckPro.Services
         private readonly MemoryOptimizationService _memoryOptimization;
         private readonly ParallelProcessingManager _parallelProcessingManager;
         private readonly Models.Config.PerformanceSettings _settings;
+        private readonly GeometryCriteria _criteria;
 
         // Phase 2 Item #5: 공간 인덱스 캐싱 (중복 생성 방지)
         // 예상 효과: 인덱스 구축 시간 3-5초 절약, 메모리 효율 20% 향상
@@ -29,13 +30,15 @@ namespace SpatialCheckPro.Services
             SpatialIndexService spatialIndexService,
             MemoryOptimizationService memoryOptimization,
             ParallelProcessingManager parallelProcessingManager,
-            Models.Config.PerformanceSettings settings)
+            Models.Config.PerformanceSettings settings,
+            GeometryCriteria criteria)
         {
             _logger = logger;
             _spatialIndexService = spatialIndexService;
             _memoryOptimization = memoryOptimization;
             _parallelProcessingManager = parallelProcessingManager;
             _settings = settings;
+            _criteria = criteria ?? throw new ArgumentNullException(nameof(criteria));
         }
 
         /// <summary>
@@ -431,13 +434,13 @@ namespace SpatialCheckPro.Services
                 
                 if (config.ShouldCheckDuplicate)
                 {
-                    var duplicateErrors = await CheckDuplicatesHighPerformanceAsync(layer, 0.001);
+                    var duplicateErrors = await CheckDuplicatesHighPerformanceAsync(layer, _criteria.DuplicateCheckTolerance);
                     batchErrors.AddRange(duplicateErrors);
                 }
 
                 if (config.ShouldCheckOverlap)
                 {
-                    var overlapErrors = await CheckOverlapsHighPerformanceAsync(layer, 0.001);
+                    var overlapErrors = await CheckOverlapsHighPerformanceAsync(layer, _criteria.OverlapTolerance);
                     batchErrors.AddRange(overlapErrors);
                 }
 

@@ -396,6 +396,7 @@ namespace SpatialCheckPro.Services
             var fields = new[]
             {
                 new { Name = "ErrCode", Type = FieldType.OFTString, Width = 32 },
+                new { Name = "SourceClass", Type = FieldType.OFTString, Width = 128 },
                 new { Name = "TableId", Type = FieldType.OFTString, Width = 128 },
                 new { Name = "TableName", Type = FieldType.OFTString, Width = 128 },
                 new { Name = "SourceOID", Type = FieldType.OFTInteger, Width = 0 },

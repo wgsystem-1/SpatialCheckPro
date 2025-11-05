@@ -101,13 +101,13 @@ namespace SpatialCheckPro.Services
                 html.AppendLine("    <h2>1단계: 테이블 검수 결과</h2>");
                 html.AppendLine("    <table>");
                 html.AppendLine("        <tr>");
-                html.AppendLine("            <th>테이블ID</th>");
-                html.AppendLine("            <th>테이블명</th>");
-                html.AppendLine("            <th>실제FeatureClass명</th>");
-                html.AppendLine("            <th>피처타입</th>");
-                html.AppendLine("            <th>실제피처타입</th>");
-                html.AppendLine("            <th>피처객체수</th>");
-                html.AppendLine("            <th>피처타입확인</th>");
+                html.AppendLine("            <th>Table Id</th>");
+                html.AppendLine("            <th>Table Name</th>");
+                html.AppendLine("            <th>Actual FeatureClass</th>");
+                html.AppendLine("            <th>Expected Feature Type</th>");
+                html.AppendLine("            <th>Actual Feature Type</th>");
+                html.AppendLine("            <th>Feature Count</th>");
+                html.AppendLine("            <th>Type Match</th>");
                 html.AppendLine("        </tr>");
                 
                 foreach (var tableResult in result.TableCheckResult.TableResults)
@@ -134,15 +134,15 @@ namespace SpatialCheckPro.Services
                 html.AppendLine("    <h3>기본 스키마 검수</h3>");
                 html.AppendLine("    <table>");
                 html.AppendLine("        <tr>");
-                html.AppendLine("            <th>테이블ID</th>");
-                html.AppendLine("            <th>컬럼명</th>");
-                html.AppendLine("            <th>컬럼한글명</th>");
-                html.AppendLine("            <th>예상타입</th>");
-                html.AppendLine("            <th>실제타입</th>");
-                html.AppendLine("            <th>예상길이</th>");
-                html.AppendLine("            <th>실제길이</th>");
-                html.AppendLine("            <th>NN일치</th>");
-                html.AppendLine("            <th>검수결과</th>");
+                html.AppendLine("            <th>Table Id</th>");
+                html.AppendLine("            <th>Field Name</th>");
+                html.AppendLine("            <th>Field Alias</th>");
+                html.AppendLine("            <th>Expected Type</th>");
+                html.AppendLine("            <th>Actual Type</th>");
+                html.AppendLine("            <th>Expected Length</th>");
+                html.AppendLine("            <th>Actual Length</th>");
+                html.AppendLine("            <th>NN Match</th>");
+                html.AppendLine("            <th>Result</th>");
                 html.AppendLine("        </tr>");
                 
                 foreach (var schemaResult in result.SchemaCheckResult.SchemaResults)
@@ -173,12 +173,12 @@ namespace SpatialCheckPro.Services
                     html.AppendLine("    <h3>OBJECTID 및 PK/UK 검수 결과</h3>");
                     html.AppendLine("    <table>");
                     html.AppendLine("        <tr>");
-                    html.AppendLine("            <th>테이블ID</th>");
-                    html.AppendLine("            <th>컬럼명</th>");
-                    html.AppendLine("            <th>컬럼한글명</th>");
-                    html.AppendLine("            <th>OBJECTID처리</th>");
-                    html.AppendLine("            <th>PK/UK 중복검사</th>");
-                    html.AppendLine("            <th>중복값 예시</th>");
+                    html.AppendLine("            <th>Table Id</th>");
+                    html.AppendLine("            <th>Field Name</th>");
+                    html.AppendLine("            <th>Field Alias</th>");
+                    html.AppendLine("            <th>OBJECTID Handling</th>");
+                    html.AppendLine("            <th>PK/UK Duplicate Check</th>");
+                    html.AppendLine("            <th>Duplicate Samples</th>");
                     html.AppendLine("            <th>PK</th>");
                     html.AppendLine("            <th>UK</th>");
                     html.AppendLine("            <th>FK</th>");

@@ -193,6 +193,8 @@ namespace SpatialCheckPro.Services
                     Severity = string.Empty,
                     Status = string.Empty,
                     RuleId = $"TABLE_CHECK_{tableResult.TableId}",
+                    TableId = tableResult.TableId ?? string.Empty,
+                    TableName = tableResult.TableName ?? tableResult.TableId ?? "Unknown",
                     SourceClass = tableResult.TableName ?? "Unknown",
                     SourceOID = 0, // 테이블 검수는 특정 객체 없음
                     SourceGlobalID = null,
@@ -235,6 +237,8 @@ namespace SpatialCheckPro.Services
                     Severity = QcSeverity.MAJOR.ToString(),
                     Status = QcStatus.OPEN.ToString(),
                     RuleId = $"SCHEMA_CHECK_{schemaResult.TableId}_{schemaResult.ColumnName}",
+                    TableId = schemaResult.TableId ?? string.Empty,
+                    TableName = schemaResult.TableId ?? string.Empty,
                     SourceClass = schemaResult.TableId ?? "Unknown",
                     SourceOID = 0, // 스키마 검수는 특정 객체 없음
                     SourceGlobalID = null,

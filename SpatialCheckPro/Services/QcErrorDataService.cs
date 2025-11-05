@@ -294,11 +294,19 @@ namespace SpatialCheckPro.Services
                         var featureDefn = layer.GetLayerDefn();
                         var feature = new Feature(featureDefn);
 
-                        // 필수 필드만 설정 (단순화된 스키마)
+                        // 필수 필드 설정
                         feature.SetField("ErrCode", qcError.ErrCode);
                         feature.SetField("SourceClass", qcError.SourceClass);
                         feature.SetField("SourceOID", (int)qcError.SourceOID);
                         feature.SetField("Message", qcError.Message);
+
+                        // NoGeom 레이어라면 TableId/TableName도 함께 기록
+                        if (string.Equals(layerName, "QC_Errors_NoGeom", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var tableId = string.IsNullOrWhiteSpace(qcError.TableId) ? qcError.SourceClass : qcError.TableId;
+                            feature.SetField("TableId", tableId);
+                            feature.SetField("TableName", qcError.TableName ?? string.Empty);
+                        }
 
                         // 포인트 지오메트리가 준비된 경우에만 지오메트리 설정
                         if (pointGeometryCandidate != null)
@@ -558,6 +566,13 @@ namespace SpatialCheckPro.Services
                             feature.SetField("SourceOID", (int)qcError.SourceOID);
                             feature.SetField("Message", qcError.Message);
 
+                            if (string.Equals(targetLayer.GetName(), "QC_Errors_NoGeom", StringComparison.OrdinalIgnoreCase))
+                            {
+                                var tableId = string.IsNullOrWhiteSpace(qcError.TableId) ? qcError.SourceClass : qcError.TableId;
+                                feature.SetField("TableId", tableId);
+                                feature.SetField("TableName", qcError.TableName ?? string.Empty);
+                            }
+
                             if (pointGeometry != null)
                             {
                                 // 좌표 확인 로그 (디버그)
@@ -685,6 +700,17 @@ namespace SpatialCheckPro.Services
                 fieldDefn.SetWidth(128);
                 layer.CreateField(fieldDefn, 1);
                 
+                if (layerName.Equals("QC_Errors_NoGeom", StringComparison.OrdinalIgnoreCase))
+                {
+                    var tableIdField = new FieldDefn("TableId", FieldType.OFTString);
+                    tableIdField.SetWidth(128);
+                    layer.CreateField(tableIdField, 1);
+
+                    var tableNameField = new FieldDefn("TableName", FieldType.OFTString);
+                    tableNameField.SetWidth(128);
+                    layer.CreateField(tableNameField, 1);
+                }
+
                 fieldDefn = new FieldDefn("SourceOID", FieldType.OFTInteger);
                 layer.CreateField(fieldDefn, 1);
                 
@@ -764,6 +790,8 @@ namespace SpatialCheckPro.Services
                                     Severity = feature.GetFieldAsString("Severity"),
                                     Status = feature.GetFieldAsString("Status"),
                                     RuleId = feature.GetFieldAsString("RuleId"),
+                                    TableId = feature.GetFieldAsString("TableId"),
+                                    TableName = feature.GetFieldAsString("TableName"),
                                     SourceClass = feature.GetFieldAsString("SourceClass"),
                                     SourceOID = feature.GetFieldAsInteger("SourceOID"),
                                     SourceGlobalID = feature.GetFieldAsString("SourceGlobalID"),

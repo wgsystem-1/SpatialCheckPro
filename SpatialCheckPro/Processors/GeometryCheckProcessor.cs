@@ -1174,23 +1174,27 @@ namespace SpatialCheckPro.Processors
 
             try
             {
-                // MultiGeometry 처리
-                int geomCount = geometry.GetGeometryCount();
-                if (geomCount > 0)
+                // 지오메트리 타입 평탄화 (25D 등 변형 타입 대응)
+                var flattened = wkbFlatten(geometry.GetGeometryType());
+
+                // 멀티폴리곤: 각 폴리곤의 모든 링 검사
+                if (flattened == wkbGeometryType.wkbMultiPolygon)
                 {
-                    for (int g = 0; g < geomCount; g++)
+                    var polyCount = geometry.GetGeometryCount();
+                    for (int p = 0; p < polyCount; p++)
                     {
-                        var part = geometry.GetGeometryRef(g);
-                        if (part != null && CheckSpikeInSingleGeometry(part, out message, out spikeX, out spikeY))
+                        var polygon = geometry.GetGeometryRef(p);
+                        if (polygon == null) continue;
+                        if (CheckSpikeInSingleGeometry(polygon, out message, out spikeX, out spikeY))
                         {
                             return true;
                         }
                     }
+                    return false;
                 }
-                else
-                {
-                    return CheckSpikeInSingleGeometry(geometry, out message, out spikeX, out spikeY);
-                }
+
+                // 폴리곤 또는 기타: 단일 지오메트리 경로
+                return CheckSpikeInSingleGeometry(geometry, out message, out spikeX, out spikeY);
             }
             catch (Exception ex)
             {
@@ -1202,37 +1206,121 @@ namespace SpatialCheckPro.Processors
 
         /// <summary>
         /// 단일 지오메트리에서 스파이크 검사
+        /// - 폴리곤: 모든 링(외곽/홀)에 대해 순환 인덱싱으로 각도 검사
+        /// - 링/라인스트링: 순환 인덱싱으로 각도 검사
         /// </summary>
         private bool CheckSpikeInSingleGeometry(Geometry geometry, out string message, out double spikeX, out double spikeY)
         {
             message = string.Empty;
             spikeX = 0;
             spikeY = 0;
-            var pointCount = geometry.GetPointCount();
-            
-            if (pointCount < 3) return false;
 
-            // CSV에서 로드한 임계값 사용
-            var threshold = _criteria.SpikeAngleThreshold; // 기본: 10도
+            var flattened = wkbFlatten(geometry.GetGeometryType());
 
-            for (int i = 1; i < pointCount - 1; i++)
+            // CSV에서 로드한 임계값 사용 (도)
+            var threshold = _criteria.SpikeAngleThresholdDegrees > 0 ? _criteria.SpikeAngleThresholdDegrees : 10.0;
+
+            // 폴리곤: 각 링 검사
+            if (flattened == wkbGeometryType.wkbPolygon)
             {
-                var x1 = geometry.GetX(i - 1);
-                var y1 = geometry.GetY(i - 1);
-                var x2 = geometry.GetX(i);
-                var y2 = geometry.GetY(i);
-                var x3 = geometry.GetX(i + 1);
-                var y3 = geometry.GetY(i + 1);
+                var ringCount = geometry.GetGeometryCount();
+                for (int r = 0; r < ringCount; r++)
+                {
+                    var ring = geometry.GetGeometryRef(r);
+                    if (ring == null) continue;
+                    if (CheckSpikeInLinearRing(ring, threshold, out message, out spikeX, out spikeY))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            // 링 또는 라인스트링: 직접 검사
+            if (flattened == wkbGeometryType.wkbLinearRing || flattened == wkbGeometryType.wkbLineString)
+            {
+                return CheckSpikeInLinearRing(geometry, threshold, out message, out spikeX, out spikeY);
+            }
+
+            // 멀티폴리곤은 HasSpike에서 처리, 그 외는 없음
+            // 단일 멀티라인/멀티포인트는 스파이크 대상 아님
+            return false;
+        }
+
+        /// <summary>
+        /// LinearRing/LineString에서 스파이크 검사 (폐합 고려 순환 인덱싱)
+        /// </summary>
+        private bool CheckSpikeInLinearRing(Geometry ring, double thresholdDeg, out string message, out double spikeX, out double spikeY)
+        {
+            message = string.Empty;
+            spikeX = 0;
+            spikeY = 0;
+
+            var n = ring.GetPointCount();
+            if (n < 3) return false;
+
+            // 폐합 여부 확인 (첫점=마지막점)
+            var firstX = ring.GetX(0);
+            var firstY = ring.GetY(0);
+            var lastX = ring.GetX(n - 1);
+            var lastY = ring.GetY(n - 1);
+            var closed = (Math.Abs(firstX - lastX) < 1e-9) && (Math.Abs(firstY - lastY) < 1e-9);
+
+            // 중복 마지막점을 제외한 유효 정점 수
+            var count = closed ? n - 1 : n;
+            if (count < 3) return false;
+
+            // 완화형 후보(스파이크 유사) 추적: 최소 각도 및 높이 조건
+            double bestAngle = double.MaxValue;
+            int bestIndex = -1;
+            double bestHeight = 0;
+
+            // 보조 임계값: 각도 완화 상한과 최소 높이(좌표계 단위)
+            double fallbackAngleMax = 80.0; // 완화 기준: 80도 이내면 후보
+            double minHeight = Math.Max(_criteria.MinLineLength * 0.2, 0.05); // 데이터 스케일 따라 조정
+
+            for (int i = 0; i < count; i++)
+            {
+                int prev = (i - 1 + count) % count;
+                int next = (i + 1) % count;
+
+                var x1 = ring.GetX(prev);
+                var y1 = ring.GetY(prev);
+                var x2 = ring.GetX(i);
+                var y2 = ring.GetY(i);
+                var x3 = ring.GetX(next);
+                var y3 = ring.GetY(next);
 
                 var angle = CalculateAngle(x1, y1, x2, y2, x3, y3);
 
-                if (angle < threshold)
+                if (angle < thresholdDeg)
                 {
-                    message = $"스파이크 검출: 정점 {i}번 각도 {angle:F1}도 (임계값: {threshold}도)";
+                    message = $"스파이크 검출: 정점 {i}번 각도 {angle:F1}도 (임계값: {thresholdDeg}도)";
                     spikeX = x2;
                     spikeY = y2;
                     return true;
                 }
+
+                // 완화형 후보 갱신 (최소 각도/충분한 높이)
+                if (angle < bestAngle)
+                {
+                    // 점-선분 거리(높이) 계산
+                    var height = DistancePointToSegment(x2, y2, x1, y1, x3, y3);
+                    bestAngle = angle;
+                    bestIndex = i;
+                    bestHeight = height;
+                }
+            }
+
+            // 강한 기준에서 검출 못했으면, 완화 기준으로라도 가장 뾰족한 정점을 반환(표시 목적)
+            if (bestIndex >= 0 && bestAngle <= fallbackAngleMax && bestHeight >= minHeight)
+            {
+                var bx = ring.GetX(bestIndex);
+                var by = ring.GetY(bestIndex);
+                message = $"스파이크(완화기준) 후보: 정점 {bestIndex}번 각도 {bestAngle:F1}도, 높이 {bestHeight:F2}";
+                spikeX = bx;
+                spikeY = by;
+                return true;
             }
 
             return false;
@@ -1259,6 +1347,30 @@ namespace SpatialCheckPro.Processors
 
             var angleRadians = Math.Acos(cosAngle);
             return angleRadians * 180.0 / Math.PI;
+        }
+
+        /// <summary>
+        /// 점과 선분 사이의 최소 거리(좌표계 단위)
+        /// </summary>
+        private static double DistancePointToSegment(double px, double py, double x1, double y1, double x2, double y2)
+        {
+            var vx = x2 - x1;
+            var vy = y2 - y1;
+            var wx = px - x1;
+            var wy = py - y1;
+
+            var c1 = vx * wx + vy * wy;
+            if (c1 <= 0) return Math.Sqrt((px - x1) * (px - x1) + (py - y1) * (py - y1));
+
+            var c2 = vx * vx + vy * vy;
+            if (c2 <= 0) return Math.Sqrt((px - x1) * (px - x1) + (py - y1) * (py - y1));
+
+            var t = c1 / c2;
+            var projX = x1 + t * vx;
+            var projY = y1 + t * vy;
+            var dx = px - projX;
+            var dy = py - projY;
+            return Math.Sqrt(dx * dx + dy * dy);
         }
 
         /// <summary>

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SpatialCheckPro.GUI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+36139417c109f4e6119df5c86946845ea85c6962")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+215cd1fd180a7a53df37f77e7e307329a2ed127f")]
 [assembly: System.Reflection.AssemblyProductAttribute("SpatialCheckPro.GUI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("국가기본도 DB 검수 시스템")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

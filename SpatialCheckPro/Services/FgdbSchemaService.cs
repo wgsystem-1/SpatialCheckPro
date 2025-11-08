@@ -91,8 +91,9 @@ namespace SpatialCheckPro.Services
         /// QC_ERRORS 스키마를 자동 생성합니다 (멱등성 보장)
         /// </summary>
         /// <param name="gdbPath">File Geodatabase 경로</param>
+        /// <param name="sourceGdbPath">원본 FGDB 경로(좌표계 복제용, 선택)</param>
         /// <returns>생성 성공 여부</returns>
-        public async Task<bool> CreateQcErrorsSchemaAsync(string gdbPath)
+        public async Task<bool> CreateQcErrorsSchemaAsync(string gdbPath, string? sourceGdbPath = null)
         {
             try
             {
@@ -167,10 +168,8 @@ namespace SpatialCheckPro.Services
                 }
                 _logger.LogDebug("FileGDB 데이터소스 준비 완료");
 
-                // 공간 참조 시스템 생성 (EPSG:5179)
-                _logger.LogDebug("공간 참조 시스템 생성 중 (EPSG:5179)...");
-                var spatialRef = new SpatialReference(null);
-                spatialRef.ImportFromEPSG(5179);
+                // 공간 참조 시스템 생성: 원본 FGDB 좌표계 우선, 실패 시 EPSG:5179 폴백
+                var spatialRef = TryResolveSpatialRefFromSource(sourceGdbPath) ?? CreateDefaultSpatialRef();
 
                 // QC_Runs 테이블 생성
                 _logger.LogDebug("QC_Runs 테이블 생성 중...");
@@ -229,6 +228,69 @@ namespace SpatialCheckPro.Services
                 
                 return false;
             }
+        }
+
+        /// <summary>
+        /// 원본 GDB에서 좌표계를 읽어 SpatialReference를 생성합니다
+        /// </summary>
+        private SpatialReference? TryResolveSpatialRefFromSource(string? sourceGdbPath)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(sourceGdbPath))
+                {
+                    _logger.LogDebug("원본 GDB 경로가 지정되지 않아 기본 좌표계를 사용합니다.");
+                    return null;
+                }
+
+                var driver = GetFileGdbDriverSafely();
+                if (driver == null)
+                {
+                    _logger.LogWarning("원본 GDB 좌표계 확인 실패: FileGDB 드라이버 없음");
+                    return null;
+                }
+
+                using var ds = driver.Open(sourceGdbPath, 0);
+                if (ds == null)
+                {
+                    _logger.LogWarning("원본 GDB를 열 수 없어 기본 좌표계를 사용합니다: {Path}", sourceGdbPath);
+                    return null;
+                }
+
+                for (int i = 0; i < ds.GetLayerCount(); i++)
+                {
+                    var layer = ds.GetLayerByIndex(i);
+                    if (layer == null) continue;
+                    var srs = layer.GetSpatialRef();
+                    if (srs != null)
+                    {
+                        srs.ExportToWkt(out string wkt, null);
+                        var spatialRef = new SpatialReference(null);
+                        spatialRef.ImportFromWkt(ref wkt);
+                        _logger.LogInformation("원본 GDB 좌표계를 사용합니다 (레이어: {LayerName})", layer.GetName());
+                        return spatialRef;
+                    }
+                }
+
+                _logger.LogWarning("원본 GDB에서 좌표계를 찾지 못했습니다. 기본 좌표계를 사용합니다.");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "원본 GDB 좌표계 확인 중 오류 - 기본 좌표계를 사용합니다.");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 기본 SpatialReference(EPSG:5179)를 생성합니다
+        /// </summary>
+        private SpatialReference CreateDefaultSpatialRef()
+        {
+            _logger.LogInformation("기본 좌표계(EPSG:5179)를 사용합니다.");
+            var spatialRef = new SpatialReference(null);
+            spatialRef.ImportFromEPSG(5179);
+            return spatialRef;
         }
 
         /// <summary>

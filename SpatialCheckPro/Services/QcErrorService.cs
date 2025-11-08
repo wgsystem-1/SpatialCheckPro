@@ -54,8 +54,8 @@ namespace SpatialCheckPro.Services
             _currentSourceGdbPath = targetGdbPath;
             _logger.LogInformation("QC 결과 저장 경로: {QcGdbPath}", _currentQcGdbPath);
 
-            // 2. 해당 GDB에 스키마 보장
-            var schemaResult = await _schemaService.CreateQcErrorsSchemaAsync(_currentQcGdbPath);
+            // 2. 해당 GDB에 스키마 보장 (원본 좌표계 복제)
+            var schemaResult = await _schemaService.CreateQcErrorsSchemaAsync(_currentQcGdbPath, _currentSourceGdbPath);
             if (!schemaResult)
             {
                 throw new InvalidOperationException("QC GDB에 스키마를 생성하지 못했습니다.");
@@ -557,9 +557,29 @@ namespace SpatialCheckPro.Services
                                 _logger.LogDebug("ObjectId 기본값 설정: {ObjectId}", objectId);
                             }
                             
-                            // 원본 FileGDB에서 실제 지오메트리 정보 추출
-                            var (geometry, x, y, geometryType) = await ExtractGeometryInfoAsync(
-                                sourceGdbPath, validationItem.TableId, objectId);
+                            // 오류 상세 좌표(X/Y)가 제공되면 이를 우선 사용, 없을 때만 원본 FGDB에서 추출
+                            double x, y;
+                            string geometryType;
+                            OSGeo.OGR.Geometry? geometry = null;
+
+                            if ((errorDetail.X != 0 || errorDetail.Y != 0))
+                            {
+                                // 오류 지점 좌표를 그대로 사용하여 Point로 저장
+                                x = errorDetail.X;
+                                y = errorDetail.Y;
+                                geometryType = "Point";
+                                // 원본 지오메트리는 저장하지 않음(DetailsJSON에 포함 가능)
+                            }
+                            else
+                            {
+                                // 좌표가 없을 때만 원본에서 대표 좌표 추출
+                                var extracted = await ExtractGeometryInfoAsync(
+                                    sourceGdbPath, validationItem.TableId, objectId);
+                                geometry = extracted.geometry;
+                                x = extracted.x;
+                                y = extracted.y;
+                                geometryType = extracted.geometryType;
+                            }
 
                             var qcError = new QcError
                             {
@@ -574,9 +594,12 @@ namespace SpatialCheckPro.Services
                                 SourceGlobalID = null, // 향후 구현
                                 X = x,
                                 Y = y,
-                                GeometryWKT = geometry != null ? GetWktFromGeometry(geometry) : null,
-                                GeometryType = geometryType,
-                                Geometry = geometry?.Clone(), // 복사본 사용
+                                // 오류 상세 좌표 우선: 좌표가 있으면 Point WKT 사용, 아니면 추출한 WKT 사용
+                                GeometryWKT = (errorDetail.X != 0 || errorDetail.Y != 0)
+                                    ? QcError.CreatePointWKT(x, y)
+                                    : (geometry != null ? GetWktFromGeometry(geometry) : null),
+                                GeometryType = (errorDetail.X != 0 || errorDetail.Y != 0) ? "Point" : geometryType,
+                                Geometry = (errorDetail.X != 0 || errorDetail.Y != 0) ? null : geometry?.Clone(), // 좌표 우선 시 원본 지오메트리 저장 안 함
                                 ErrorValue = errorDetail.ErrorValue,
                                 ThresholdValue = errorDetail.ThresholdValue,
                                 Message = errorDetail.DetailMessage,
@@ -587,7 +610,9 @@ namespace SpatialCheckPro.Services
                                     Threshold = validationItem.Threshold,
                                     ObjectId = errorDetail.ObjectId,
                                     Coordinates = new { X = x, Y = y },
-                                    GeometryType = geometryType
+                                    GeometryType = (errorDetail.X != 0 || errorDetail.Y != 0) ? "Point" : geometryType,
+                                    // 원본 지오메트리는 상세에만 선택적으로 보존
+                                    OriginalGeometryWKT = errorDetail.GeometryWkt ?? (geometry != null ? GetWktFromGeometry(geometry) : null)
                                 }),
                                 RunID = runId,
                                 CreatedUTC = DateTime.UtcNow,
@@ -1008,7 +1033,9 @@ namespace SpatialCheckPro.Services
                 double firstX = 0, firstY = 0;
                 var geomType = clonedGeometry.GetGeometryType();
                 
-                if (geomType == wkbGeometryType.wkbPoint)
+                var flattened = (wkbGeometryType)((int)geomType & 0xFF);
+
+                if (flattened == wkbGeometryType.wkbPoint)
                 {
                     // Point: 그대로 사용
                     var pointArray = new double[3];
@@ -1016,7 +1043,7 @@ namespace SpatialCheckPro.Services
                     firstX = pointArray[0];
                     firstY = pointArray[1];
                 }
-                else if (geomType == wkbGeometryType.wkbMultiPoint)
+                else if (flattened == wkbGeometryType.wkbMultiPoint)
                 {
                     // MultiPoint: 첫 번째 Point 사용
                     if (clonedGeometry.GetGeometryCount() > 0)
@@ -1031,7 +1058,7 @@ namespace SpatialCheckPro.Services
                         }
                     }
                 }
-                else if (geomType == wkbGeometryType.wkbLineString)
+                else if (flattened == wkbGeometryType.wkbLineString)
                 {
                     // LineString: 첫 번째 점 사용
                     if (clonedGeometry.GetPointCount() > 0)
@@ -1042,7 +1069,7 @@ namespace SpatialCheckPro.Services
                         firstY = pointArray[1];
                     }
                 }
-                else if (geomType == wkbGeometryType.wkbMultiLineString)
+                else if (flattened == wkbGeometryType.wkbMultiLineString)
                 {
                     // MultiLineString: 첫 번째 LineString의 첫 점 사용
                     if (clonedGeometry.GetGeometryCount() > 0)
@@ -1057,36 +1084,90 @@ namespace SpatialCheckPro.Services
                         }
                     }
                 }
-                else if (geomType == wkbGeometryType.wkbPolygon)
+                else if (flattened == wkbGeometryType.wkbPolygon)
                 {
-                    // Polygon: 외부 링의 첫 번째 점 사용
-                    if (clonedGeometry.GetGeometryCount() > 0)
+                    // Polygon: 내부 보장 포인트(PointOnSurface) 우선
+                    try
                     {
-                        var exteriorRing = clonedGeometry.GetGeometryRef(0);
-                        if (exteriorRing != null && exteriorRing.GetPointCount() > 0)
+                        using var pos = clonedGeometry.PointOnSurface();
+                        if (pos != null && !pos.IsEmpty())
                         {
-                            var pointArray = new double[3];
-                            exteriorRing.GetPoint(0, pointArray);
-                            firstX = pointArray[0];
-                            firstY = pointArray[1];
+                            var p = new double[3];
+                            pos.GetPoint(0, p);
+                            firstX = p[0];
+                            firstY = p[1];
                         }
-                    }
-                }
-                else if (geomType == wkbGeometryType.wkbMultiPolygon)
-                {
-                    // MultiPolygon: 첫 번째 Polygon의 외부 링 첫 점 사용
-                    if (clonedGeometry.GetGeometryCount() > 0)
-                    {
-                        var firstPolygon = clonedGeometry.GetGeometryRef(0);
-                        if (firstPolygon != null && firstPolygon.GetGeometryCount() > 0)
+                        else if (clonedGeometry.GetGeometryCount() > 0)
                         {
-                            var exteriorRing = firstPolygon.GetGeometryRef(0);
+                            var exteriorRing = clonedGeometry.GetGeometryRef(0);
                             if (exteriorRing != null && exteriorRing.GetPointCount() > 0)
                             {
                                 var pointArray = new double[3];
                                 exteriorRing.GetPoint(0, pointArray);
                                 firstX = pointArray[0];
                                 firstY = pointArray[1];
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        if (clonedGeometry.GetGeometryCount() > 0)
+                        {
+                            var exteriorRing = clonedGeometry.GetGeometryRef(0);
+                            if (exteriorRing != null && exteriorRing.GetPointCount() > 0)
+                            {
+                                var pointArray = new double[3];
+                                exteriorRing.GetPoint(0, pointArray);
+                                firstX = pointArray[0];
+                                firstY = pointArray[1];
+                            }
+                        }
+                    }
+                }
+                else if (flattened == wkbGeometryType.wkbMultiPolygon)
+                {
+                    // MultiPolygon: PointOnSurface 우선, 실패 시 첫 Polygon 외부 링 첫점
+                    try
+                    {
+                        using var pos = clonedGeometry.PointOnSurface();
+                        if (pos != null && !pos.IsEmpty())
+                        {
+                            var p = new double[3];
+                            pos.GetPoint(0, p);
+                            firstX = p[0];
+                            firstY = p[1];
+                        }
+                        else if (clonedGeometry.GetGeometryCount() > 0)
+                        {
+                            var firstPolygon = clonedGeometry.GetGeometryRef(0);
+                            if (firstPolygon != null && firstPolygon.GetGeometryCount() > 0)
+                            {
+                                var exteriorRing = firstPolygon.GetGeometryRef(0);
+                                if (exteriorRing != null && exteriorRing.GetPointCount() > 0)
+                                {
+                                    var pointArray = new double[3];
+                                    exteriorRing.GetPoint(0, pointArray);
+                                    firstX = pointArray[0];
+                                    firstY = pointArray[1];
+                                }
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        if (clonedGeometry.GetGeometryCount() > 0)
+                        {
+                            var firstPolygon = clonedGeometry.GetGeometryRef(0);
+                            if (firstPolygon != null && firstPolygon.GetGeometryCount() > 0)
+                            {
+                                var exteriorRing = firstPolygon.GetGeometryRef(0);
+                                if (exteriorRing != null && exteriorRing.GetPointCount() > 0)
+                                {
+                                    var pointArray = new double[3];
+                                    exteriorRing.GetPoint(0, pointArray);
+                                    firstX = pointArray[0];
+                                    firstY = pointArray[1];
+                                }
                             }
                         }
                     }

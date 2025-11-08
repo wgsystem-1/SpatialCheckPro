@@ -59,10 +59,10 @@
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
-                                    <DataGridTextColumn Binding="{Binding Item.TableId}" Header="테이블ID" Width="*"/>
-                                    <DataGridTextColumn Binding="{Binding Item.TableName}" Header="테이블명칭" Width="*"/>
-                                    <DataGridTextColumn Binding="{Binding Item.GeometryType}" Header="지오메트리타입" Width="*"/>
-                                    <DataGridTextColumn Binding="{Binding Item.CoordinateSystem}" Header="좌표계" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.TableId}" Header="Table Id" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.TableName}" Header="Table Name" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.GeometryType}" Header="Geometry Type" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.CoordinateSystem}" Header="CRS" Width="*"/>
                                 </DataGrid.Columns>
                             </DataGrid>
                         </DockPanel>
@@ -85,11 +85,11 @@
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
-                                    <DataGridTextColumn Binding="{Binding Item.TableId}" Header="테이블ID" Width="*"/>
-                                    <DataGridTextColumn Binding="{Binding Item.ColumnName}" Header="컬럼명칭" Width="*"/>
-                                    <DataGridTextColumn Binding="{Binding Item.ColumnKoreanName}" Header="컬럼한글명" Width="*"/>
-                                    <DataGridTextColumn Binding="{Binding Item.DataType}" Header="타입" Width="*"/>
-                                    <DataGridTextColumn Binding="{Binding Item.Length}" Header="길이" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.TableId}" Header="Table Id" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.ColumnName}" Header="Field Name" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.ColumnKoreanName}" Header="Field Alias" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.DataType}" Header="Data Type" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.Length}" Header="Length" Width="*"/>
                                     <DataGridTextColumn Binding="{Binding Item.IsNotNull}" Header="NN" Width="80"/>
                                     <DataGridTextColumn Binding="{Binding Item.UniqueKey}" Header="UK" Width="80"/>
                                     <DataGridTextColumn Binding="{Binding Item.ForeignKey}" Header="FK" Width="80"/>
@@ -115,9 +115,9 @@
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
-                                    <DataGridTextColumn Binding="{Binding Item.TableId}" Header="테이블ID" Width="*"/>
-                                    <DataGridTextColumn Binding="{Binding Item.TableName}" Header="테이블명칭" Width="*"/>
-                                    <DataGridTextColumn Binding="{Binding Item.GeometryType}" Header="지오메트리타입" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.TableId}" Header="Table Id" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.TableName}" Header="Table Name" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.GeometryType}" Header="Geometry Type" Width="*"/>
                                     <DataGridTextColumn Binding="{Binding Item.CheckDuplicate}" Header="객체중복" Width="*"/>
                                     <DataGridTextColumn Binding="{Binding Item.CheckOverlap}" Header="객체간겹침" Width="*"/>
                                     <DataGridTextColumn Binding="{Binding Item.CheckSelfIntersection}" Header="자체꼬임" Width="*"/>
@@ -152,13 +152,13 @@
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
-                                    <DataGridTextColumn Binding="{Binding Item.RuleId}" Header="규칙ID" Width="*"/>
-                                    <DataGridTextColumn Binding="{Binding Item.TableId}" Header="테이블ID" Width="*"/>
-                                    <DataGridTextColumn Binding="{Binding Item.TableName}" Header="테이블명" Width="*"/>
-                                    <DataGridTextColumn Binding="{Binding Item.FieldName}" Header="필드명" Width="*"/>
-                                    <DataGridTextColumn Binding="{Binding Item.CheckType}" Header="검수유형" Width="*"/>
-                                    <DataGridTextColumn Binding="{Binding Item.Parameters}" Header="매개변수" Width="*"/>
-                                    <DataGridTextColumn Binding="{Binding Item.Severity}" Header="심각도" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.RuleId}" Header="Rule Id" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.TableId}" Header="Table Id" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.TableName}" Header="Table Name" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.FieldName}" Header="Field Name" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.CheckType}" Header="Check Type" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.Parameters}" Header="Parameters" Width="*"/>
+                                    <DataGridTextColumn Binding="{Binding Item.Severity}" Header="Severity" Width="*"/>
                                 </DataGrid.Columns>
                             </DataGrid>
                         </DockPanel>

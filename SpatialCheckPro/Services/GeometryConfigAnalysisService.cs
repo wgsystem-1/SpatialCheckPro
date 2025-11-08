@@ -53,7 +53,8 @@ namespace SpatialCheckPro.Services
 
                 // 헤더 분석
                 var header = lines[0].Split(',');
-                var ruleColumns = header.Skip(3).ToArray(); // 테이블ID, 테이블명칭, 지오메트리타입 제외
+                var baseCols = new[] { "TableId", "TableName", "GeometryType" };
+                var ruleColumns = header.Where(h => !baseCols.Contains(h, StringComparer.OrdinalIgnoreCase)).ToArray(); // 기본 컬럼 제외
                 
                 _logger.LogDebug("지오메트리 검수 규칙 컬럼: {RuleColumns}", string.Join(", ", ruleColumns));
 

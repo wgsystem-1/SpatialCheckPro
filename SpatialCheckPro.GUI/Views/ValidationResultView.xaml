@@ -660,11 +660,11 @@
                                          CanUserResizeColumns="True"
                                          ColumnWidth="*">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="테이블ID" Binding="{Binding TableId}" Width="*"/>
-                                        <DataGridTextColumn Header="테이블명" Binding="{Binding TableName}" Width="*"/>
-                                        <DataGridTextColumn Header="피처객체수" Binding="{Binding FeatureCount, TargetNullValue='N/A'}" Width="*"/>
-                                        <DataGridTextColumn Header="피처타입" Binding="{Binding FeatureType}" Width="*"/>
-                                        <DataGridTextColumn Header="피처타입확인" Binding="{Binding FeatureTypeCheck}" Width="*"/>
+                                        <DataGridTextColumn Header="Table Id" Binding="{Binding TableId}" Width="*"/>
+                                        <DataGridTextColumn Header="Table Name" Binding="{Binding TableName}" Width="*"/>
+                                        <DataGridTextColumn Header="Feature Count" Binding="{Binding FeatureCount, TargetNullValue='N/A'}" Width="*"/>
+                                        <DataGridTextColumn Header="Feature Type" Binding="{Binding FeatureType}" Width="*"/>
+                                        <DataGridTextColumn Header="Feature Type Check" Binding="{Binding FeatureTypeCheck}" Width="*"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Grid>
@@ -750,15 +750,15 @@
                                          CanUserResizeColumns="True"
                                          ColumnWidth="*">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="테이블ID" Binding="{Binding TableId}" Width="*"/>
-                                        <DataGridTextColumn Header="컬럼명" Binding="{Binding ColumnName}" Width="*"/>
-                                        <DataGridTextColumn Header="컬럼한글명" Binding="{Binding ColumnKoreanName}" Width="*"/>
-                                        <DataGridTextColumn Header="예상타입" Binding="{Binding ExpectedDataType}" Width="*"/>
-                                        <DataGridTextColumn Header="실제타입" Binding="{Binding ActualDataType}" Width="*"/>
-                                        <DataGridTextColumn Header="길이일치" Binding="{Binding LengthMatches}" Width="*"/>
-                                        <DataGridTextColumn Header="NN일치" Binding="{Binding NotNullMatches}" Width="*"/>
-                                        <DataGridTextColumn Header="검수결과" Binding="{Binding IsValid}" Width="*"/>
-                                        <DataGridTextColumn Header="내용" Binding="{Binding ErrorContent}" Width="*"/>
+                                        <DataGridTextColumn Header="Table Id" Binding="{Binding TableId}" Width="*"/>
+                                        <DataGridTextColumn Header="Column Name" Binding="{Binding ColumnName}" Width="*"/>
+                                        <DataGridTextColumn Header="Korean Name" Binding="{Binding ColumnKoreanName}" Width="*"/>
+                                        <DataGridTextColumn Header="Expected Data Type" Binding="{Binding ExpectedDataType}" Width="*"/>
+                                        <DataGridTextColumn Header="Actual Data Type" Binding="{Binding ActualDataType}" Width="*"/>
+                                        <DataGridTextColumn Header="Length Match" Binding="{Binding LengthMatches}" Width="*"/>
+                                        <DataGridTextColumn Header="NotNull Match" Binding="{Binding NotNullMatches}" Width="*"/>
+                                        <DataGridTextColumn Header="Validation Result" Binding="{Binding IsValid}" Width="*"/>
+                                        <DataGridTextColumn Header="Error Content" Binding="{Binding ErrorContent}" Width="*"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Grid>
@@ -845,9 +845,9 @@
                                          HorizontalScrollBarVisibility="Auto"
                                          CanUserResizeColumns="True">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="테이블ID" Binding="{Binding TableId}" Width="*" 
+                                        <DataGridTextColumn Header="Table Id" Binding="{Binding TableId}" Width="*" 
                                                            CanUserSort="True" SortMemberPath="TableId"/>
-                                        <DataGridTemplateColumn Header="종류" Width="*" 
+                                        <DataGridTemplateColumn Header="Error Types Summary" Width="*" 
                                                                CanUserSort="True" SortMemberPath="ErrorTypesSummary">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
@@ -872,7 +872,7 @@
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
-                                        <DataGridTemplateColumn Header="개수" Width="*" 
+                                        <DataGridTemplateColumn Header="Count" Width="*" 
                                                                CanUserSort="True" SortMemberPath="ErrorCount">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
@@ -896,7 +896,7 @@
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
-                                        <DataGridTemplateColumn Header="검수결과" Width="*" 
+                                        <DataGridTemplateColumn Header="Status" Width="*" 
                                                                CanUserSort="True" SortMemberPath="Status">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
@@ -1014,19 +1014,19 @@
                                          HorizontalScrollBarVisibility="Auto"
                                          CanUserResizeColumns="True">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="테이블명" Binding="{Binding TableName}" Width="*" 
+                                        <DataGridTextColumn Header="Table Name" Binding="{Binding TableName}" Width="*" 
                                                            CanUserSort="True" SortMemberPath="TableName"/>
-                                        <DataGridTextColumn Header="필드명" Binding="{Binding FieldName}" Width="*" 
+                                        <DataGridTextColumn Header="Field Name" Binding="{Binding FieldName}" Width="*" 
                                                            CanUserSort="True" SortMemberPath="FieldName"/>
-                                        <DataGridTextColumn Header="규칙명" Binding="{Binding RuleName}" Width="*" 
+                                        <DataGridTextColumn Header="Rule Name" Binding="{Binding RuleName}" Width="*" 
                                                            CanUserSort="True" SortMemberPath="RuleName"/>
-                                        <DataGridTextColumn Header="객체ID" Binding="{Binding ObjectId}" Width="*" 
+                                        <DataGridTextColumn Header="Object Id" Binding="{Binding ObjectId}" Width="*" 
                                                            CanUserSort="True" SortMemberPath="ObjectId"/>
-                                        <DataGridTextColumn Header="기대값" Binding="{Binding ExpectedValue}" Width="*" 
+                                        <DataGridTextColumn Header="Expected Value" Binding="{Binding ExpectedValue}" Width="*" 
                                                            CanUserSort="True" SortMemberPath="ExpectedValue"/>
-                                        <DataGridTextColumn Header="실제값" Binding="{Binding ActualValue}" Width="*" 
+                                        <DataGridTextColumn Header="Actual Value" Binding="{Binding ActualValue}" Width="*" 
                                                            CanUserSort="True" SortMemberPath="ActualValue"/>
-                                        <DataGridTextColumn Header="메시지" Binding="{Binding Message}" Width="*"/>
+                                        <DataGridTextColumn Header="Message" Binding="{Binding Message}" Width="*"/>
                                         
                                     </DataGrid.Columns>
                                 </DataGrid>
@@ -1119,11 +1119,11 @@
                                          HorizontalScrollBarVisibility="Auto"
                                          CanUserResizeColumns="True">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="원본 레이어" Binding="{Binding SourceLayer}" Width="*" CanUserSort="True" SortMemberPath="SourceLayer"/>
-                                        <DataGridTextColumn Header="관계 타입" Binding="{Binding RelationType}" Width="*" CanUserSort="True" SortMemberPath="RelationType"/>
-                                        <DataGridTextColumn Header="유형" Binding="{Binding ErrorType}" Width="*" CanUserSort="True" SortMemberPath="ErrorType"/>
-                                        <DataGridTextColumn Header="원본 객체ID" Binding="{Binding SourceObjectId}" Width="*" CanUserSort="True" SortMemberPath="SourceObjectId"/>
-                                        <DataGridTextColumn Header="메시지" Binding="{Binding Message}" Width="*"/>
+                                        <DataGridTextColumn Header="Source Layer" Binding="{Binding SourceLayer}" Width="*" CanUserSort="True" SortMemberPath="SourceLayer"/>
+                                        <DataGridTextColumn Header="Relation Type" Binding="{Binding RelationType}" Width="*" CanUserSort="True" SortMemberPath="RelationType"/>
+                                        <DataGridTextColumn Header="Error Type" Binding="{Binding ErrorType}" Width="*" CanUserSort="True" SortMemberPath="ErrorType"/>
+                                        <DataGridTextColumn Header="Source Object Id" Binding="{Binding SourceObjectId}" Width="*" CanUserSort="True" SortMemberPath="SourceObjectId"/>
+                                        <DataGridTextColumn Header="Message" Binding="{Binding Message}" Width="*"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Grid>
@@ -1166,27 +1166,27 @@
                                     <!-- 1행: 포함/제외 키워드 + 테이블 필터 + 초기화 -->
                                     <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal">
                                         <StackPanel Width="260" Margin="0,0,12,0">
-                                            <TextBlock Text="포함 키워드" Style="{StaticResource CaptionText}"/>
+                                            <TextBlock Text="Include Keywords" Style="{StaticResource CaptionText}"/>
                                             <TextBox x:Name="IncludeTextBox" Style="{StaticResource ModernTextBox}"/>
                                         </StackPanel>
                                         <StackPanel Width="260" Margin="0,0,12,0">
-                                            <TextBlock Text="제외 키워드" Style="{StaticResource CaptionText}"/>
+                                            <TextBlock Text="Exclude Keywords" Style="{StaticResource CaptionText}"/>
                                             <TextBox x:Name="ExcludeTextBox" Style="{StaticResource ModernTextBox}"/>
                                         </StackPanel>
                                     </StackPanel>
 
                                     <!-- 1행: 테이블 필터 검색 -->
                                     <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Vertical" Margin="0,0,0,0">
-                                        <TextBlock Text="테이블 필터" Style="{StaticResource CaptionText}"/>
+                                        <TextBlock Text="Table Filter" Style="{StaticResource CaptionText}"/>
                                         <TextBox x:Name="TableFilterSearchBox" Style="{StaticResource ModernTextBox}" MinWidth="260"/>
                                     </StackPanel>
 
-                                    <Button Grid.Row="0" Grid.Column="2" x:Name="ClearFiltersButton" Content="모두 지우기" Style="{StaticResource SecondaryButton}" VerticalAlignment="Top"/>
+                                    <Button Grid.Row="0" Grid.Column="2" x:Name="ClearFiltersButton" Content="Clear All" Style="{StaticResource SecondaryButton}" VerticalAlignment="Top"/>
 
                                     <!-- 2행: 단계/심각도/테이블 -->
                                     <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,8,0,0">
                                         <StackPanel Orientation="Horizontal" Margin="0,0,16,0">
-                                            <TextBlock Text="단계" Style="{StaticResource CaptionText}" Margin="0,0,8,0"/>
+                                            <TextBlock Text="Stage" Style="{StaticResource CaptionText}" Margin="0,0,8,0"/>
                                             <UniformGrid Rows="1" Columns="5" Width="180">
                                                 <CheckBox x:Name="Stage1Check" Content="1"/>
                                                 <CheckBox x:Name="Stage2Check" Content="2"/>
@@ -1220,10 +1220,10 @@
                                          HorizontalScrollBarVisibility="Auto"
                                          CanUserResizeColumns="True">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="검수 단계" Binding="{Binding Stage}" Width="100" SortMemberPath="Stage"/>
-                                        <DataGridTextColumn Header="테이블" Binding="{Binding TableName}" Width="140" SortMemberPath="TableName"/>
-                                        <DataGridTextColumn Header="유형" Binding="{Binding ErrorType}" Width="160" SortMemberPath="ErrorType"/>
-                                        <DataGridTextColumn Header="메시지" Binding="{Binding Message}" Width="*" SortMemberPath="Message"/>
+                                        <DataGridTextColumn Header="Stage" Binding="{Binding Stage}" Width="100" SortMemberPath="Stage"/>
+                                        <DataGridTextColumn Header="Table Name" Binding="{Binding TableName}" Width="140" SortMemberPath="TableName"/>
+                                        <DataGridTextColumn Header="Error Type" Binding="{Binding ErrorType}" Width="160" SortMemberPath="ErrorType"/>
+                                        <DataGridTextColumn Header="Message" Binding="{Binding Message}" Width="*" SortMemberPath="Message"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Grid>
@@ -1317,12 +1317,12 @@
                                          HorizontalScrollBarVisibility="Auto"
                                          CanUserResizeColumns="True">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="단계" Binding="{Binding StageNumber}" Width="60" SortMemberPath="StageNumber"/>
-                                        <DataGridTextColumn Header="단계명" Binding="{Binding StageName}" Width="120" SortMemberPath="StageName"/>
-                                        <DataGridTextColumn Header="검수 결과 오류 수" Binding="{Binding ValidationErrorCount}" Width="120" SortMemberPath="ValidationErrorCount"/>
-                                        <DataGridTextColumn Header="저장된 오류 수" Binding="{Binding SavedErrorCount}" Width="120" SortMemberPath="SavedErrorCount"/>
-                                        <DataGridTextColumn Header="누락된 오류 수" Binding="{Binding MissingErrorCount}" Width="120" SortMemberPath="MissingErrorCount"/>
-                                        <DataGridTextColumn Header="저장 성공률" Binding="{Binding SaveSuccessRate, StringFormat={}{0:F1}%}" Width="100" SortMemberPath="SaveSuccessRate"/>
+                                        <DataGridTextColumn Header="Stage Number" Binding="{Binding StageNumber}" Width="60" SortMemberPath="StageNumber"/>
+                                        <DataGridTextColumn Header="Stage Name" Binding="{Binding StageName}" Width="120" SortMemberPath="StageName"/>
+                                        <DataGridTextColumn Header="Validation Error Count" Binding="{Binding ValidationErrorCount}" Width="120" SortMemberPath="ValidationErrorCount"/>
+                                        <DataGridTextColumn Header="Saved Error Count" Binding="{Binding SavedErrorCount}" Width="120" SortMemberPath="SavedErrorCount"/>
+                                        <DataGridTextColumn Header="Missing Error Count" Binding="{Binding MissingErrorCount}" Width="120" SortMemberPath="MissingErrorCount"/>
+                                        <DataGridTextColumn Header="Save Success Rate" Binding="{Binding SaveSuccessRate, StringFormat={}{0:F1}%}" Width="100" SortMemberPath="SaveSuccessRate"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </StackPanel>
@@ -1350,13 +1350,13 @@
                                          HorizontalScrollBarVisibility="Auto"
                                          CanUserResizeColumns="True">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="단계" Binding="{Binding StageNumber}" Width="60" SortMemberPath="StageNumber"/>
-                                        <DataGridTextColumn Header="오류 타입" Binding="{Binding ErrorType}" Width="120" SortMemberPath="ErrorType"/>
-                                        <DataGridTextColumn Header="오류 타입명" Binding="{Binding ErrorTypeName}" Width="140" SortMemberPath="ErrorTypeName"/>
-                                        <DataGridTextColumn Header="검수 결과 오류 수" Binding="{Binding ValidationErrorCount}" Width="120" SortMemberPath="ValidationErrorCount"/>
-                                        <DataGridTextColumn Header="저장된 오류 수" Binding="{Binding SavedErrorCount}" Width="120" SortMemberPath="SavedErrorCount"/>
-                                        <DataGridTextColumn Header="누락된 오류 수" Binding="{Binding MissingErrorCount}" Width="120" SortMemberPath="MissingErrorCount"/>
-                                        <DataGridTextColumn Header="저장 성공률" Binding="{Binding SaveSuccessRate, StringFormat={}{0:F1}%}" Width="100" SortMemberPath="SaveSuccessRate"/>
+                                        <DataGridTextColumn Header="Stage Number" Binding="{Binding StageNumber}" Width="60" SortMemberPath="StageNumber"/>
+                                        <DataGridTextColumn Header="Error Type" Binding="{Binding ErrorType}" Width="120" SortMemberPath="ErrorType"/>
+                                        <DataGridTextColumn Header="Error Type Name" Binding="{Binding ErrorTypeName}" Width="140" SortMemberPath="ErrorTypeName"/>
+                                        <DataGridTextColumn Header="Validation Error Count" Binding="{Binding ValidationErrorCount}" Width="120" SortMemberPath="ValidationErrorCount"/>
+                                        <DataGridTextColumn Header="Saved Error Count" Binding="{Binding SavedErrorCount}" Width="120" SortMemberPath="SavedErrorCount"/>
+                                        <DataGridTextColumn Header="Missing Error Count" Binding="{Binding MissingErrorCount}" Width="120" SortMemberPath="MissingErrorCount"/>
+                                        <DataGridTextColumn Header="Save Success Rate" Binding="{Binding SaveSuccessRate, StringFormat={}{0:F1}%}" Width="100" SortMemberPath="SaveSuccessRate"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </StackPanel>
@@ -1384,12 +1384,12 @@
                                          HorizontalScrollBarVisibility="Auto"
                                          CanUserResizeColumns="True">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="단계" Binding="{Binding StageNumber}" Width="60" SortMemberPath="StageNumber"/>
-                                        <DataGridTextColumn Header="오류 타입" Binding="{Binding ErrorType}" Width="120" SortMemberPath="ErrorType"/>
-                                        <DataGridTextColumn Header="소스 클래스" Binding="{Binding SourceClass}" Width="120" SortMemberPath="SourceClass"/>
-                                        <DataGridTextColumn Header="소스 OID" Binding="{Binding SourceOID}" Width="80" SortMemberPath="SourceOID"/>
-                                        <DataGridTextColumn Header="메시지" Binding="{Binding Message}" Width="*" SortMemberPath="Message"/>
-                                        <DataGridTextColumn Header="실패 원인" Binding="{Binding FailureReason}" Width="120" SortMemberPath="FailureReason"/>
+                                        <DataGridTextColumn Header="Stage Number" Binding="{Binding StageNumber}" Width="60" SortMemberPath="StageNumber"/>
+                                        <DataGridTextColumn Header="Error Type" Binding="{Binding ErrorType}" Width="120" SortMemberPath="ErrorType"/>
+                                        <DataGridTextColumn Header="Source Class" Binding="{Binding SourceClass}" Width="120" SortMemberPath="SourceClass"/>
+                                        <DataGridTextColumn Header="Source OID" Binding="{Binding SourceOID}" Width="80" SortMemberPath="SourceOID"/>
+                                        <DataGridTextColumn Header="Message" Binding="{Binding Message}" Width="*" SortMemberPath="Message"/>
+                                        <DataGridTextColumn Header="Failure Reason" Binding="{Binding FailureReason}" Width="120" SortMemberPath="FailureReason"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </StackPanel>

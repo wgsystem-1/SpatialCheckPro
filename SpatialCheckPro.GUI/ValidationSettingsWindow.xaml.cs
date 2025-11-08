@@ -234,8 +234,9 @@ namespace SpatialCheckPro.GUI
                     {
                         string Get(string name)
                         {
-                            if (!headers.Contains(name, StringComparer.OrdinalIgnoreCase)) return string.Empty;
-                            try { return csv.GetField(name) ?? string.Empty; } catch { return string.Empty; }
+                            var matched = headers.FirstOrDefault(h => h.Equals(name, StringComparison.OrdinalIgnoreCase));
+                            if (matched == null) return string.Empty;
+                            try { return csv.GetField(matched) ?? string.Empty; } catch { return string.Empty; }
                         }
 
                         var cfg = new RelationCheckConfig

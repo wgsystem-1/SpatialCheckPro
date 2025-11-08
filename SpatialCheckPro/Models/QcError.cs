@@ -34,6 +34,16 @@ namespace SpatialCheckPro.Models
         public string RuleId { get; set; } = string.Empty;
 
         /// <summary>
+        /// 테이블 ID (SourceClass 대신 명확한 식별자)
+        /// </summary>
+        public string TableId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 테이블 명칭 (한글명)
+        /// </summary>
+        public string TableName { get; set; } = string.Empty;
+
+        /// <summary>
         /// 원본 FeatureClass 이름
         /// </summary>
         public string SourceClass { get; set; } = string.Empty;

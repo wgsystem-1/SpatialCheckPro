@@ -144,7 +144,7 @@ namespace SpatialCheckPro.Services
                         // 상세 테이블
                         var table = new PdfPTable(4) { WidthPercentage = 100 };
                         table.SetWidths(new float[] { 25, 45, 15, 15 });
-                        AddTableHeader(table, new[] { "테이블명", "검수 항목", "오류 개수", "결과" }, smallFont);
+                        AddTableHeader(table, new[] { "Table Name", "Check Item", "Error Count", "Result" }, smallFont);
 
                         int rowIndex = 0;
                         foreach (var res in tableResults)
@@ -255,7 +255,7 @@ namespace SpatialCheckPro.Services
                 table.SetWidths(new float[] { 15, 15, 25, 15, 15, 15 });
 
                 // 헤더
-                AddTableHeader(table, new[] { "테이블ID", "테이블명", "실제FeatureClass명", "피처타입", "실제피처타입", "피처타입확인결과" }, smallFont);
+                AddTableHeader(table, new[] { "Table Id", "Table Name", "Actual FeatureClass", "Expected Type", "Actual Type", "Type Match" }, smallFont);
 
                 // 데이터 (행 교차 배경)
                 int rowIndex = 0;
@@ -302,7 +302,7 @@ namespace SpatialCheckPro.Services
                 table.SetWidths(new float[] { 12, 12, 15, 10, 10, 8, 8, 8, 10 });
 
                 // 헤더
-                AddTableHeader(table, new[] { "테이블ID", "컬럼명", "컬럼한글명", "예상타입", "실제타입", "예상길이", "실제길이", "NN일치", "검수결과" }, smallFont);
+                AddTableHeader(table, new[] { "Table Id", "Field Name", "Field Alias", "Expected Type", "Actual Type", "Expected Length", "Actual Length", "NN Match", "Result" }, smallFont);
 
                 // 데이터 (행 교차 배경)
                 int rowIndex = 0;
@@ -374,7 +374,7 @@ namespace SpatialCheckPro.Services
                 // 상세 테이블
                 var table = new PdfPTable(4) { WidthPercentage = 100 };
                 table.SetWidths(new float[] { 25, 45, 15, 15 });
-                AddTableHeader(table, new[] { "테이블명", "검수 항목", "오류 개수", "결과" }, smallFont);
+                AddTableHeader(table, new[] { "Table Name", "Check Item", "Error Count", "Result" }, smallFont);
 
                 int rowIndex = 0;
                 foreach (var res in tableResults)

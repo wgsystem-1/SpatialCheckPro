@@ -60,6 +60,11 @@ namespace SpatialCheckPro.Models
         public double SpikeAngleThreshold { get; set; }
 
         /// <summary>
+        /// 스파이크를 모두 저장할지 여부 (true = 모든 정점 저장, false = 가장 날카로운 1개만)
+        /// </summary>
+        public bool SaveAllSpikes { get; set; } = false;
+
+        /// <summary>
         /// 네트워크탐색거리
         /// </summary>
         public double NetworkSearchDistance { get; set; }
@@ -119,7 +124,8 @@ namespace SpatialCheckPro.Models
             DuplicateCheckTolerance = 0.001,
             NetworkSearchDistance = 0.1,
             SpikeRatio = 0.1,
-            SpikeAngleThreshold = 0.1
+            SpikeAngleThreshold = 0.1,
+            SaveAllSpikes = false
         };
     }
 
@@ -151,13 +157,13 @@ namespace SpatialCheckPro.Models
                 var parts = line.Split(',');
                 if (parts.Length >= 2)
                 {
-                    var itemName = parts[0].Trim();
+                    var key = parts[0].Trim();
                     var valueStr = parts[1].Trim();
                     
                     if (double.TryParse(valueStr, System.Globalization.NumberStyles.Float, 
                         System.Globalization.CultureInfo.InvariantCulture, out double value))
                     {
-                        switch (itemName)
+                        switch (key)
                         {
                             case "최소선길이":
                                 criteria.MinLineLength = value;
@@ -188,6 +194,9 @@ namespace SpatialCheckPro.Models
                                 break;
                             case "스파이크각도임계값":
                                 criteria.SpikeAngleThresholdDegrees = value;
+                                break;
+                            case "스파이크모두저장":
+                                criteria.SaveAllSpikes = value > 0.0;
                                 break;
                             case "네트워크탐색거리":
                                 criteria.NetworkSearchDistance = value;

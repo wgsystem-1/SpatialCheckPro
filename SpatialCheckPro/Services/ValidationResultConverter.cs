@@ -193,6 +193,8 @@ namespace SpatialCheckPro.Services
                     Severity = string.Empty,
                     Status = string.Empty,
                     RuleId = $"TABLE_CHECK_{tableResult.TableId}",
+                    TableId = tableResult.TableId ?? string.Empty,
+                    TableName = tableResult.TableName ?? tableResult.TableId ?? "Unknown",
                     SourceClass = tableResult.TableName ?? "Unknown",
                     SourceOID = 0, // 테이블 검수는 특정 객체 없음
                     SourceGlobalID = null,
@@ -235,6 +237,8 @@ namespace SpatialCheckPro.Services
                     Severity = QcSeverity.MAJOR.ToString(),
                     Status = QcStatus.OPEN.ToString(),
                     RuleId = $"SCHEMA_CHECK_{schemaResult.TableId}_{schemaResult.ColumnName}",
+                    TableId = schemaResult.TableId ?? string.Empty,
+                    TableName = schemaResult.TableId ?? string.Empty,
                     SourceClass = schemaResult.TableId ?? "Unknown",
                     SourceOID = 0, // 스키마 검수는 특정 객체 없음
                     SourceGlobalID = null,
@@ -299,8 +303,9 @@ namespace SpatialCheckPro.Services
                     {
                         try
                         {
-                            // 지오메트리 타입에 따른 대표 좌표 추출 (첫 점 또는 엔벨로프 중심)
-                            switch (geometry.GetGeometryType())
+                            // 지오메트리 타입에 따른 대표 좌표 추출 (폴리곤은 내부 보장 PointOnSurface)
+                            var flattened = (wkbGeometryType)((int)geometry.GetGeometryType() & 0xFF);
+                            switch (flattened)
                             {
                                 case wkbGeometryType.wkbPoint:
                                 {
@@ -349,6 +354,19 @@ namespace SpatialCheckPro.Services
                                 }
                                 case wkbGeometryType.wkbPolygon:
                                 {
+                                    try
+                                    {
+                                        using var pos = geometry.PointOnSurface();
+                                        if (pos != null && !pos.IsEmpty())
+                                        {
+                                            var p = new double[3];
+                                            pos.GetPoint(0, p);
+                                            outX = p[0]; outY = p[1];
+                                            break;
+                                        }
+                                    }
+                                    catch { /* PointOnSurface 미지원 시 폴백 */ }
+
                                     if (geometry.GetGeometryCount() > 0)
                                     {
                                         var ring = geometry.GetGeometryRef(0);
@@ -363,6 +381,19 @@ namespace SpatialCheckPro.Services
                                 }
                                 case wkbGeometryType.wkbMultiPolygon:
                                 {
+                                    try
+                                    {
+                                        using var pos = geometry.PointOnSurface();
+                                        if (pos != null && !pos.IsEmpty())
+                                        {
+                                            var p = new double[3];
+                                            pos.GetPoint(0, p);
+                                            outX = p[0]; outY = p[1];
+                                            break;
+                                        }
+                                    }
+                                    catch { /* PointOnSurface 미지원 시 폴백 */ }
+
                                     if (geometry.GetGeometryCount() > 0)
                                     {
                                         var poly = geometry.GetGeometryRef(0);

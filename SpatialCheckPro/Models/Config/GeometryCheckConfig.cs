@@ -10,19 +10,19 @@ namespace SpatialCheckPro.Models.Config
         /// <summary>
         /// 테이블 ID
         /// </summary>
-        [Name("테이블ID")]
+        [Name("TableId")]
         public string TableId { get; set; } = string.Empty;
 
         /// <summary>
         /// 테이블 명칭
         /// </summary>
-        [Name("테이블명칭")]
+        [Name("TableName")]
         public string TableName { get; set; } = string.Empty;
 
         /// <summary>
         /// 지오메트리 타입
         /// </summary>
-        [Name("지오메트리타입")]
+        [Name("GeometryType")]
         public string GeometryType { get; set; } = string.Empty;
 
         /// <summary>

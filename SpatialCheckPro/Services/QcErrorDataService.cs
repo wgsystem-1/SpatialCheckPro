@@ -187,13 +187,22 @@ namespace SpatialCheckPro.Services
                         }
 
                         // 우선 포인트 지오메트리를 생성 시도하여 저장 레이어를 결정
+                        // 우선순위: 오류 상세 좌표(X/Y) → WKT → Geometry
                         OSGeo.OGR.Geometry? pointGeometryCandidate = null;
-                        // 1차 시도: 기존 지오메트리에서 Point 생성
-                        if (qcError.Geometry != null)
+
+                        // 1차: 오류 상세 좌표(X/Y)가 있는 경우 이를 우선 사용 (0,0은 무시)
+                        if (qcError.X != 0 || qcError.Y != 0)
                         {
-                            try { pointGeometryCandidate = CreateSimplePoint(qcError.Geometry); } catch { pointGeometryCandidate = null; }
+                            try
+                            {
+                                var p = new OSGeo.OGR.Geometry(wkbGeometryType.wkbPoint);
+                                p.AddPoint(qcError.X, qcError.Y, 0);
+                                pointGeometryCandidate = p;
+                            }
+                            catch { pointGeometryCandidate = null; }
                         }
-                        // 2차 시도: WKT에서 Point 생성
+
+                        // 2차: WKT에서 Point 생성 (가능하면 그대로, 아니면 단순화)
                         if (pointGeometryCandidate == null && !string.IsNullOrWhiteSpace(qcError.GeometryWKT))
                         {
                             try
@@ -207,16 +216,11 @@ namespace SpatialCheckPro.Services
                             }
                             catch { pointGeometryCandidate = null; }
                         }
-                        // 3차 시도: 좌표로부터 Point 생성 (0,0은 위치 미확정으로 간주)
-                        if (pointGeometryCandidate == null && (qcError.X != 0 || qcError.Y != 0))
+
+                        // 3차: 기존 지오메트리에서 Point 생성
+                        if (pointGeometryCandidate == null && qcError.Geometry != null)
                         {
-                            try
-                            {
-                                var p = new OSGeo.OGR.Geometry(wkbGeometryType.wkbPoint);
-                                p.AddPoint(qcError.X, qcError.Y, 0);
-                                pointGeometryCandidate = p;
-                            }
-                            catch { pointGeometryCandidate = null; }
+                            try { pointGeometryCandidate = CreateSimplePoint(qcError.Geometry); } catch { pointGeometryCandidate = null; }
                         }
 
                         // 저장 레이어 결정: 포인트 지오메트리가 있으면 Point, 없으면 NoGeom
@@ -294,11 +298,19 @@ namespace SpatialCheckPro.Services
                         var featureDefn = layer.GetLayerDefn();
                         var feature = new Feature(featureDefn);
 
-                        // 필수 필드만 설정 (단순화된 스키마)
+                        // 필수 필드 설정
                         feature.SetField("ErrCode", qcError.ErrCode);
                         feature.SetField("SourceClass", qcError.SourceClass);
                         feature.SetField("SourceOID", (int)qcError.SourceOID);
                         feature.SetField("Message", qcError.Message);
+
+                        // NoGeom 레이어라면 TableId/TableName도 함께 기록
+                        if (string.Equals(layerName, "QC_Errors_NoGeom", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var tableId = string.IsNullOrWhiteSpace(qcError.TableId) ? qcError.SourceClass : qcError.TableId;
+                            feature.SetField("TableId", tableId);
+                            feature.SetField("TableName", qcError.TableName ?? string.Empty);
+                        }
 
                         // 포인트 지오메트리가 준비된 경우에만 지오메트리 설정
                         if (pointGeometryCandidate != null)
@@ -308,7 +320,7 @@ namespace SpatialCheckPro.Services
                                 // 좌표 확인을 위한 WKT 로깅
                                 string wkt = string.Empty;
                                 pointGeometryCandidate.ExportToWkt(out wkt);
-                                _logger.LogDebug("Point 지오메트리 WKT: {Wkt}", wkt);
+                                _logger.LogDebug("Point 지오메트리 WKT(좌표 우선 적용): {Wkt}", wkt);
 
                                 // 피처에 지오메트리 설정
                                 feature.SetGeometry(pointGeometryCandidate);
@@ -514,10 +526,12 @@ namespace SpatialCheckPro.Services
                         OSGeo.OGR.Geometry? pointGeometry = null;
                         try
                         {
-                            // 1차: 기존 지오메트리에서 Point 생성
-                            if (qcError.Geometry != null)
+                            // 1차: 좌표로 Point 생성 (0,0은 무시)
+                            if (qcError.X != 0 || qcError.Y != 0)
                             {
-                                pointGeometry = CreateSimplePoint(qcError.Geometry);
+                                var p = new OSGeo.OGR.Geometry(wkbGeometryType.wkbPoint);
+                                p.AddPoint(qcError.X, qcError.Y, 0);
+                                pointGeometry = p;
                             }
                             // 2차: WKT에서 Point 생성
                             else if (!string.IsNullOrWhiteSpace(qcError.GeometryWKT))
@@ -529,12 +543,10 @@ namespace SpatialCheckPro.Services
                                     geometryFromWkt.Dispose();
                                 }
                             }
-                            // 3차: 좌표로 Point 생성 (0,0은 무시)
-                            else if (qcError.X != 0 || qcError.Y != 0)
+                            // 3차: 기존 지오메트리에서 Point 생성
+                            else if (qcError.Geometry != null)
                             {
-                                var p = new OSGeo.OGR.Geometry(wkbGeometryType.wkbPoint);
-                                p.AddPoint(qcError.X, qcError.Y, 0);
-                                pointGeometry = p;
+                                pointGeometry = CreateSimplePoint(qcError.Geometry);
                             }
 
                             // 대상 레이어 결정 및 생성
@@ -558,12 +570,19 @@ namespace SpatialCheckPro.Services
                             feature.SetField("SourceOID", (int)qcError.SourceOID);
                             feature.SetField("Message", qcError.Message);
 
+                            if (string.Equals(targetLayer.GetName(), "QC_Errors_NoGeom", StringComparison.OrdinalIgnoreCase))
+                            {
+                                var tableId = string.IsNullOrWhiteSpace(qcError.TableId) ? qcError.SourceClass : qcError.TableId;
+                                feature.SetField("TableId", tableId);
+                                feature.SetField("TableName", qcError.TableName ?? string.Empty);
+                            }
+
                             if (pointGeometry != null)
                             {
                                 // 좌표 확인 로그 (디버그)
                                 string wkt = string.Empty;
                                 pointGeometry.ExportToWkt(out wkt);
-                                _logger.LogDebug("배치 Point WKT: {Wkt}", wkt);
+                                _logger.LogDebug("배치 Point WKT(좌표 우선 적용): {Wkt}", wkt);
 
                                 feature.SetGeometry(pointGeometry);
                                 pointGeometry.Dispose();
@@ -685,6 +704,17 @@ namespace SpatialCheckPro.Services
                 fieldDefn.SetWidth(128);
                 layer.CreateField(fieldDefn, 1);
                 
+                if (layerName.Equals("QC_Errors_NoGeom", StringComparison.OrdinalIgnoreCase))
+                {
+                    var tableIdField = new FieldDefn("TableId", FieldType.OFTString);
+                    tableIdField.SetWidth(128);
+                    layer.CreateField(tableIdField, 1);
+
+                    var tableNameField = new FieldDefn("TableName", FieldType.OFTString);
+                    tableNameField.SetWidth(128);
+                    layer.CreateField(tableNameField, 1);
+                }
+
                 fieldDefn = new FieldDefn("SourceOID", FieldType.OFTInteger);
                 layer.CreateField(fieldDefn, 1);
                 
@@ -764,6 +794,8 @@ namespace SpatialCheckPro.Services
                                     Severity = feature.GetFieldAsString("Severity"),
                                     Status = feature.GetFieldAsString("Status"),
                                     RuleId = feature.GetFieldAsString("RuleId"),
+                                    TableId = feature.GetFieldAsString("TableId"),
+                                    TableName = feature.GetFieldAsString("TableName"),
                                     SourceClass = feature.GetFieldAsString("SourceClass"),
                                     SourceOID = feature.GetFieldAsInteger("SourceOID"),
                                     SourceGlobalID = feature.GetFieldAsString("SourceGlobalID"),
@@ -839,7 +871,9 @@ namespace SpatialCheckPro.Services
                     return null;
                 }
 
-                var geomType = geometry.GetGeometryType();
+                // 지오메트리 타입을 평탄화하여 25D 등 변형 타입도 정확히 분기
+                var rawType = geometry.GetGeometryType();
+                var geomType = (wkbGeometryType)((int)rawType & 0xFF);
                 
                 // POINT: 그대로 사용
                 if (geomType == wkbGeometryType.wkbPoint)
@@ -892,34 +926,56 @@ namespace SpatialCheckPro.Services
                     }
                 }
                 
-                // Polygon: 외부 링의 첫 번째 점 사용
+                // Polygon: 내부 보장 포인트(PointOnSurface) 우선 사용
                 if (geomType == wkbGeometryType.wkbPolygon)
                 {
+                    try
+                    {
+                        using var pos = geometry.PointOnSurface();
+                        if (pos != null && !pos.IsEmpty())
+                        {
+                            _logger.LogDebug("Polygon PointOnSurface 사용");
+                            return pos.Clone();
+                        }
+                    }
+                    catch { /* PointOnSurface 미지원 시 폴백 */ }
+
                     if (geometry.GetGeometryCount() > 0)
                     {
-                        var exteriorRing = geometry.GetGeometryRef(0); // 외부 링
+                        // 최종 폴백: 외부 링 첫 점(경계 상)
+                        var exteriorRing = geometry.GetGeometryRef(0);
                         if (exteriorRing != null && exteriorRing.GetPointCount() > 0)
                         {
                             var point = new OSGeo.OGR.Geometry(wkbGeometryType.wkbPoint);
                             var pointArray = new double[3];
                             exteriorRing.GetPoint(0, pointArray);
                             point.AddPoint(pointArray[0], pointArray[1], pointArray[2]);
-                            
-                            _logger.LogDebug("Polygon 첫점 추출: ({X}, {Y})", pointArray[0], pointArray[1]);
+                            _logger.LogDebug("Polygon 외부 링 첫점 폴백: ({X}, {Y})", pointArray[0], pointArray[1]);
                             return point;
                         }
                     }
                 }
                 
-                // MultiPolygon: 첫 번째 Polygon의 외부 링 첫 점 사용
+                // MultiPolygon: PointOnSurface 우선, 실패 시 첫 Polygon 외부 링 첫점
                 if (geomType == wkbGeometryType.wkbMultiPolygon)
                 {
+                    try
+                    {
+                        using var pos = geometry.PointOnSurface();
+                        if (pos != null && !pos.IsEmpty())
+                        {
+                            _logger.LogDebug("MultiPolygon PointOnSurface 사용");
+                            return pos.Clone();
+                        }
+                    }
+                    catch { /* PointOnSurface 미지원 시 폴백 */ }
+
                     if (geometry.GetGeometryCount() > 0)
                     {
                         var firstPolygon = geometry.GetGeometryRef(0);
                         if (firstPolygon != null && firstPolygon.GetGeometryCount() > 0)
                         {
-                            var exteriorRing = firstPolygon.GetGeometryRef(0); // 외부 링
+                            var exteriorRing = firstPolygon.GetGeometryRef(0);
                             if (exteriorRing != null && exteriorRing.GetPointCount() > 0)
                             {
                                 var point = new OSGeo.OGR.Geometry(wkbGeometryType.wkbPoint);
@@ -927,7 +983,7 @@ namespace SpatialCheckPro.Services
                                 exteriorRing.GetPoint(0, pointArray);
                                 point.AddPoint(pointArray[0], pointArray[1], pointArray[2]);
                                 
-                                _logger.LogDebug("MultiPolygon 첫점 추출: ({X}, {Y})", pointArray[0], pointArray[1]);
+                                _logger.LogDebug("MultiPolygon 외부 링 첫점 폴백: ({X}, {Y})", pointArray[0], pointArray[1]);
                                 return point;
                             }
                         }

@@ -197,6 +197,21 @@ namespace SpatialCheckPro.Processors
             IStreamingErrorWriter? errorWriter = null)
         {
             var errors = new ConcurrentBag<ValidationError>();
+
+            // 스트리밍 모드와 메모리 모드 처리를 위한 헬퍼 함수
+            void __AddErrorToResult(ValidationError error)
+            {
+                if (errorWriter != null)
+                {
+                    // 스트리밍 모드: 즉시 파일에 기록
+                    errorWriter.WriteErrorAsync(error).Wait();
+                }
+                else
+                {
+                    // 메모리 모드: 리스트에 추가
+                    errors.Add(error);
+                }
+            }
             var streamingMode = errorWriter != null;
             var streamingBatchSize = 1000; // 1000개마다 디스크에 플러시
             var pendingErrors = new List<ValidationError>(streamingBatchSize);
@@ -207,7 +222,7 @@ namespace SpatialCheckPro.Processors
             var startTime = DateTime.Now;
 
             // 오류 추가 헬퍼 (스트리밍 모드와 메모리 모드 모두 지원)
-            Action<ValidationError> addError = (error) =>
+            Action<ValidationError> _AddErrorToResult = (error) =>
             {
                 if (streamingMode)
                 {
@@ -284,7 +299,7 @@ namespace SpatialCheckPro.Processors
                                         (errorX, errorY) = GeometryCoordinateExtractor.GetEnvelopeCenter(geometryRef);
                                     }
 
-                                    addError(new ValidationError
+                                    _AddErrorToResult(new ValidationError
                                     {
                                         ErrorCode = "GEOM_INVALID",
                                         Message = validationError != null ? $"{errorTypeName}: {validationError.Message}" : "지오메트리 유효성 오류",
@@ -327,7 +342,7 @@ namespace SpatialCheckPro.Processors
                                             (errorX, errorY) = GeometryCoordinateExtractor.GetEnvelopeCenter(geometryRef);
                                         }
 
-                                        addError(new ValidationError
+                                        _AddErrorToResult(new ValidationError
                                         {
                                             ErrorCode = "GEOM_NOT_SIMPLE",
                                             Message = "자기 교차 오류 (Self-intersection)",
@@ -348,7 +363,7 @@ namespace SpatialCheckPro.Processors
                                     catch
                                     {
                                         var (centerX, centerY) = GeometryCoordinateExtractor.GetEnvelopeCenter(geometryRef);
-                                        addError(new ValidationError
+                                        _AddErrorToResult(new ValidationError
                                         {
                                             ErrorCode = "GEOM_NOT_SIMPLE",
                                             Message = "자기 교차 오류 (Self-intersection)",
@@ -398,7 +413,7 @@ namespace SpatialCheckPro.Processors
 
                                             workingGeometry.ExportToWkt(out string wkt);
 
-                                            addError(new ValidationError
+                                            _AddErrorToResult(new ValidationError
                                             {
                                                 ErrorCode = "GEOM_SHORT_LINE",
                                                 Message = $"선이 너무 짧습니다: {length:F3}m (최소: {_criteria.MinLineLength}m)",
@@ -428,7 +443,7 @@ namespace SpatialCheckPro.Processors
 
                                             workingGeometry.ExportToWkt(out string wkt);
 
-                                            addError(new ValidationError
+                                            _AddErrorToResult(new ValidationError
                                             {
                                                 ErrorCode = "GEOM_SMALL_AREA",
                                                 Message = $"면적이 너무 작습니다: {area:F2}㎡ (최소: {_criteria.MinPolygonArea}㎡)",
@@ -471,7 +486,7 @@ namespace SpatialCheckPro.Processors
 
                                             workingGeometry.ExportToWkt(out string wkt);
 
-                                            addError(new ValidationError
+                                            _AddErrorToResult(new ValidationError
                                             {
                                                 ErrorCode = "GEOM_MIN_VERTEX",
                                                 Message = $"정점 수가 부족합니다: {minVertexCheck.ObservedVertices}개 (최소: {minVertexCheck.RequiredVertices}개){detail}",
@@ -519,7 +534,7 @@ namespace SpatialCheckPro.Processors
                                             }
                                             geometryRef.ExportToWkt(out string wkt);
 
-                                            addError(new ValidationError
+                                            _AddErrorToResult(new ValidationError
                                             {
                                                 ErrorCode = "GEOM_SLIVER",
                                                 Message = sliverMessage,
@@ -542,24 +557,24 @@ namespace SpatialCheckPro.Processors
                                         geometryRef.ExportToWkt(out string wkt);
                                         if (HasSpike(geometryRef, out string spikeMessage, out double spikeX, out double spikeY))
                                         {
-                                            // result.Errors.Add(new ValidationError
-                                            // {
-                                            //     ErrorCode = "GEOM_SPIKE",
-                                            //     Message = spikeMessage,
-                                            //     TableName = config.TableId,
-                                            //     FeatureId = fid.ToString(),
-                                            //     Severity = Models.Enums.ErrorSeverity.Warning,
-                                            //     X = spikeX,
-                                            //     Y = spikeY,
-                                            //     GeometryWKT = QcError.CreatePointWKT(spikeX, spikeY),
-                                            //     Metadata =
-                                            //     {
-                                            //         ["X"] = spikeX.ToString(),
-                                            //         ["Y"] = spikeY.ToString(),
-                                            //         ["GeometryWkt"] = wkt,
-                                            //         ["OriginalGeometryWKT"] = wkt
-                                            //     }
-                                            // });
+                                            _AddErrorToResult(new ValidationError
+                                            {
+                                                ErrorCode = "GEOM_SPIKE",
+                                                Message = spikeMessage,
+                                                TableName = config.TableId,
+                                                FeatureId = fid.ToString(),
+                                                Severity = Models.Enums.ErrorSeverity.Warning,
+                                                X = spikeX,
+                                                Y = spikeY,
+                                                GeometryWKT = QcError.CreatePointWKT(spikeX, spikeY),
+                                                Metadata =
+                                                {
+                                                    ["X"] = spikeX.ToString(),
+                                                    ["Y"] = spikeY.ToString(),
+                                                    ["GeometryWkt"] = wkt,
+                                                    ["OriginalGeometryWKT"] = wkt
+                                                }
+                                            });
                                         }
                                     }
                                 }

@@ -423,6 +423,9 @@ namespace SpatialCheckPro.Services
                         catch { /* 좌표 보완 실패 시 무시 */ }
                     }
 
+                    // 좌표가 있으면 Point로 표시, 없으면 원본 지오메트리 사용
+                    bool hasValidCoordinates = (outX != 0 || outY != 0);
+
                     var qcError = new QcError
                     {
                         GlobalID = Guid.NewGuid().ToString(),
@@ -444,12 +447,18 @@ namespace SpatialCheckPro.Services
                             ObjectId = errorDetail.ObjectId,
                             ErrorValue = errorDetail.ErrorValue,
                             ThresholdValue = errorDetail.ThresholdValue,
-                            DetailMessage = errorDetail.DetailMessage
+                            DetailMessage = errorDetail.DetailMessage,
+                            OriginalGeometryWKT = errorDetail.GeometryWkt // 원본 지오메트리는 상세정보에 보존
                         }),
                         RunID = runId.ToString(),
-                        Geometry = geometry, // 생성된 지오메트리 객체 할당
-                        GeometryWKT = errorDetail.GeometryWkt,
-                        GeometryType = QcError.DetermineGeometryType(errorDetail.GeometryWkt),
+                        // 좌표가 있으면 Point만 저장, 없으면 원본 지오메트리 저장
+                        Geometry = hasValidCoordinates ? null : geometry,
+                        GeometryWKT = hasValidCoordinates
+                            ? QcError.CreatePointWKT(outX, outY)
+                            : errorDetail.GeometryWkt,
+                        GeometryType = hasValidCoordinates
+                            ? "Point"
+                            : QcError.DetermineGeometryType(errorDetail.GeometryWkt),
                         X = outX,
                         Y = outY,
                         ErrorValue = errorDetail.ErrorValue,

@@ -424,7 +424,7 @@ namespace SpatialCheckPro.Services
         }
 
         /// <summary>
-        /// ValidationError를 GeometryErrorDetail로 변환 (Metadata 기반 좌표/WKT 반영)
+        /// ValidationError를 GeometryErrorDetail로 변환 (ValidationError 필드 우선, Metadata 폴백)
         /// </summary>
         private GeometryErrorDetail ConvertValidationErrorToGeometryErrorDetail(ValidationError error)
         {
@@ -436,19 +436,38 @@ namespace SpatialCheckPro.Services
                 DetailMessage = error.Message
             };
 
+            // ValidationError 필드를 우선 사용 (스파이크 등 위치 특정 오류에서 정확한 좌표 제공)
+            if (error.X.HasValue)
+            {
+                detail.X = error.X.Value;
+            }
+
+            if (error.Y.HasValue)
+            {
+                detail.Y = error.Y.Value;
+            }
+
+            // GeometryWKT 필드를 우선 사용 (이미 Point WKT로 설정됨)
+            if (!string.IsNullOrWhiteSpace(error.GeometryWKT))
+            {
+                detail.GeometryWkt = error.GeometryWKT;
+            }
+
+            // Metadata는 폴백으로만 사용 (ValidationError 필드가 없을 때)
             if (error.Metadata != null)
             {
-                if (error.Metadata.TryGetValue("X", out var xValue) && double.TryParse(xValue?.ToString(), out var x))
+                if (!error.X.HasValue && error.Metadata.TryGetValue("X", out var xValue) && double.TryParse(xValue?.ToString(), out var x))
                 {
                     detail.X = x;
                 }
 
-                if (error.Metadata.TryGetValue("Y", out var yValue) && double.TryParse(yValue?.ToString(), out var y))
+                if (!error.Y.HasValue && error.Metadata.TryGetValue("Y", out var yValue) && double.TryParse(yValue?.ToString(), out var y))
                 {
                     detail.Y = y;
                 }
 
-                if (error.Metadata.TryGetValue("GeometryWkt", out var wktObj))
+                // GeometryWKT 필드가 없을 때만 Metadata 사용
+                if (string.IsNullOrWhiteSpace(error.GeometryWKT) && error.Metadata.TryGetValue("GeometryWkt", out var wktObj))
                 {
                     var wkt = wktObj?.ToString();
                     if (!string.IsNullOrWhiteSpace(wkt))

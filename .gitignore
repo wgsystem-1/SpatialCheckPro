@@ -6,6 +6,7 @@
 *.cache
 *.log
 *.tlog
+**/startup_debug.log
 *.pdb
 *.exe
 *.dll

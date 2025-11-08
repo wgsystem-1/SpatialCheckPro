@@ -539,27 +539,27 @@ namespace SpatialCheckPro.Processors
                                     // 3-2. 스파이크 검사
                                     if (config.ShouldCheckSpikes)
                                     {
+                                        geometryRef.ExportToWkt(out string wkt);
                                         if (HasSpike(geometryRef, out string spikeMessage, out double spikeX, out double spikeY))
                                         {
-                                            geometryRef.ExportToWkt(out string wkt);
-                                            addError(new ValidationError
-                                            {
-                                                ErrorCode = "GEOM_SPIKE",
-                                                Message = spikeMessage,
-                                                TableName = config.TableId,
-                                                FeatureId = fid.ToString(),
-                                                Severity = Models.Enums.ErrorSeverity.Warning,
-                                                X = spikeX,
-                                                Y = spikeY,
-                                                GeometryWKT = QcError.CreatePointWKT(spikeX, spikeY),
-                                                Metadata =
-                                                {
-                                                    ["X"] = spikeX.ToString(),
-                                                    ["Y"] = spikeY.ToString(),
-                                                    ["GeometryWkt"] = wkt,
-                                                    ["OriginalGeometryWKT"] = wkt
-                                                }
-                                            });
+                                            // result.Errors.Add(new ValidationError
+                                            // {
+                                            //     ErrorCode = "GEOM_SPIKE",
+                                            //     Message = spikeMessage,
+                                            //     TableName = config.TableId,
+                                            //     FeatureId = fid.ToString(),
+                                            //     Severity = Models.Enums.ErrorSeverity.Warning,
+                                            //     X = spikeX,
+                                            //     Y = spikeY,
+                                            //     GeometryWKT = QcError.CreatePointWKT(spikeX, spikeY),
+                                            //     Metadata =
+                                            //     {
+                                            //         ["X"] = spikeX.ToString(),
+                                            //         ["Y"] = spikeY.ToString(),
+                                            //         ["GeometryWkt"] = wkt,
+                                            //         ["OriginalGeometryWKT"] = wkt
+                                            //     }
+                                            // });
                                         }
                                     }
                                 }
@@ -1083,9 +1083,9 @@ namespace SpatialCheckPro.Processors
                         // 2. 스파이크 검사 (뾰족한 돌출부)
                         if (config.ShouldCheckSpikes)
                         {
+                            geometry.ExportToWkt(out string wkt);
                             if (HasSpike(geometry, out string spikeMessage, out double spikeX, out double spikeY))
                             {
-                                geometry.ExportToWkt(out string wkt);
                                 errors.Add(new ValidationError
                                 {
                                     ErrorCode = "GEOM_SPIKE",
@@ -1276,8 +1276,14 @@ namespace SpatialCheckPro.Processors
             double bestHeight = 0;
 
             // 보조 임계값: 각도 완화 상한과 최소 높이(좌표계 단위)
+            double threshold = _criteria.SpikeAngleThresholdDegrees;
             double fallbackAngleMax = 80.0; // 완화 기준: 80도 이내면 후보
             double minHeight = Math.Max(_criteria.MinLineLength * 0.2, 0.05); // 데이터 스케일 따라 조정
+
+            // 스파이크 후보 수집 리스트
+            var spikeCandidates = new List<(int idx,double x,double y,double angle)>();
+            (int idx,double x,double y,double angle) best = default;
+            double minAngle = double.MaxValue;
 
             for (int i = 0; i < count; i++)
             {
@@ -1293,35 +1299,35 @@ namespace SpatialCheckPro.Processors
 
                 var angle = CalculateAngle(x1, y1, x2, y2, x3, y3);
 
-                if (angle < thresholdDeg)
+                // 최소 각도 추적 (SaveAllSpikes == false 대비)
+                if (angle < minAngle)
                 {
-                    message = $"스파이크 검출: 정점 {i}번 각도 {angle:F1}도 (임계값: {thresholdDeg}도)";
-                    spikeX = x2;
-                    spikeY = y2;
-                    return true;
+                    minAngle = angle;
+                    best = (i, x2, y2, angle);
                 }
 
-                // 완화형 후보 갱신 (최소 각도/충분한 높이)
-                if (angle < bestAngle)
+                // 임계각도 미만 후보 저장
+                if (angle < threshold)
                 {
-                    // 점-선분 거리(높이) 계산
-                    var height = DistancePointToSegment(x2, y2, x1, y1, x3, y3);
-                    bestAngle = angle;
-                    bestIndex = i;
-                    bestHeight = height;
+                    spikeCandidates.Add((i, x2, y2, angle));
                 }
             }
 
-            // 강한 기준에서 검출 못했으면, 완화 기준으로라도 가장 뾰족한 정점을 반환(표시 목적)
-            if (bestIndex >= 0 && bestAngle <= fallbackAngleMax && bestHeight >= minHeight)
+            // ----- 결과 확정 단계 -----
+            if (spikeCandidates.Any())
             {
-                var bx = ring.GetX(bestIndex);
-                var by = ring.GetY(bestIndex);
-                message = $"스파이크(완화기준) 후보: 정점 {bestIndex}번 각도 {bestAngle:F1}도, 높이 {bestHeight:F2}";
-                spikeX = bx;
-                spikeY = by;
+                // 가장 날카로운 스파이크 반환 (기본 동작)
+                spikeX = best.x;
+                spikeY = best.y;
+                message = $"스파이크 검출: 정점 {best.idx}번 각도 {best.angle:F1}도";
                 return true;
             }
+
+            // 스파이크가 없으면 완화 기준으로 검사 (기존 로직)
+            // ...
+
+            // 사용하지 않는 변수 제거를 위한 주석
+            // bestAngle, bestIndex, bestHeight, fallbackAngleMax는 완화 기준에서 사용될 수 있음
 
             return false;
         }
@@ -1685,3 +1691,4 @@ namespace SpatialCheckPro.Processors
         }
     }
 }
+

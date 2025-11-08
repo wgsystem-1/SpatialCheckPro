@@ -243,3 +243,15 @@
 [2025-11-08 17:13:26] ValidationSettingsViewModel 생성 시작
 [2025-11-08 17:13:26] ValidationSettingsView DataContext 설정
 [2025-11-08 17:13:26] MainWindow 생성자 완료
+[2025-11-08 18:16:15] MainWindow 생성자 시작
+[2025-11-08 18:16:15] DI 서비스 주입 완료 - ValidationService: True, QcErrorService: True, StageSummaryCollectionViewModel: True, AlertAggregationService: True
+[2025-11-08 18:16:15] 어셈블리 정보 로드 시작
+[2025-11-08 18:16:15] 어셈블리 정보 로드 완료
+[2025-11-08 18:16:15] DI 서비스 초기화 성공
+[2025-11-08 18:16:15] 타이머 시작
+[2025-11-08 18:16:15] ValidationSettingsView 초기화 시작
+[2025-11-08 18:16:15] 기본 설정 파일 경로 초기화 시작
+[2025-11-08 18:16:15] 상태 업데이트 시작
+[2025-11-08 18:16:15] ValidationSettingsViewModel 생성 시작
+[2025-11-08 18:16:15] ValidationSettingsView DataContext 설정
+[2025-11-08 18:16:15] MainWindow 생성자 완료

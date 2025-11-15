@@ -223,6 +223,72 @@ namespace SpatialCheckPro.GUI.Views
             // 테이블별 오류 집계 (실제 피처클래스 이름을 키로 사용)
             var tableErrors = new Dictionary<string, (string TableId, string TableName, int ErrorCount)>();
 
+            // 실제 검수된 테이블 목록 수집 (각 검수 단계의 결과에서 실제 검수된 테이블만 수집)
+            var validatedTables = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            // TableId로 실제 한글명을 조회하기 위한 Dictionary (대소문자 무시)
+            var tableNameLookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            
+            // 1단계: TableCheckResult에서 실제 존재하는 테이블 수집
+            if (_validationResult.TableCheckResult?.TableResults != null)
+            {
+                foreach (var tableResult in _validationResult.TableCheckResult.TableResults)
+                {
+                    // 테이블이 실제로 존재하는 경우만 추가
+                    if (tableResult.TableExistsCheck == "Y" || !string.IsNullOrEmpty(tableResult.ActualFeatureClassName))
+                    {
+                        // TableId와 ActualFeatureClassName 모두 추가 (대소문자 차이 대응)
+                        if (!string.IsNullOrEmpty(tableResult.TableId))
+                        {
+                            validatedTables.Add(tableResult.TableId);
+                            // TableId로 한글명 조회 가능하도록 저장
+                            if (!string.IsNullOrEmpty(tableResult.TableName))
+                            {
+                                tableNameLookup[tableResult.TableId] = tableResult.TableName;
+                            }
+                        }
+                        if (!string.IsNullOrEmpty(tableResult.ActualFeatureClassName))
+                        {
+                            validatedTables.Add(tableResult.ActualFeatureClassName);
+                            // ActualFeatureClassName으로도 한글명 조회 가능하도록 저장
+                            if (!string.IsNullOrEmpty(tableResult.TableName))
+                            {
+                                tableNameLookup[tableResult.ActualFeatureClassName] = tableResult.TableName;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2단계: SchemaCheckResult에서 실제 검수된 테이블 수집
+            if (_validationResult.SchemaCheckResult?.SchemaResults != null)
+            {
+                foreach (var schemaResult in _validationResult.SchemaCheckResult.SchemaResults)
+                {
+                    if (!string.IsNullOrEmpty(schemaResult.TableId))
+                    {
+                        validatedTables.Add(schemaResult.TableId);
+                        // 스키마 결과에는 TableName이 없으므로 TableCheckResult에서 가져온 정보 사용
+                    }
+                }
+            }
+
+            // 3단계: GeometryCheckResult에서 실제 검수된 테이블 수집
+            if (_validationResult.GeometryCheckResult?.GeometryResults != null)
+            {
+                foreach (var geometryResult in _validationResult.GeometryCheckResult.GeometryResults)
+                {
+                    if (!string.IsNullOrEmpty(geometryResult.TableId))
+                    {
+                        validatedTables.Add(geometryResult.TableId);
+                        // GeometryResult의 TableName도 저장
+                        if (!string.IsNullOrEmpty(geometryResult.TableName))
+                        {
+                            tableNameLookup[geometryResult.TableId] = geometryResult.TableName;
+                        }
+                    }
+                }
+            }
+
             // 1단계: 테이블 검수 오류
             if (_validationResult.TableCheckResult?.TableResults != null)
             {
@@ -235,61 +301,74 @@ namespace SpatialCheckPro.GUI.Views
                 }
             }
 
-            // 2단계: 스키마 검수 오류 (테이블별로 그룹화)
+            // 2단계: 스키마 검수 오류 (테이블별로 그룹화, 실제 검수된 테이블만 포함)
             if (_validationResult.SchemaCheckResult?.SchemaResults != null)
             {
-                // 테이블별로 스키마 오류 개수 집계
+                // 테이블별로 스키마 오류 개수 집계 (실제 검수된 테이블만)
                 var schemaErrorsByTable = _validationResult.SchemaCheckResult.SchemaResults
-                    .Where(s => !s.IsValid && !string.IsNullOrEmpty(s.TableId))
+                    .Where(s => !s.IsValid && !string.IsNullOrEmpty(s.TableId) && validatedTables.Contains(s.TableId))
                     .GroupBy(s => s.TableId)
                     .ToDictionary(g => g.Key, g => g.Count());
 
                 foreach (var kvp in schemaErrorsByTable)
                 {
-                    AddOrUpdateTableError(tableErrors, kvp.Key, kvp.Key, kvp.Key, kvp.Value);
+                    // 실제 한글명 조회 (없으면 TableId 사용)
+                    var displayName = tableNameLookup.TryGetValue(kvp.Key, out var name) ? name : kvp.Key;
+                    AddOrUpdateTableError(tableErrors, kvp.Key, kvp.Key, displayName, kvp.Value);
                 }
             }
 
-            // 3단계: 지오메트리 검수 오류
+            // 3단계: 지오메트리 검수 오류 (실제 검수된 테이블만 포함)
             if (_validationResult.GeometryCheckResult?.GeometryResults != null)
             {
                 foreach (var result in _validationResult.GeometryCheckResult.GeometryResults)
                 {
-                    if (!string.IsNullOrEmpty(result.TableId))
+                    if (!string.IsNullOrEmpty(result.TableId) && validatedTables.Contains(result.TableId))
                     {
-                        AddOrUpdateTableError(tableErrors, result.TableId, result.TableId, result.TableName ?? result.TableId, result.TotalErrorCount);
+                        var displayName = !string.IsNullOrEmpty(result.TableName) 
+                            ? result.TableName 
+                            : (tableNameLookup.TryGetValue(result.TableId, out var name) ? name : result.TableId);
+                        AddOrUpdateTableError(tableErrors, result.TableId, result.TableId, displayName, result.TotalErrorCount);
                     }
                 }
             }
 
-            // 4단계: 속성 관계 검수 오류 (SourceTable 우선 사용)
+            // 4단계: 속성 관계 검수 오류 (SourceTable 우선 사용, 실제 검수된 테이블만 포함)
             if (_validationResult.AttributeRelationCheckResult?.Errors != null)
             {
                 foreach (var error in _validationResult.AttributeRelationCheckResult.Errors)
                 {
                     // SourceTable을 우선적으로 사용하고, 없으면 TableId 사용
                     var tableId = !string.IsNullOrEmpty(error.SourceTable) ? error.SourceTable : error.TableId;
-                    var tableName = !string.IsNullOrEmpty(error.SourceTable) ? error.SourceTable : error.TableName;
 
-                    if (!string.IsNullOrEmpty(tableId))
+                    // 실제 검수된 테이블만 통계에 포함
+                    if (!string.IsNullOrEmpty(tableId) && validatedTables.Contains(tableId))
                     {
-                        AddOrUpdateTableError(tableErrors, tableId, tableId, tableName ?? tableId, 1);
+                        // 실제 한글명 조회 (TableCheckResult/GeometryResult에서 가져온 한글명 우선, 없으면 error.TableName, 그것도 없으면 tableId)
+                        var displayName = tableNameLookup.TryGetValue(tableId, out var name) 
+                            ? name 
+                            : (!string.IsNullOrEmpty(error.TableName) ? error.TableName : tableId);
+                        AddOrUpdateTableError(tableErrors, tableId, tableId, displayName, 1);
                     }
                 }
             }
 
-            // 5단계: 공간 관계 검수 오류 (SourceTable 우선 사용)
+            // 5단계: 공간 관계 검수 오류 (SourceTable 우선 사용, 실제 검수된 테이블만 포함)
             if (_validationResult.RelationCheckResult?.Errors != null)
             {
                 foreach (var error in _validationResult.RelationCheckResult.Errors)
                 {
                     // SourceTable을 우선적으로 사용하고, 없으면 TableId 사용
                     var tableId = !string.IsNullOrEmpty(error.SourceTable) ? error.SourceTable : error.TableId;
-                    var tableName = !string.IsNullOrEmpty(error.SourceTable) ? error.SourceTable : error.TableName;
 
-                    if (!string.IsNullOrEmpty(tableId))
+                    // 실제 검수된 테이블만 통계에 포함
+                    if (!string.IsNullOrEmpty(tableId) && validatedTables.Contains(tableId))
                     {
-                        AddOrUpdateTableError(tableErrors, tableId, tableId, tableName ?? tableId, 1);
+                        // 실제 한글명 조회 (TableCheckResult/GeometryResult에서 가져온 한글명 우선, 없으면 error.TableName, 그것도 없으면 tableId)
+                        var displayName = tableNameLookup.TryGetValue(tableId, out var name) 
+                            ? name 
+                            : (!string.IsNullOrEmpty(error.TableName) ? error.TableName : tableId);
+                        AddOrUpdateTableError(tableErrors, tableId, tableId, displayName, 1);
                     }
                 }
             }
@@ -366,6 +445,71 @@ namespace SpatialCheckPro.GUI.Views
             // 가장 많은 오류가 있는 테이블
             var tableErrorsForRecommendation = new Dictionary<string, (string TableId, string TableName, int ErrorCount)>();
 
+            // 실제 검수된 테이블 목록 수집 (각 검수 단계의 결과에서 실제 검수된 테이블만 수집)
+            var validatedTablesForRecommendation = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            // TableId로 실제 한글명을 조회하기 위한 Dictionary (대소문자 무시)
+            var tableNameLookupForRecommendation = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            
+            // 1단계: TableCheckResult에서 실제 존재하는 테이블 수집
+            if (_validationResult.TableCheckResult?.TableResults != null)
+            {
+                foreach (var tableResult in _validationResult.TableCheckResult.TableResults)
+                {
+                    // 테이블이 실제로 존재하는 경우만 추가
+                    if (tableResult.TableExistsCheck == "Y" || !string.IsNullOrEmpty(tableResult.ActualFeatureClassName))
+                    {
+                        // TableId와 ActualFeatureClassName 모두 추가 (대소문자 차이 대응)
+                        if (!string.IsNullOrEmpty(tableResult.TableId))
+                        {
+                            validatedTablesForRecommendation.Add(tableResult.TableId);
+                            // TableId로 한글명 조회 가능하도록 저장
+                            if (!string.IsNullOrEmpty(tableResult.TableName))
+                            {
+                                tableNameLookupForRecommendation[tableResult.TableId] = tableResult.TableName;
+                            }
+                        }
+                        if (!string.IsNullOrEmpty(tableResult.ActualFeatureClassName))
+                        {
+                            validatedTablesForRecommendation.Add(tableResult.ActualFeatureClassName);
+                            // ActualFeatureClassName으로도 한글명 조회 가능하도록 저장
+                            if (!string.IsNullOrEmpty(tableResult.TableName))
+                            {
+                                tableNameLookupForRecommendation[tableResult.ActualFeatureClassName] = tableResult.TableName;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2단계: SchemaCheckResult에서 실제 검수된 테이블 수집
+            if (_validationResult.SchemaCheckResult?.SchemaResults != null)
+            {
+                foreach (var schemaResult in _validationResult.SchemaCheckResult.SchemaResults)
+                {
+                    if (!string.IsNullOrEmpty(schemaResult.TableId))
+                    {
+                        validatedTablesForRecommendation.Add(schemaResult.TableId);
+                    }
+                }
+            }
+
+            // 3단계: GeometryCheckResult에서 실제 검수된 테이블 수집
+            if (_validationResult.GeometryCheckResult?.GeometryResults != null)
+            {
+                foreach (var geometryResult in _validationResult.GeometryCheckResult.GeometryResults)
+                {
+                    if (!string.IsNullOrEmpty(geometryResult.TableId))
+                    {
+                        validatedTablesForRecommendation.Add(geometryResult.TableId);
+                        // GeometryResult의 TableName도 저장
+                        if (!string.IsNullOrEmpty(geometryResult.TableName))
+                        {
+                            tableNameLookupForRecommendation[geometryResult.TableId] = geometryResult.TableName;
+                        }
+                    }
+                }
+            }
+
             // 1단계: 테이블 검수 오류
             if (_validationResult.TableCheckResult?.TableResults != null)
             {
@@ -378,61 +522,74 @@ namespace SpatialCheckPro.GUI.Views
                 }
             }
 
-            // 2단계: 스키마 검수 오류 (테이블별로 그룹화)
+            // 2단계: 스키마 검수 오류 (테이블별로 그룹화, 실제 검수된 테이블만 포함)
             if (_validationResult.SchemaCheckResult?.SchemaResults != null)
             {
-                // 테이블별로 스키마 오류 개수 집계
+                // 테이블별로 스키마 오류 개수 집계 (실제 검수된 테이블만)
                 var schemaErrorsByTable = _validationResult.SchemaCheckResult.SchemaResults
-                    .Where(s => !s.IsValid && !string.IsNullOrEmpty(s.TableId))
+                    .Where(s => !s.IsValid && !string.IsNullOrEmpty(s.TableId) && validatedTablesForRecommendation.Contains(s.TableId))
                     .GroupBy(s => s.TableId)
                     .ToDictionary(g => g.Key, g => g.Count());
 
                 foreach (var kvp in schemaErrorsByTable)
                 {
-                    AddOrUpdateTableError(tableErrorsForRecommendation, kvp.Key, kvp.Key, kvp.Key, kvp.Value);
+                    // 실제 한글명 조회 (없으면 TableId 사용)
+                    var displayName = tableNameLookupForRecommendation.TryGetValue(kvp.Key, out var name) ? name : kvp.Key;
+                    AddOrUpdateTableError(tableErrorsForRecommendation, kvp.Key, kvp.Key, displayName, kvp.Value);
                 }
             }
 
-            // 3단계: 지오메트리 검수 오류
+            // 3단계: 지오메트리 검수 오류 (실제 검수된 테이블만 포함)
             if (_validationResult.GeometryCheckResult?.GeometryResults != null)
             {
                 foreach (var result in _validationResult.GeometryCheckResult.GeometryResults)
                 {
-                    if (!string.IsNullOrEmpty(result.TableId))
+                    if (!string.IsNullOrEmpty(result.TableId) && validatedTablesForRecommendation.Contains(result.TableId))
                     {
-                        AddOrUpdateTableError(tableErrorsForRecommendation, result.TableId, result.TableId, result.TableName ?? result.TableId, result.TotalErrorCount);
+                        var displayName = !string.IsNullOrEmpty(result.TableName) 
+                            ? result.TableName 
+                            : (tableNameLookupForRecommendation.TryGetValue(result.TableId, out var name) ? name : result.TableId);
+                        AddOrUpdateTableError(tableErrorsForRecommendation, result.TableId, result.TableId, displayName, result.TotalErrorCount);
                     }
                 }
             }
 
-            // 4단계: 속성 관계 검수 오류 (SourceTable 우선 사용)
+            // 4단계: 속성 관계 검수 오류 (SourceTable 우선 사용, 실제 검수된 테이블만 포함)
             if (_validationResult.AttributeRelationCheckResult?.Errors != null)
             {
                 foreach (var error in _validationResult.AttributeRelationCheckResult.Errors)
                 {
                     // SourceTable을 우선적으로 사용하고, 없으면 TableId 사용
                     var tableId = !string.IsNullOrEmpty(error.SourceTable) ? error.SourceTable : error.TableId;
-                    var tableName = !string.IsNullOrEmpty(error.SourceTable) ? error.SourceTable : error.TableName;
 
-                    if (!string.IsNullOrEmpty(tableId))
+                    // 실제 검수된 테이블만 통계에 포함
+                    if (!string.IsNullOrEmpty(tableId) && validatedTablesForRecommendation.Contains(tableId))
                     {
-                        AddOrUpdateTableError(tableErrorsForRecommendation, tableId, tableId, tableName ?? tableId, 1);
+                        // 실제 한글명 조회 (TableCheckResult/GeometryResult에서 가져온 한글명 우선, 없으면 error.TableName, 그것도 없으면 tableId)
+                        var displayName = tableNameLookupForRecommendation.TryGetValue(tableId, out var name) 
+                            ? name 
+                            : (!string.IsNullOrEmpty(error.TableName) ? error.TableName : tableId);
+                        AddOrUpdateTableError(tableErrorsForRecommendation, tableId, tableId, displayName, 1);
                     }
                 }
             }
 
-            // 5단계: 공간 관계 검수 오류 (SourceTable 우선 사용)
+            // 5단계: 공간 관계 검수 오류 (SourceTable 우선 사용, 실제 검수된 테이블만 포함)
             if (_validationResult.RelationCheckResult?.Errors != null)
             {
                 foreach (var error in _validationResult.RelationCheckResult.Errors)
                 {
                     // SourceTable을 우선적으로 사용하고, 없으면 TableId 사용
                     var tableId = !string.IsNullOrEmpty(error.SourceTable) ? error.SourceTable : error.TableId;
-                    var tableName = !string.IsNullOrEmpty(error.SourceTable) ? error.SourceTable : error.TableName;
 
-                    if (!string.IsNullOrEmpty(tableId))
+                    // 실제 검수된 테이블만 통계에 포함
+                    if (!string.IsNullOrEmpty(tableId) && validatedTablesForRecommendation.Contains(tableId))
                     {
-                        AddOrUpdateTableError(tableErrorsForRecommendation, tableId, tableId, tableName ?? tableId, 1);
+                        // 실제 한글명 조회 (TableCheckResult/GeometryResult에서 가져온 한글명 우선, 없으면 error.TableName, 그것도 없으면 tableId)
+                        var displayName = tableNameLookupForRecommendation.TryGetValue(tableId, out var name) 
+                            ? name 
+                            : (!string.IsNullOrEmpty(error.TableName) ? error.TableName : tableId);
+                        AddOrUpdateTableError(tableErrorsForRecommendation, tableId, tableId, displayName, 1);
                     }
                 }
             }

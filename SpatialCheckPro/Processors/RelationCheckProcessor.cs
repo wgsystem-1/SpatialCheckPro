@@ -194,6 +194,11 @@ namespace SpatialCheckPro.Processors
             {
                 await Task.Run(() => EvaluatePolygonNotContainPoint(ds, FindLayer, overall, fieldFilter, cancellationToken, config), cancellationToken);
             }
+            else if (caseType.Equals("ConnectedLinesSameAttribute", StringComparison.OrdinalIgnoreCase))
+            {
+                var tol = config.Tolerance ?? _geometryCriteria.LineConnectivityTolerance;
+                await Task.Run(() => EvaluateConnectedLinesSameAttribute(ds, FindLayer, overall, tol, fieldFilter, cancellationToken, config), cancellationToken);
+            }
             else
             {
                 _logger.LogWarning("알 수 없는 CaseType: {CaseType}", caseType);
@@ -1372,6 +1377,217 @@ namespace SpatialCheckPro.Processors
             {
                 _logger.LogWarning(ex, "선형 객체 허용오차 검사 중 오류 발생");
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// 연결된 선분끼리 속성값이 같은지 검사 (예: 등고선의 높이값)
+        /// </summary>
+        private void EvaluateConnectedLinesSameAttribute(DataSource ds, Func<string, Layer?> getLayer, ValidationResult result, double tolerance, string attributeFieldName, CancellationToken token, RelationCheckConfig config)
+        {
+            // 메인: 등고선, 관련: 등고선 (동일 레이어 내 검사)
+            var line = getLayer(config.MainTableId);
+            if (line == null)
+            {
+                _logger.LogWarning("레이어를 찾을 수 없습니다: {TableId}", config.MainTableId);
+                return;
+            }
+
+            // FieldFilter에 속성 필드명이 지정되어 있는지 확인
+            if (string.IsNullOrWhiteSpace(attributeFieldName))
+            {
+                _logger.LogWarning("속성 필드명이 지정되지 않았습니다. FieldFilter에 필드명을 지정하세요.");
+                return;
+            }
+
+            _logger.LogInformation("연결된 선분 속성값 일치 검사 시작: 레이어={Layer}, 속성필드={Field}, 허용오차={Tolerance}m", 
+                config.MainTableId, attributeFieldName, tolerance);
+            var startTime = DateTime.Now;
+
+            // 1단계: 모든 선분과 끝점 정보 수집 (속성값 포함)
+            line.ResetReading();
+            var allSegments = new List<LineSegmentInfo>();
+            var endpointIndex = new Dictionary<string, List<EndpointInfo>>();
+            var attributeValues = new Dictionary<long, double?>(); // OID -> 속성값
+
+            Feature? f;
+            int fieldIndex = -1;
+            while ((f = line.GetNextFeature()) != null)
+            {
+                using (f)
+                {
+                    var g = f.GetGeometryRef();
+                    if (g == null) continue;
+
+                    var oid = f.GetFID();
+                    var lineString = g.GetGeometryType() == wkbGeometryType.wkbLineString ? g : g.GetGeometryRef(0);
+                    if (lineString == null || lineString.GetPointCount() < 2) continue;
+
+                    // 속성값 읽기 (첫 번째 피처에서 필드 인덱스 확인)
+                    if (fieldIndex < 0)
+                    {
+                        var defn = line.GetLayerDefn();
+                        fieldIndex = defn.GetFieldIndex(attributeFieldName);
+                        if (fieldIndex < 0)
+                        {
+                            _logger.LogError("속성 필드를 찾을 수 없습니다: {Field} (레이어: {Layer})", attributeFieldName, config.MainTableId);
+                            return;
+                        }
+                    }
+
+                    // 속성값 읽기 (NUMERIC 타입)
+                    double? attrValue = null;
+                    if (fieldIndex >= 0)
+                    {
+                        var fieldDefn = f.GetFieldDefnRef(fieldIndex);
+                        if (fieldDefn != null)
+                        {
+                            var fieldType = fieldDefn.GetFieldType();
+                            if (fieldType == FieldType.OFTReal || fieldType == FieldType.OFTInteger || fieldType == FieldType.OFTInteger64)
+                            {
+                                attrValue = f.GetFieldAsDouble(fieldIndex);
+                            }
+                            else
+                            {
+                                // 문자열인 경우 숫자로 변환 시도
+                                var strValue = f.GetFieldAsString(fieldIndex);
+                                if (!string.IsNullOrWhiteSpace(strValue) && double.TryParse(strValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsedValue))
+                                {
+                                    attrValue = parsedValue;
+                                }
+                            }
+                        }
+                    }
+
+                    attributeValues[oid] = attrValue;
+
+                    var pCount = lineString.GetPointCount();
+                    var sx = lineString.GetX(0);
+                    var sy = lineString.GetY(0);
+                    var ex = lineString.GetX(pCount - 1);
+                    var ey = lineString.GetY(pCount - 1);
+
+                    var segmentInfo = new LineSegmentInfo
+                    {
+                        Oid = oid,
+                        Geom = g.Clone(),
+                        StartX = sx,
+                        StartY = sy,
+                        EndX = ex,
+                        EndY = ey
+                    };
+                    allSegments.Add(segmentInfo);
+
+                    // 끝점을 공간 인덱스에 추가
+                    AddEndpointToIndex(endpointIndex, sx, sy, oid, true, tolerance);
+                    AddEndpointToIndex(endpointIndex, ex, ey, oid, false, tolerance);
+                }
+            }
+
+            _logger.LogInformation("선분 수집 완료: {Count}개, 끝점 인덱스 그리드 수: {GridCount}", 
+                allSegments.Count, endpointIndex.Count);
+
+            // 2단계: 연결된 선분끼리 속성값 비교
+            var total = allSegments.Count;
+            var idx = 0;
+            var checkedPairs = new HashSet<string>(); // 중복 검사 방지 (OID1_OID2 형식)
+
+            foreach (var segment in allSegments)
+            {
+                token.ThrowIfCancellationRequested();
+                idx++;
+                if (idx % 50 == 0 || idx == total)
+                {
+                    RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, idx, total);
+                }
+
+                var oid = segment.Oid;
+                var currentAttrValue = attributeValues.GetValueOrDefault(oid);
+
+                // 현재 선분의 속성값이 없으면 스킵
+                if (!currentAttrValue.HasValue)
+                {
+                    continue;
+                }
+
+                var sx = segment.StartX;
+                var sy = segment.StartY;
+                var ex = segment.EndX;
+                var ey = segment.EndY;
+
+                // 공간 인덱스를 사용하여 연결된 선분 검색
+                var startCandidates = SearchEndpointsNearby(endpointIndex, sx, sy, tolerance);
+                var endCandidates = SearchEndpointsNearby(endpointIndex, ex, ey, tolerance);
+
+                // 시작점에 연결된 선분 확인
+                foreach (var candidate in startCandidates)
+                {
+                    if (candidate.Oid == oid) continue;
+
+                    var dist = Distance(sx, sy, candidate.X, candidate.Y);
+                    if (dist <= tolerance)
+                    {
+                        var pairKey = oid < candidate.Oid ? $"{oid}_{candidate.Oid}" : $"{candidate.Oid}_{oid}";
+                        if (checkedPairs.Contains(pairKey)) continue;
+                        checkedPairs.Add(pairKey);
+
+                        var connectedAttrValue = attributeValues.GetValueOrDefault(candidate.Oid);
+                        if (connectedAttrValue.HasValue)
+                        {
+                            // 속성값 비교 (NUMERIC 타입이므로 부동소수점 오차 고려)
+                            var diff = Math.Abs(currentAttrValue.Value - connectedAttrValue.Value);
+                            if (diff > 0.01) // 0.01 이상 차이나면 오류 (NUMERIC(7,2)이므로 소수점 2자리까지)
+                            {
+                                var oidStr = oid.ToString(CultureInfo.InvariantCulture);
+                                var connectedOidStr = candidate.Oid.ToString(CultureInfo.InvariantCulture);
+                                AddDetailedError(result, "REL_CONNECTED_LINES_ATTR_MISMATCH",
+                                    $"연결된 등고선의 높이값이 일치하지 않음: {currentAttrValue.Value:F2}m vs {connectedAttrValue.Value:F2}m (차이: {diff:F2}m)",
+                                    config.MainTableId, oidStr, $"연결된 피처: {connectedOidStr}", segment.Geom);
+                            }
+                        }
+                    }
+                }
+
+                // 끝점에 연결된 선분 확인
+                foreach (var candidate in endCandidates)
+                {
+                    if (candidate.Oid == oid) continue;
+
+                    var dist = Distance(ex, ey, candidate.X, candidate.Y);
+                    if (dist <= tolerance)
+                    {
+                        var pairKey = oid < candidate.Oid ? $"{oid}_{candidate.Oid}" : $"{candidate.Oid}_{oid}";
+                        if (checkedPairs.Contains(pairKey)) continue;
+                        checkedPairs.Add(pairKey);
+
+                        var connectedAttrValue = attributeValues.GetValueOrDefault(candidate.Oid);
+                        if (connectedAttrValue.HasValue)
+                        {
+                            // 속성값 비교
+                            var diff = Math.Abs(currentAttrValue.Value - connectedAttrValue.Value);
+                            if (diff > 0.01) // 0.01 이상 차이나면 오류
+                            {
+                                var oidStr = oid.ToString(CultureInfo.InvariantCulture);
+                                var connectedOidStr = candidate.Oid.ToString(CultureInfo.InvariantCulture);
+                                AddDetailedError(result, "REL_CONNECTED_LINES_ATTR_MISMATCH",
+                                    $"연결된 등고선의 높이값이 일치하지 않음: {currentAttrValue.Value:F2}m vs {connectedAttrValue.Value:F2}m (차이: {diff:F2}m)",
+                                    config.MainTableId, oidStr, $"연결된 피처: {connectedOidStr}", segment.Geom);
+                            }
+                        }
+                    }
+                }
+            }
+
+            var elapsed = (DateTime.Now - startTime).TotalSeconds;
+            _logger.LogInformation("연결된 선분 속성값 일치 검사 완료: {Count}개 선분, 소요시간: {Elapsed:F2}초", 
+                total, elapsed);
+
+            RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, total, total, completed: true);
+
+            // 메모리 정리
+            foreach (var seg in allSegments)
+            {
+                seg.Geom?.Dispose();
             }
         }
 

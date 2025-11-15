@@ -49,6 +49,5 @@ tn_arwtcors_fclty,면형수로시설,MULTIPOLYGON,Y,Y,Y,Y,N,Y,Y,Y,Y,Y,N,N
 tn_ptwtcors_fclty,점형수로시설,POINT,Y,N,N,N,N,N,N,Y,N,N,N,N
 tn_river_rt,하천경로,MULTILINESTRING,Y,Y,Y,N,Y,N,N,Y,N,Y,Y,Y
 tn_fmlnd_bndry,경지경계,MULTIPOLYGON,Y,Y,Y,Y,N,Y,Y,Y,Y,Y,N,N
-tn_mtc_bndry,산지경계,MULTIPOLYGON,Y,Y,Y,Y,N,Y,Y,Y,Y,Y,N,N
 tn_ptvgt_fclty,점형식생시설,POINT,Y,N,N,N,N,N,N,Y,N,N,N,N
 tn_mapindx_5k,도엽인덱스5K,MULTIPOLYGON,Y,Y,Y,Y,N,Y,Y,Y,Y,Y,N,N

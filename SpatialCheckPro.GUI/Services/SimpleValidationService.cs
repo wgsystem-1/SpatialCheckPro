@@ -1590,6 +1590,25 @@ namespace SpatialCheckPro.GUI.Services
                             }
                         }
 
+                        // 레이어 존재 여부 확인
+                        bool layerExists = false;
+                        using (var ds = Ogr.Open(originalGdbPath, 0))
+                        {
+                            if (ds != null)
+                            {
+                                var layer = ds.GetLayerByName(config.TableId);
+                                layerExists = layer != null;
+                            }
+                        }
+
+                        // 레이어가 존재하지 않으면 스킵
+                        if (!layerExists)
+                        {
+                            _logger.LogWarning("레이어가 존재하지 않아 지오메트리 검수를 스킵합니다: {TableId}", config.TableId);
+                            processedConfigs++;
+                            continue;
+                        }
+
                         // GeometryCheckProcessor를 사용하여 검수 수행
                         validationResult = await _geometryCheckProcessor.ProcessAsync(
                             originalGdbPath,

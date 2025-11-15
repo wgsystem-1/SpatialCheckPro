@@ -84,7 +84,7 @@ namespace SpatialCheckPro.GUI.Services
                 var item = new GeometryValidationItem
                 {
                         TableId = layerName,
-                        TableName = layerName,
+                        TableName = !string.IsNullOrEmpty(config?.TableName) ? config.TableName : layerName,
                         GeometryType = layer.GetGeomType().ToString(),
                         TotalFeatureCount = (int)layer.GetFeatureCount(1),
                         ProcessedFeatureCount = (int)layer.GetFeatureCount(1),

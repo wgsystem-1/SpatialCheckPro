@@ -18,3 +18,4 @@
 경지경계_도로경계선_침범,Y,PolygonNotIntersectLine,tn_fmlnd_bndry,경지경계,tn_rodway_bndryln,도로경계선,,,경지경계는 도로경계선과 교차하면 안됨
 경지경계_철도경계면_침범,Y,PolygonNotOverlap,tn_fmlnd_bndry,경지경계,tn_rlroad_bndry,철도경계면,,0,경지경계는 철도경계면을 침범하면 안됨
 경지경계_하천중심선_침범,Y,PolygonNotIntersectLine,tn_fmlnd_bndry,경지경계,tn_river_ctln,하천중심선,,,경지경계는 하천중심선과 교차하면 안됨
+등고선_연결높이일치,Y,ConnectedLinesSameAttribute,tn_ctrln,등고선,tn_ctrln,등고선,ctrln_hgt,1,연결된 등고선끼리 높이값이 같아야 함

@@ -81,7 +81,7 @@ detectedStack: ['.NET', 'WPF', 'GIS']
 ## .NET / Build & Test
 
 ```bash
-dotnet build -c Release
+dotnet build SpatialCheckPro.sln -c Release
 dotnet test -c Release --collect "XPlat Code Coverage"
 ```
 

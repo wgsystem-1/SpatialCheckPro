@@ -360,10 +360,11 @@ namespace SpatialCheckPro.GUI.ViewModels
 
         /// <summary>
         /// 완료 단계 수를 업데이트합니다
+        /// Failed 상태도 실행이 완료된 것으로 간주합니다
         /// </summary>
         private void UpdateCompletedStageCount()
         {
-            var newCount = _stages.Count(stage => stage.Status is StageStatus.Completed or StageStatus.CompletedWithWarnings or StageStatus.Skipped);
+            var newCount = _stages.Count(stage => stage.Status is StageStatus.Completed or StageStatus.CompletedWithWarnings or StageStatus.Skipped or StageStatus.Failed);
             CompletedStageCount = newCount;
         }
 

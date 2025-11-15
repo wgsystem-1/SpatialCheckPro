@@ -1244,6 +1244,23 @@ namespace SpatialCheckPro.GUI
                         var status = $"[{Math.Max(1, index + 1)}/{total}] {args.StageName} - {args.StatusMessage}";
                         progressView.UpdateProgress(batchPct, status);
                         progressView.UpdateCurrentStage(args.StageName, args.CurrentStage);
+
+                        // 개별 단계 진행률 갱신
+                        try { progressView.UpdateStageProgress(args.CurrentStage, args.StageProgress); } catch { }
+
+                        // 단위 정보가 제공되면 상세 정보 업데이트
+                        try
+                        {
+                            if (args.ProcessedUnits >= 0 && args.TotalUnits >= 0)
+                            {
+                                progressView.UpdateUnits(args.CurrentStage, args.ProcessedUnits, args.TotalUnits);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.LogError(ex, "[MainWindow] UpdateUnits 호출 중 오류");
+                        }
+
                         // 5단계 (CurrentStage = 5) 검수 진행 추적
                         // 단, RelationValidationProgressEventArgs의 CurrentStage는 RelationValidationStage enum이므로,
                         // 정수 비교가 아닌 실제 전달된 CurrentStage 값이 5인 경우로 확인
@@ -1253,7 +1270,7 @@ namespace SpatialCheckPro.GUI
                             if (args.IsStageCompleted) sawStage5Done = true;
                         }
                         _stageSummaryCollectionViewModel.ApplyProgress(args);
-                        
+
                         // 부분 결과 저장 및 진행 화면에 표시 (단계 완료 시)
                         if (args.IsStageCompleted)
                         {
@@ -1263,7 +1280,7 @@ namespace SpatialCheckPro.GUI
                                 progressView.UpdatePartialResults(_currentValidationResult);
                             }
                         }
-                        
+
                         if (args.IsStageCompleted)
                         {
                             if (args.IsStageSkipped)

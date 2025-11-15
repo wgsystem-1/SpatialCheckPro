@@ -28,6 +28,9 @@ namespace SpatialCheckPro.GUI.Views
             _remainingTimeViewModel = new RemainingTimeViewModel();
             InitializeElapsedTimer();
             ResetHeader();
+
+            // CompletedStageCount 변경 시 자동으로 UI 업데이트
+            _stageSummaries.PropertyChanged += OnStageSummariesPropertyChanged;
         }
 
         private StageSummaryCollectionViewModel EnsureStageSummaryViewModel()
@@ -44,10 +47,35 @@ namespace SpatialCheckPro.GUI.Views
 
         private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
+            // 기존 이벤트 구독 해제
+            if (e.OldValue is StageSummaryCollectionViewModel oldVm)
+            {
+                oldVm.PropertyChanged -= OnStageSummariesPropertyChanged;
+            }
+
+            // 새 ViewModel 설정 및 이벤트 구독
             if (e.NewValue is StageSummaryCollectionViewModel vm)
             {
                 _stageSummaries = vm;
+                vm.PropertyChanged += OnStageSummariesPropertyChanged;
                 ResetHeader();
+            }
+        }
+
+        /// <summary>
+        /// StageSummaryCollectionViewModel의 속성 변경 시 UI 자동 업데이트
+        /// </summary>
+        private void OnStageSummariesPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(StageSummaryCollectionViewModel.CompletedStageCount))
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    var completedCount = _stageSummaries.CompletedStageCount;
+                    var totalCount = _stageSummaries.Stages.Count;
+                    CompletedStagesText.Text = $"{completedCount} / {totalCount}";
+                    System.Console.WriteLine($"[ValidationProgressView.OnStageSummariesPropertyChanged] 완료 단계 자동 업데이트: {completedCount}/{totalCount}");
+                });
             }
         }
 
@@ -120,9 +148,23 @@ namespace SpatialCheckPro.GUI.Views
 
         public void UpdateUnits(int stageNumber, long processedUnits, long totalUnits)
         {
+            System.Console.WriteLine($"[ValidationProgressView.UpdateUnits] 호출됨 - Stage={stageNumber}, {processedUnits}/{totalUnits}, Thread={System.Threading.Thread.CurrentThread.ManagedThreadId}");
+
+            // UI 스레드에서 실행되도록 보장
+            if (!Dispatcher.CheckAccess())
+            {
+                System.Console.WriteLine($"[ValidationProgressView.UpdateUnits] ⚠️ UI 스레드가 아님 - Dispatcher로 전환");
+                Dispatcher.Invoke(() => UpdateUnits(stageNumber, processedUnits, totalUnits));
+                return;
+            }
+
+            System.Console.WriteLine($"[ValidationProgressView.UpdateUnits] ✅ UI 스레드에서 실행 중");
+
             var stage = _stageSummaries.GetStage(stageNumber);
             stage?.UpdateUnits(processedUnits, totalUnits);
             UpdateRemainingTime();
+
+            System.Console.WriteLine($"[ValidationProgressView.UpdateUnits] ✅ UpdateUnits 완료");
         }
 
         private void HighlightActiveStage(int stageNumber)

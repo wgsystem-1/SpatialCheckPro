@@ -189,3 +189,13 @@ G:\SpatialCheckPro\SpatialCheckPro.GUI\obj\Release\net8.0-windows\refint\Spatial
 G:\SpatialCheckPro\SpatialCheckPro.GUI\obj\Release\net8.0-windows\SpatialCheckPro.GUI.pdb
 G:\SpatialCheckPro\SpatialCheckPro.GUI\obj\Release\net8.0-windows\SpatialCheckPro.GUI.genruntimeconfig.cache
 G:\SpatialCheckPro\SpatialCheckPro.GUI\obj\Release\net8.0-windows\ref\SpatialCheckPro.GUI.dll
+G:\SpatialCheckPro\SpatialCheckPro.GUI\obj\Release\net8.0-windows\Views\PredictionAccuracyView.baml
+G:\SpatialCheckPro\SpatialCheckPro.GUI\obj\Release\net8.0-windows\Views\PredictionAccuracyView.g.cs
+G:\SpatialCheckPro\SpatialCheckPro.GUI\obj\Release\net8.0-windows\Views\FolderSelectionPreviewDialog.baml
+G:\SpatialCheckPro\SpatialCheckPro.GUI\obj\Release\net8.0-windows\Views\FolderSelectionPreviewDialog.g.cs
+G:\SpatialCheckPro\SpatialCheckPro.GUI\obj\Release\net8.0-windows\Views\CompactValidationProgressView.baml
+G:\SpatialCheckPro\SpatialCheckPro.GUI\obj\Release\net8.0-windows\Views\CompactValidationProgressView.g.cs
+G:\SpatialCheckPro\SpatialCheckPro.GUI\obj\Release\net8.0-windows\Views\WelcomeView.baml
+G:\SpatialCheckPro\SpatialCheckPro.GUI\obj\Release\net8.0-windows\Views\WelcomeView.g.cs
+G:\SpatialCheckPro\SpatialCheckPro.GUI\obj\Release\net8.0-windows\Views\WideDashboardView.baml
+G:\SpatialCheckPro\SpatialCheckPro.GUI\obj\Release\net8.0-windows\Views\WideDashboardView.g.cs

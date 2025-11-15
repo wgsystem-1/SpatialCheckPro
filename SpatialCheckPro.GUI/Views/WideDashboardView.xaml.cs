@@ -220,7 +220,7 @@ namespace SpatialCheckPro.GUI.Views
         {
             if (_validationResult == null) return;
 
-            // 테이블별 오류 집계 (TableId를 반드시 키로 사용, 없으면 스킵)
+            // 테이블별 오류 집계 (실제 피처클래스 이름을 키로 사용)
             var tableErrors = new Dictionary<string, (string TableId, string TableName, int ErrorCount)>();
 
             // 1단계: 테이블 검수 오류
@@ -235,16 +235,18 @@ namespace SpatialCheckPro.GUI.Views
                 }
             }
 
-            // 2단계: 스키마 검수 오류
+            // 2단계: 스키마 검수 오류 (테이블별로 그룹화)
             if (_validationResult.SchemaCheckResult?.SchemaResults != null)
             {
-                foreach (var schemaResult in _validationResult.SchemaCheckResult.SchemaResults)
+                // 테이블별로 스키마 오류 개수 집계
+                var schemaErrorsByTable = _validationResult.SchemaCheckResult.SchemaResults
+                    .Where(s => !s.IsValid && !string.IsNullOrEmpty(s.TableId))
+                    .GroupBy(s => s.TableId)
+                    .ToDictionary(g => g.Key, g => g.Count());
+
+                foreach (var kvp in schemaErrorsByTable)
                 {
-                    if (!schemaResult.IsValid && !string.IsNullOrEmpty(schemaResult.TableId))
-                    {
-                        var tableName = schemaResult.TableId; // SchemaValidationItem에는 TableName이 별도로 없으므로 TableId 사용
-                        AddOrUpdateTableError(tableErrors, schemaResult.TableId, schemaResult.TableId, tableName, 1);
-                    }
+                    AddOrUpdateTableError(tableErrors, kvp.Key, kvp.Key, kvp.Key, kvp.Value);
                 }
             }
 
@@ -260,34 +262,40 @@ namespace SpatialCheckPro.GUI.Views
                 }
             }
 
-            // 4단계: 속성 관계 검수 오류
+            // 4단계: 속성 관계 검수 오류 (SourceTable 우선 사용)
             if (_validationResult.AttributeRelationCheckResult?.Errors != null)
             {
                 foreach (var error in _validationResult.AttributeRelationCheckResult.Errors)
                 {
-                    // TableId가 있는 것만 집계
-                    if (!string.IsNullOrEmpty(error.TableId))
+                    // SourceTable을 우선적으로 사용하고, 없으면 TableId 사용
+                    var tableId = !string.IsNullOrEmpty(error.SourceTable) ? error.SourceTable : error.TableId;
+                    var tableName = !string.IsNullOrEmpty(error.SourceTable) ? error.SourceTable : error.TableName;
+
+                    if (!string.IsNullOrEmpty(tableId))
                     {
-                        AddOrUpdateTableError(tableErrors, error.TableId, error.TableId, error.TableName ?? error.TableId, 1);
+                        AddOrUpdateTableError(tableErrors, tableId, tableId, tableName ?? tableId, 1);
                     }
                 }
             }
 
-            // 5단계: 공간 관계 검수 오류
+            // 5단계: 공간 관계 검수 오류 (SourceTable 우선 사용)
             if (_validationResult.RelationCheckResult?.Errors != null)
             {
                 foreach (var error in _validationResult.RelationCheckResult.Errors)
                 {
-                    // TableId가 있는 것만 집계
-                    if (!string.IsNullOrEmpty(error.TableId))
+                    // SourceTable을 우선적으로 사용하고, 없으면 TableId 사용
+                    var tableId = !string.IsNullOrEmpty(error.SourceTable) ? error.SourceTable : error.TableId;
+                    var tableName = !string.IsNullOrEmpty(error.SourceTable) ? error.SourceTable : error.TableName;
+
+                    if (!string.IsNullOrEmpty(tableId))
                     {
-                        AddOrUpdateTableError(tableErrors, error.TableId, error.TableId, error.TableName ?? error.TableId, 1);
+                        AddOrUpdateTableError(tableErrors, tableId, tableId, tableName ?? tableId, 1);
                     }
                 }
             }
 
             var maxCount = tableErrors.Values.Select(v => v.ErrorCount).DefaultIfEmpty(0).Max();
-            
+
             var topTables = tableErrors.Values
                 .OrderByDescending(v => v.ErrorCount)
                 .Take(5)
@@ -357,7 +365,7 @@ namespace SpatialCheckPro.GUI.Views
 
             // 가장 많은 오류가 있는 테이블
             var tableErrorsForRecommendation = new Dictionary<string, (string TableId, string TableName, int ErrorCount)>();
-            
+
             // 1단계: 테이블 검수 오류
             if (_validationResult.TableCheckResult?.TableResults != null)
             {
@@ -370,16 +378,18 @@ namespace SpatialCheckPro.GUI.Views
                 }
             }
 
-            // 2단계: 스키마 검수 오류
+            // 2단계: 스키마 검수 오류 (테이블별로 그룹화)
             if (_validationResult.SchemaCheckResult?.SchemaResults != null)
             {
-                foreach (var schemaResult in _validationResult.SchemaCheckResult.SchemaResults)
+                // 테이블별로 스키마 오류 개수 집계
+                var schemaErrorsByTable = _validationResult.SchemaCheckResult.SchemaResults
+                    .Where(s => !s.IsValid && !string.IsNullOrEmpty(s.TableId))
+                    .GroupBy(s => s.TableId)
+                    .ToDictionary(g => g.Key, g => g.Count());
+
+                foreach (var kvp in schemaErrorsByTable)
                 {
-                    if (!schemaResult.IsValid && !string.IsNullOrEmpty(schemaResult.TableId))
-                    {
-                        var tableName = schemaResult.TableId;
-                        AddOrUpdateTableError(tableErrorsForRecommendation, schemaResult.TableId, schemaResult.TableId, tableName, 1);
-                    }
+                    AddOrUpdateTableError(tableErrorsForRecommendation, kvp.Key, kvp.Key, kvp.Key, kvp.Value);
                 }
             }
 
@@ -395,26 +405,34 @@ namespace SpatialCheckPro.GUI.Views
                 }
             }
 
-            // 4단계: 속성 관계 검수 오류
+            // 4단계: 속성 관계 검수 오류 (SourceTable 우선 사용)
             if (_validationResult.AttributeRelationCheckResult?.Errors != null)
             {
                 foreach (var error in _validationResult.AttributeRelationCheckResult.Errors)
                 {
-                    if (!string.IsNullOrEmpty(error.TableId))
+                    // SourceTable을 우선적으로 사용하고, 없으면 TableId 사용
+                    var tableId = !string.IsNullOrEmpty(error.SourceTable) ? error.SourceTable : error.TableId;
+                    var tableName = !string.IsNullOrEmpty(error.SourceTable) ? error.SourceTable : error.TableName;
+
+                    if (!string.IsNullOrEmpty(tableId))
                     {
-                        AddOrUpdateTableError(tableErrorsForRecommendation, error.TableId, error.TableId, error.TableName ?? error.TableId, 1);
+                        AddOrUpdateTableError(tableErrorsForRecommendation, tableId, tableId, tableName ?? tableId, 1);
                     }
                 }
             }
 
-            // 5단계: 공간 관계 검수 오류
+            // 5단계: 공간 관계 검수 오류 (SourceTable 우선 사용)
             if (_validationResult.RelationCheckResult?.Errors != null)
             {
                 foreach (var error in _validationResult.RelationCheckResult.Errors)
                 {
-                    if (!string.IsNullOrEmpty(error.TableId))
+                    // SourceTable을 우선적으로 사용하고, 없으면 TableId 사용
+                    var tableId = !string.IsNullOrEmpty(error.SourceTable) ? error.SourceTable : error.TableId;
+                    var tableName = !string.IsNullOrEmpty(error.SourceTable) ? error.SourceTable : error.TableName;
+
+                    if (!string.IsNullOrEmpty(tableId))
                     {
-                        AddOrUpdateTableError(tableErrorsForRecommendation, error.TableId, error.TableId, error.TableName ?? error.TableId, 1);
+                        AddOrUpdateTableError(tableErrorsForRecommendation, tableId, tableId, tableName ?? tableId, 1);
                     }
                 }
             }

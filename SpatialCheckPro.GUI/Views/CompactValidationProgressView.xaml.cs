@@ -32,6 +32,9 @@ namespace SpatialCheckPro.GUI.Views
             _startTime = DateTime.Now; // 시작 시간 초기화 (UpdateUnits에서 사용)
             InitializeStageCards();
             ResetHeader();
+
+            // CompletedStageCount 변경 시 자동으로 UI 업데이트
+            _stageSummaries.PropertyChanged += OnStageSummariesPropertyChanged;
         }
 
         private StageSummaryCollectionViewModel EnsureStageSummaryViewModel()
@@ -49,11 +52,36 @@ namespace SpatialCheckPro.GUI.Views
 
         private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
+            // 기존 이벤트 구독 해제
+            if (e.OldValue is StageSummaryCollectionViewModel oldVm)
+            {
+                oldVm.PropertyChanged -= OnStageSummariesPropertyChanged;
+            }
+
+            // 새 ViewModel 설정 및 이벤트 구독
             if (e.NewValue is StageSummaryCollectionViewModel vm)
             {
                 _stageSummaries = vm;
+                vm.PropertyChanged += OnStageSummariesPropertyChanged;
                 InitializeStageCards();
                 ResetHeader();
+            }
+        }
+
+        /// <summary>
+        /// StageSummaryCollectionViewModel의 속성 변경 시 UI 자동 업데이트
+        /// </summary>
+        private void OnStageSummariesPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(StageSummaryCollectionViewModel.CompletedStageCount))
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    var completedCount = _stageSummaries.CompletedStageCount;
+                    var totalCount = _stageSummaries.Stages.Count;
+                    CompletedStagesText.Text = $"{completedCount} / {totalCount}";
+                    System.Console.WriteLine($"[OnStageSummariesPropertyChanged] 완료 단계 자동 업데이트: {completedCount}/{totalCount}");
+                });
             }
         }
 
@@ -340,8 +368,18 @@ namespace SpatialCheckPro.GUI.Views
 
         public void UpdateUnits(int stageNumber, long processedUnits, long totalUnits)
         {
-            System.Console.WriteLine($"[UpdateUnits] 호출됨 - Stage={stageNumber}, {processedUnits}/{totalUnits}");
-            
+            System.Console.WriteLine($"[UpdateUnits] 호출됨 - Stage={stageNumber}, {processedUnits}/{totalUnits}, Thread={System.Threading.Thread.CurrentThread.ManagedThreadId}");
+
+            // UI 스레드에서 실행되도록 보장
+            if (!Dispatcher.CheckAccess())
+            {
+                System.Console.WriteLine($"[UpdateUnits] ⚠️ UI 스레드가 아님 - Dispatcher로 전환");
+                Dispatcher.Invoke(() => UpdateUnits(stageNumber, processedUnits, totalUnits));
+                return;
+            }
+
+            System.Console.WriteLine($"[UpdateUnits] ✅ UI 스레드에서 실행 중");
+
             // 단계가 변경되면 시작 시간 초기화
             if (_currentStageNumber != stageNumber)
             {
@@ -349,29 +387,29 @@ namespace SpatialCheckPro.GUI.Views
                 _currentStageStartTime = DateTime.Now;
                 System.Console.WriteLine($"[UpdateUnits] 단계 변경 감지: Stage {stageNumber} 시작 시간 = {_currentStageStartTime:HH:mm:ss.fff}");
             }
-            
+
             var stage = _stageSummaries.GetStage(stageNumber);
             stage?.UpdateUnits(processedUnits, totalUnits);
             UpdateRemainingTime();
-            
+
             // 상세 정보 업데이트
             ProcessedItemsText.Text = processedUnits.ToString("N0");
             TotalItemsText.Text = totalUnits.ToString("N0");
-            
-            System.Console.WriteLine($"[UpdateUnits] 상세 정보 텍스트 업데이트 완료: {processedUnits:N0}/{totalUnits:N0}");
-            
+
+            System.Console.WriteLine($"[UpdateUnits] 상세 정보 텍스트 업데이트 완료: ProcessedItemsText={ProcessedItemsText.Text}, TotalItemsText={TotalItemsText.Text}");
+
             // 처리 속도 계산 (단계별 시작 시간 사용)
-            var stageElapsed = _currentStageStartTime.HasValue 
-                ? DateTime.Now - _currentStageStartTime.Value 
+            var stageElapsed = _currentStageStartTime.HasValue
+                ? DateTime.Now - _currentStageStartTime.Value
                 : DateTime.Now - _startTime;
-                
+
             if (stageElapsed.TotalSeconds > 0 && processedUnits > 0)
             {
                 var speed = processedUnits / stageElapsed.TotalSeconds;
                 ProcessingSpeedText.Text = $"{speed:F0}/초";
-                
+
                 System.Console.WriteLine($"[UpdateUnits] 처리 속도: {speed:F0}/초 (경과 시간: {stageElapsed.TotalSeconds:F1}초)");
-                
+
                 // 이 단계 남은 시간 계산
                 if (speed > 0 && totalUnits > processedUnits)
                 {
@@ -388,14 +426,15 @@ namespace SpatialCheckPro.GUI.Views
             {
                 ProcessingSpeedText.Text = "0/초";
                 StageRemainingTimeText.Text = "-";
+                System.Console.WriteLine($"[UpdateUnits] ⚠️ 처리 속도 계산 불가: stageElapsed={stageElapsed.TotalSeconds:F1}초, processedUnits={processedUnits}");
             }
-            
+
             // 현재 처리 정보
             var stageName = stage?.StageName ?? "처리 중";
             CurrentProcessingText.Text = stageName;
             CurrentProgressText.Text = $"{processedUnits:N0} / {totalUnits:N0} 항목 ({(processedUnits * 100.0 / Math.Max(totalUnits, 1)):F1}%)";
-            
-            System.Console.WriteLine($"[UpdateUnits] 현재 처리: {stageName}, 진행: {CurrentProgressText.Text}");
+
+            System.Console.WriteLine($"[UpdateUnits] ✅ 현재 처리 정보 업데이트 완료: CurrentProcessingText={CurrentProcessingText.Text}, CurrentProgressText={CurrentProgressText.Text}");
         }
 
         public void UpdateErrorCount(int errorCount)

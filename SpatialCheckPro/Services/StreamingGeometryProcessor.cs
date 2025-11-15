@@ -17,18 +17,24 @@ namespace SpatialCheckPro.Services
         private readonly int _batchSize;
         private readonly int _maxMemoryMB;
         private readonly GeometryCriteria _criteria;
+        private readonly IMemoryManager? _memoryManager;
+        private readonly IDynamicBatchSizeManager _dynamicBatchManager;
         private bool _disposed = false;
 
         public StreamingGeometryProcessor(
             ILogger<StreamingGeometryProcessor> logger,
             GeometryCriteria? criteria = null,
             int batchSize = 1000,
-            int maxMemoryMB = 512)
+            int maxMemoryMB = 512,
+            IMemoryManager? memoryManager = null,
+            IDynamicBatchSizeManager? dynamicBatchManager = null)
         {
             _logger = logger;
             _criteria = criteria ?? GeometryCriteria.CreateDefault();
             _batchSize = batchSize;
             _maxMemoryMB = maxMemoryMB;
+            _memoryManager = memoryManager;
+            _dynamicBatchManager = dynamicBatchManager ?? new DefaultDynamicBatchSizeManager(memoryManager);
         }
 
         /// <summary>
@@ -75,11 +81,11 @@ namespace SpatialCheckPro.Services
                 foreach (var batch in batches)
                 {
                     var batchGeometries = ProcessBatch(layer, batch.Start, batch.Count);
-                    
+
                     if (batchGeometries.Count > 0)
                     {
                         var batchUnion = CreateBatchUnion(batchGeometries);
-                        
+
                         if (unionResult == null)
                         {
                             unionResult = batchUnion;
@@ -91,7 +97,7 @@ namespace SpatialCheckPro.Services
                             batchUnion.Dispose();
                             unionResult = newUnion;
                         }
-                        
+
                         // 배치 지오메트리들 정리
                         foreach (var geom in batchGeometries)
                         {
@@ -107,7 +113,7 @@ namespace SpatialCheckPro.Services
                         Message = $"Union 처리 중: {processedCount}/{totalFeatures}"
                     });
 
-                    // 메모리 사용량 체크
+                    // 메모리 사용량 체크 (개선된 버전)
                     CheckMemoryUsage();
                 }
 

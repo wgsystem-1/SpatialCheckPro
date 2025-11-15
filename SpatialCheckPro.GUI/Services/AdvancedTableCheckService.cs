@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using SpatialCheckPro.Models;
 using SpatialCheckPro.Models.Config;
@@ -65,6 +66,8 @@ namespace SpatialCheckPro.GUI.Services
 
                 // 2. 설정된 각 테이블에 대해 병렬 검수 수행
                 List<TableCheckItem> tableItems;
+                var totalTables = configList.Count;
+                var processedTables = 0;
                 
                 if (_parallelProcessingManager != null && _performanceSettings.EnableTableParallelProcessing)
                 {
@@ -73,6 +76,18 @@ namespace SpatialCheckPro.GUI.Services
                     // 테이블별 병렬 처리
                     var configItems = configList.Select(config => (object)config).ToList();
                     
+                    IProgress<string>? parallelProgress = null;
+                    if (progress != null && totalTables > 0)
+                    {
+                        parallelProgress = new Progress<string>(_ =>
+                        {
+                            var current = Math.Min(Interlocked.Increment(ref processedTables), totalTables);
+                            var percentage = (current * 100.0) / totalTables;
+                            var message = $"테이블 검수 중... ({current}/{totalTables})";
+                            progress.Report((percentage, message));
+                        });
+                    }
+
                     var tableResults = await _parallelProcessingManager.ExecuteTableParallelProcessingAsync(
                         configItems,
                         async (item) =>
@@ -81,7 +96,7 @@ namespace SpatialCheckPro.GUI.Services
                             // CheckTableAsync는 더 이상 gdbPath를 직접 사용하지 않음
                             return await CheckTableAsync(config, allFeatureClasses);
                         },
-                        null, // progress는 병렬 처리에서 직접 처리하지 않음
+                        parallelProgress,
                         "테이블 검수"
                     );
                     
@@ -90,22 +105,21 @@ namespace SpatialCheckPro.GUI.Services
                 else
                 {
                     _logger.LogInformation("테이블 검수 순차 처리 모드로 실행: {TableCount}개 테이블", configList.Count);
-                    
+                    processedTables = 0;
                     // 순차 처리
                     tableItems = new List<TableCheckItem>();
-                    int processedCount = 0;
-                    
+
                     foreach (var config in configList)
                     {
                         var tableItem = await CheckTableAsync(config, allFeatureClasses);
                         tableItems.Add(tableItem);
                         
                         // 진행률 보고
-                        processedCount++;
-                        if (progress != null)
+                        processedTables++;
+                        if (progress != null && totalTables > 0)
                         {
-                            var percentage = (processedCount * 100.0) / configList.Count;
-                            var message = $"테이블 검수 중... ({processedCount}/{configList.Count}) {config.TableName}";
+                            var percentage = (processedTables * 100.0) / totalTables;
+                            var message = $"테이블 검수 중... ({processedTables}/{totalTables}) {config.TableName}";
                             progress.Report((percentage, message));
                         }
                     }
@@ -162,6 +176,14 @@ namespace SpatialCheckPro.GUI.Services
                         _logger.LogError("  - {Name}: {GeometryType} ({FeatureCount}개 피처) - 정의되지 않은 테이블", 
                             additional.Name, additional.GeometryType, additional.FeatureCount);
                     }
+                }
+
+                if (progress != null && totalTables > 0)
+                {
+                    var finalTotal = Math.Max(totalTables, 1);
+                    var finalProcessed = Math.Max(processedTables, totalTables);
+                    var finalPercentage = (finalProcessed * 100.0) / finalTotal;
+                    progress.Report((Math.Min(finalPercentage, 100.0), $"테이블 검수 완료 ({finalProcessed}/{totalTables})"));
                 }
 
                 _logger.LogInformation("✅ 고도화된 테이블 검수 완료: 통과 {Passed}개, 실패 {Failed}개, 추가 {Additional}개", 

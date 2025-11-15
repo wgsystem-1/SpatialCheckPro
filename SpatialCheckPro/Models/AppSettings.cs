@@ -85,7 +85,7 @@ namespace SpatialCheckPro.Models
     public class FileProcessingSettings
     {
         /// <summary>최대 파일 크기 (바이트)</summary>
-        public long MaxFileSizeBytes { get; set; } = 2147483648; // 2GB
+        public long MaxFileSizeBytes { get; set; } = 1_932_735_283; // 약 1.8GB
 
         /// <summary>청크 크기 (바이트)</summary>
         public int ChunkSizeBytes { get; set; } = 104857600; // 100MB
@@ -98,6 +98,12 @@ namespace SpatialCheckPro.Models
 
         /// <summary>동시 처리 가능한 최대 파일 수</summary>
         public int MaxConcurrentFiles { get; set; } = 5;
+
+        /// <summary>기본 FileGDB 디렉터리 경로</summary>
+        public string DefaultGdbDirectory { get; set; } = string.Empty;
+
+        /// <summary>최근 사용된 FileGDB 디렉터리 목록</summary>
+        public List<string> RecentGdbDirectories { get; set; } = new();
     }
 
     /// <summary>
@@ -176,5 +182,26 @@ namespace SpatialCheckPro.Models
 
         /// <summary>가비지 컬렉션 모드</summary>
         public string GarbageCollectionMode { get; set; } = "Interactive";
+
+        /// <summary>고성능 모드 자동 전환을 위한 파일 크기 임계값(바이트)</summary>
+        public long HighPerformanceModeSizeThresholdBytes { get; set; } = 1_932_735_283;
+
+        /// <summary>고성능 모드 자동 전환을 위한 총 피처 수 임계값</summary>
+        public long HighPerformanceModeFeatureThreshold { get; set; } = 400_000;
+
+        /// <summary>스트리밍 모드 강제 사용 여부</summary>
+        public bool ForceStreamingMode { get; set; } = false;
+
+        /// <summary>사용자 지정 스트리밍 배치 크기</summary>
+        public int CustomBatchSize { get; set; } = 1000;
+
+        /// <summary>프리페칭 활성화 여부</summary>
+        public bool EnablePrefetching { get; set; } = false;
+
+        /// <summary>병렬 스트리밍 활성화 여부</summary>
+        public bool EnableParallelStreaming { get; set; } = false;
+
+        /// <summary>검수에서 제외할 객체변동 구분 코드 목록</summary>
+        public List<string> ExcludedObjectChangeCodes { get; set; } = new() { "OFJ008" };
     }
 }

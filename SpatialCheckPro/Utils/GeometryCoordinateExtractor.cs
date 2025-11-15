@@ -127,6 +127,52 @@ namespace SpatialCheckPro.Utils
         }
 
         /// <summary>
+        /// Polygon의 내부 중심점 추출 (PointOnSurface 사용, 실패 시 Centroid, 최종 폴백 Envelope)
+        /// - PointOnSurface: 폴리곤 내부에 반드시 위치하는 점 (오목 폴리곤에도 안전)
+        /// - Centroid: 무게중심 (오목 폴리곤의 경우 외부에 위치할 수 있음)
+        /// </summary>
+        public static (double X, double Y) GetPolygonInteriorPoint(OSGeo.OGR.Geometry geometry)
+        {
+            if (geometry == null || geometry.IsEmpty())
+                return (0, 0);
+
+            try
+            {
+                // 1순위: PointOnSurface (폴리곤 내부 보장)
+                using var pointOnSurface = geometry.PointOnSurface();
+                if (pointOnSurface != null && !pointOnSurface.IsEmpty())
+                {
+                    var point = new double[3];
+                    pointOnSurface.GetPoint(0, point);
+                    return (point[0], point[1]);
+                }
+            }
+            catch
+            {
+                // PointOnSurface 실패 시 Centroid 시도
+            }
+
+            try
+            {
+                // 2순위: Centroid (무게중심)
+                using var centroid = geometry.Centroid();
+                if (centroid != null && !centroid.IsEmpty())
+                {
+                    var point = new double[3];
+                    centroid.GetPoint(0, point);
+                    return (point[0], point[1]);
+                }
+            }
+            catch
+            {
+                // Centroid 실패 시 Envelope 중심 사용
+            }
+
+            // 3순위: Envelope 중심 (폴백)
+            return GetEnvelopeCenter(geometry);
+        }
+
+        /// <summary>
         /// NTS ValidationError 타입을 한글 오류명으로 변환
         /// </summary>
         public static string GetKoreanErrorType(int errorType)

@@ -112,6 +112,11 @@ namespace SpatialCheckPro.Models
         /// </summary>
         public List<ValidationError> Warnings { get; set; } = new List<ValidationError>();
 
+        /// <summary>
+        /// 전체 검수 과정에서 제외된 객체 수
+        /// </summary>
+        public int SkippedCount { get; set; }
+
         // Phase 2 Item #8: 예외 처리 표준화 - Factory Methods
 
         /// <summary>

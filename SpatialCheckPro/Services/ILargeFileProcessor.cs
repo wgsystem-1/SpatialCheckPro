@@ -31,7 +31,7 @@ namespace SpatialCheckPro.Services
         /// <param name="filePath">파일 경로</param>
         /// <param name="threshold">임계값 (바이트)</param>
         /// <returns>대용량 파일 여부</returns>
-        bool IsLargeFile(string filePath, long threshold = 104857600); // 100MB
+        bool IsLargeFile(string filePath, long threshold = 2_147_483_648L); // 2GB
 
         /// <summary>
         /// 메모리 사용량을 모니터링합니다
@@ -47,6 +47,13 @@ namespace SpatialCheckPro.Services
         /// <param name="cancellationToken">취소 토큰</param>
         /// <returns>처리 결과</returns>
         Task<ProcessingResult> ProcessFileStreamAsync(System.IO.Stream stream, Func<System.IO.Stream, Task<bool>> processor, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// 파일의 메타데이터를 분석하여 처리 모드를 결정합니다
+        /// </summary>
+        /// <param name="filePath">분석할 파일 경로</param>
+        /// <returns>파일 분석 결과</returns>
+        object AnalyzeFileForProcessing(string filePath);
 
 
     }

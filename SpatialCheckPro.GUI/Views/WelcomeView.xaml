@@ -1,0 +1,168 @@
+<UserControl x:Class="SpatialCheckPro.GUI.Views.WelcomeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="800" d:DesignWidth="1200"
+             Background="#F9FAFB">
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- 메인 컨텐츠 -->
+        <StackPanel Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,66,0,0">
+            <!-- 로고 및 타이틀 -->
+            <StackPanel HorizontalAlignment="Center" Margin="0,0,0,40">
+                <TextBlock Text="🗺️" FontSize="80" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                
+                <TextBlock Text="국가기본도 FileGDB 검수 프로그램" 
+                          FontSize="36" 
+                          FontWeight="Bold" 
+                          Foreground="#1F2937" 
+                          HorizontalAlignment="Center"
+                          FontFamily="HYGothic-Extra"/>
+                
+                <TextBlock Text="SpatialCheckPro Ver 1.0" 
+                          FontSize="18" 
+                          Foreground="#3B82F6" 
+                          HorizontalAlignment="Center"
+                          FontWeight="SemiBold"
+                          Margin="0,12,0,0"/>
+            </StackPanel>
+            
+            <!-- 설명 텍스트 -->
+            <Border Background="White" 
+                   CornerRadius="12" 
+                   Padding="32,24"
+                   MaxWidth="700"
+                   Margin="0,0,0,40" Height="169">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="20" ShadowDepth="0" Opacity="0.1"/>
+                </Border.Effect>
+                
+                <StackPanel>
+                    <TextBlock TextWrapping="Wrap" 
+                              FontSize="14" 
+                              Foreground="#374151"
+                              LineHeight="24"
+                              TextAlignment="Center"><Run Text="본 검수 프로그램은"/><LineBreak/><Run Text="국가기본도 Master DB 모델을 기반으로 개발되었습니다."/></TextBlock>
+
+                    <Border Background="#FEF2F2" 
+                           CornerRadius="6" 
+                           Padding="12,8"
+                           Margin="0,16,0,0" RenderTransformOrigin="0.474,1.67">
+                        <TextBlock Text="⚠️ 국가기본도 수정 사업자 외의 사용을 금합니다." 
+                                  FontSize="14" 
+                                  Foreground="#DC2626"
+                                  TextAlignment="Center"
+                                  FontWeight="Medium"/>
+                    </Border>
+                </StackPanel>
+            </Border>
+            
+            <!-- 빠른 시작 버튼 -->
+            <Button x:Name="QuickStartButton" 
+                   Click="QuickStartButton_Click"
+                   Cursor="Hand"
+                   Padding="32,16"
+                   Margin="0,0,0,20">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background">
+                            <Setter.Value>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="#3B82F6" Offset="0"/>
+                                    <GradientStop Color="#2563EB" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Setter.Value>
+                        </Setter>
+                        <Setter Property="Foreground" Value="White"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}"
+                                           CornerRadius="8"
+                                           Padding="{TemplateBinding Padding}">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="12" ShadowDepth="4" Opacity="0.2" Color="#3B82F6"/>
+                                        </Border.Effect>
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background">
+                                                <Setter.Value>
+                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                        <GradientStop Color="#2563EB" Offset="0"/>
+                                                        <GradientStop Color="#1D4ED8" Offset="1"/>
+                                                    </LinearGradientBrush>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Button.Style>
+                
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="📂" FontSize="24" Margin="0,0,12,0"/>
+                    <TextBlock Text="폴더 선택하여 검수 시작" FontSize="18" FontWeight="SemiBold"/>
+                </StackPanel>
+            </Button>
+            
+            <!-- 도움말 -->
+            <TextBlock Text="💡 왼쪽 메뉴에서 언제든지 다른 기능에 접근할 수 있습니다" 
+                      FontSize="13" 
+                      Foreground="#6B7280"
+                      HorizontalAlignment="Center"/>
+        </StackPanel>
+        
+        <!-- 하단 정보 -->
+        <Border Grid.Row="1" 
+               Background="White" 
+               BorderBrush="#E5E7EB" 
+               BorderThickness="0,1,0,0"
+               Padding="20">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- 최근 검수 정보 -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <TextBlock Text="📊 최근 검수:" 
+                              FontSize="12" 
+                              Foreground="#6B7280"
+                              VerticalAlignment="Center"
+                              Margin="0,0,10,0"/>
+                    <TextBlock x:Name="LastValidationText" 
+                              Text="-" 
+                              FontSize="12" 
+                              Foreground="#374151"
+                              VerticalAlignment="Center"/>
+                </StackPanel>
+                
+                <!-- 시스템 정보 -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <TextBlock Text="ISO 19157 데이터 품질 표준 준수" 
+                              FontSize="11" 
+                              Foreground="#9CA3AF"
+                              VerticalAlignment="Center"
+                              Margin="0,0,20,0"/>
+                    <TextBlock Text="© 2024 우리강산시스템" 
+                              FontSize="11" 
+                              Foreground="#9CA3AF"
+                              VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

@@ -30,6 +30,13 @@ namespace SpatialCheckPro.GUI.Views
         public bool EnableRealTimeMonitoring { get; set; } = false;
         public int MonitoringIntervalSeconds { get; set; } = 5;
 
+        // 수동 스트리밍 모드 설정
+        public bool ForceStreamingMode { get; set; } = false;
+        public int CustomBatchSize { get; set; } = 1000;
+        public int MaxMemoryUsageMB { get; set; } = 512;
+        public bool EnablePrefetching { get; set; } = false;
+        public bool EnableParallelStreaming { get; set; } = false;
+
         // private CentralizedResourceMonitor? _resourceMonitor;
         // private ParallelPerformanceMonitor? _performanceMonitor;
         // private PerformanceBenchmarkService? _benchmarkService;
@@ -68,6 +75,9 @@ namespace SpatialCheckPro.GUI.Views
                 _ = LoadStage5Async();
                 
                 // 시스템 리소스 분석 초기화
+
+                // 수동 스트리밍 모드 UI 초기화
+                InitializeManualStreamingModeUI();
                 // InitializeSystemResourceAnalyzer();
                 // _ = LoadSystemResourceStatusAsync();
                 // InitializeRealTimeMonitoring();
@@ -141,14 +151,52 @@ namespace SpatialCheckPro.GUI.Views
         {
             _stage2Rows.Clear();
             var path = SchemaConfigPathTextBox.Text;
-            if (!File.Exists(path)) return;
-            using var reader = new StreamReader(path, DetectCsvEncoding(path), detectEncodingFromByteOrderMarks: false);
-            using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
-            csv.Context.Configuration.HeaderValidated = null;
-            csv.Context.Configuration.MissingFieldFound = null;
-            var items = await System.Threading.Tasks.Task.Run(() => csv.GetRecords<SchemaCheckConfig>().ToList());
-            foreach (var it in items) _stage2Rows.Add(new PreviewRow<SchemaCheckConfig>(it));
-            Stage2Grid.ItemsSource = _stage2Rows;
+
+            // 디버깅: 파일 경로 확인
+            System.Diagnostics.Debug.WriteLine($"[LoadStage2Async] 경로: {path}");
+            System.Diagnostics.Debug.WriteLine($"[LoadStage2Async] 파일 존재: {File.Exists(path)}");
+
+            if (!File.Exists(path))
+            {
+                System.Diagnostics.Debug.WriteLine($"[LoadStage2Async] 파일이 존재하지 않습니다: {path}");
+                return;
+            }
+
+            try
+            {
+                using var reader = new StreamReader(path, DetectCsvEncoding(path), detectEncodingFromByteOrderMarks: false);
+                using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+                csv.Context.Configuration.HeaderValidated = null;
+                csv.Context.Configuration.MissingFieldFound = null;
+
+                var items = await System.Threading.Tasks.Task.Run(() => csv.GetRecords<SchemaCheckConfig>().ToList());
+
+                System.Diagnostics.Debug.WriteLine($"[LoadStage2Async] 로드된 항목 수: {items.Count}");
+
+                foreach (var it in items)
+                {
+                    _stage2Rows.Add(new PreviewRow<SchemaCheckConfig>(it));
+                }
+
+                // UI 스레드에서 ItemsSource 설정
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    Stage2Grid.ItemsSource = _stage2Rows;
+                    System.Diagnostics.Debug.WriteLine($"[LoadStage2Async] DataGrid 바인딩 완료: {_stage2Rows.Count}개 항목");
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[LoadStage2Async] 예외 발생: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[LoadStage2Async] 스택 트레이스: {ex.StackTrace}");
+
+                // 사용자에게 오류 표시
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    MessageBox.Show($"스키마 설정 파일 로드 중 오류가 발생했습니다:\n\n{ex.Message}",
+                                  "파일 로드 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                });
+            }
         }
 
         private async System.Threading.Tasks.Task LoadStage3Async()
@@ -227,6 +275,9 @@ namespace SpatialCheckPro.GUI.Views
             var main = Application.Current?.MainWindow as MainWindow;
             if (main == null) return;
 
+            string warn = string.Empty;
+            string err = string.Empty;
+
             // 체크박스 플래그 적용
             main.GetType().GetField("_enableStage1", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.SetValue(main, (Stage1EnabledCheck.IsChecked == true));
             main.GetType().GetField("_enableStage2", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.SetValue(main, (Stage2EnabledCheck.IsChecked == true));
@@ -242,27 +293,68 @@ namespace SpatialCheckPro.GUI.Views
                 try
                 {
                     // 대상이 상위 폴더인 경우 하위 .gdb를 수집하여 배치 대상 설정
-                    List<string> gdbs;
-                    if (System.IO.Directory.Exists(target) && !target.EndsWith(".gdb", StringComparison.OrdinalIgnoreCase))
+                    List<string> gdbs = new List<string>();
+
+                    if (!System.IO.Directory.Exists(target) && !System.IO.File.Exists(target))
                     {
-                        gdbs = System.IO.Directory.GetDirectories(target, "*.gdb", System.IO.SearchOption.AllDirectories).ToList();
+                        warn += $"\n- 검수 대상 경로를 찾을 수 없습니다: {target}";
+                        System.Windows.MessageBox.Show($"검수 대상 폴더 또는 파일이 존재하지 않습니다.\n\n경로: {target}",
+                                                       "경로 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        main.GetType().GetField("_selectedFilePaths",
+                            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+                            .SetValue(main, new List<string>());
+                        return;
+                    }
+                    else if (System.IO.Directory.Exists(target) && !target.EndsWith(".gdb", StringComparison.OrdinalIgnoreCase))
+                    {
+                        try
+                        {
+                            gdbs = System.IO.Directory.GetDirectories(target, "*.gdb", System.IO.SearchOption.AllDirectories).ToList();
+                            if (gdbs.Count == 0)
+                            {
+                                warn += $"\n- 지정된 폴더에 .gdb 파일이 없습니다: {target}";
+                                warn += "\n  FileGDB 폴더를 직접 선택하거나 .gdb 파일이 있는 상위 폴더를 선택해주세요.";
+                            }
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            err += $"\n- 폴더 접근 권한이 없습니다: {target}";
+                        }
+                        catch (System.IO.IOException ex)
+                        {
+                            err += $"\n- 폴더 읽기 오류: {target} ({ex.Message})";
+                        }
+                        main.GetType().GetField("_selectedFilePaths", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.SetValue(main, gdbs);
                     }
                     else if (System.IO.Directory.Exists(target) && target.EndsWith(".gdb", StringComparison.OrdinalIgnoreCase))
                     {
+                        // FileGDB 폴더인 경우 추가 검증
+                        if (!IsValidFileGdbDirectory(target))
+                        {
+                            warn += $"\n- 유효하지 않은 FileGDB 폴더: {target}";
+                            System.Windows.MessageBox.Show($"유효하지 않은 FileGDB 폴더입니다.\n\n경로: {target}\n\n올바른 FileGDB 폴더를 선택해주세요.",
+                                                           "FileGDB 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            return;
+                        }
                         gdbs = new List<string> { target };
+                        main.GetType().GetField("_selectedFilePaths", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.SetValue(main, gdbs);
                     }
                     else
                     {
-                        gdbs = new List<string>();
+                        warn += $"\n- 잘못된 경로 형식: {target}";
+                        warn += "\n  FileGDB 폴더 또는 .gdb 파일이 있는 폴더를 선택해주세요.";
+                        main.GetType().GetField("_selectedFilePaths", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.SetValue(main, gdbs);
                     }
-                    main.GetType().GetField("_selectedFilePaths", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.SetValue(main, gdbs);
                 }
-                catch { /* 배치 경로 설정 실패는致命아님 */ }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show($"경로 확인 중 오류가 발생했습니다.\n\n{ex.Message}",
+                                                   "예외 처리", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
             }
 
             // 파일 경로들 유효성 검증
-            string err = string.Empty;
-            string warn = string.Empty;
             void SetPath(string field, string value, bool mustExist)
             {
                 main.GetType().GetField(field, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.SetValue(main, value);
@@ -1307,5 +1399,115 @@ namespace SpatialCheckPro.GUI.Views
         public bool EnableRealTimeMonitoring { get; set; }
         public int MonitoringIntervalSeconds { get; set; }
     }
+}
+
+namespace SpatialCheckPro.GUI.Views
+{
+    public partial class ValidationSettingsView : UserControl
+    {
+        /// <summary>
+        /// 수동 스트리밍 모드 UI 초기화
+        /// </summary>
+    private void InitializeManualStreamingModeUI()
+    {
+        // UI 컨트롤 값 설정
+        ForceStreamingModeCheck.IsChecked = ForceStreamingMode;
+        BatchSizeTextBox.Text = CustomBatchSize.ToString();
+        MemoryUsageTextBox.Text = MaxMemoryUsageMB.ToString();
+        EnablePrefetchingCheck.IsChecked = EnablePrefetching;
+        EnableParallelStreamingCheck.IsChecked = EnableParallelStreaming;
+
+        // 이벤트 핸들러 연결
+        ForceStreamingModeCheck.Checked += (s, e) => ForceStreamingMode = true;
+        ForceStreamingModeCheck.Unchecked += (s, e) => ForceStreamingMode = false;
+
+        BatchSizeTextBox.TextChanged += BatchSizeTextBox_TextChanged;
+        MemoryUsageTextBox.TextChanged += MemoryUsageTextBox_TextChanged;
+
+        EnablePrefetchingCheck.Checked += (s, e) => EnablePrefetching = true;
+        EnablePrefetchingCheck.Unchecked += (s, e) => EnablePrefetching = false;
+
+        EnableParallelStreamingCheck.Checked += (s, e) => EnableParallelStreaming = true;
+        EnableParallelStreamingCheck.Unchecked += (s, e) => EnableParallelStreaming = false;
+    }
+
+    /// <summary>
+    /// 배치 크기 텍스트박스 변경 이벤트
+    /// </summary>
+    private void BatchSizeTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (int.TryParse(BatchSizeTextBox.Text, out int value))
+        {
+            CustomBatchSize = Math.Max(100, Math.Min(10000, value));
+            BatchSizeTextBox.Text = CustomBatchSize.ToString();
+        }
+        else
+        {
+            BatchSizeTextBox.Text = CustomBatchSize.ToString();
+        }
+    }
+
+    /// <summary>
+    /// 메모리 사용량 텍스트박스 변경 이벤트
+    /// </summary>
+    private void MemoryUsageTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (int.TryParse(MemoryUsageTextBox.Text, out int value))
+        {
+            MaxMemoryUsageMB = Math.Max(128, Math.Min(4096, value));
+            MemoryUsageTextBox.Text = MaxMemoryUsageMB.ToString();
+        }
+        else
+        {
+            MemoryUsageTextBox.Text = MaxMemoryUsageMB.ToString();
+        }
+    }
+
+    /// <summary>
+    /// 수동 스트리밍 모드 설정을 PerformanceSettings로 변환
+    /// </summary>
+    public PerformanceSettings ToPerformanceSettings()
+    {
+        return new PerformanceSettings
+        {
+            ForceStreamingMode = ForceStreamingMode,
+            CustomBatchSize = CustomBatchSize,
+            MaxMemoryUsageMB = MaxMemoryUsageMB,
+            EnablePrefetching = EnablePrefetching,
+            EnableParallelStreaming = EnableParallelStreaming,
+            EnableDynamicParallelismAdjustment = true,
+            MaxDegreeOfParallelism = MaxParallelism,
+            ResourceMonitoringIntervalSeconds = MonitoringIntervalSeconds,
+            EnableTableParallelProcessing = EnableParallelProcessing
+        };
+    }
+
+    /// <summary>
+    /// FileGDB 폴더가 유효한지 기본 검증
+    /// </summary>
+    /// <param name="gdbPath">FileGDB 폴더 경로</param>
+    /// <returns>유효한 FileGDB 폴더인지 여부</returns>
+    private bool IsValidFileGdbDirectory(string gdbPath)
+    {
+        try
+        {
+            if (!System.IO.Directory.Exists(gdbPath))
+                return false;
+
+            var hasGdbTable = System.IO.Directory.EnumerateFiles(gdbPath, "*.gdbtable", System.IO.SearchOption.TopDirectoryOnly).Any();
+            if (!hasGdbTable)
+                return false;
+
+            var hasIndexOrSystemFile = System.IO.Directory.EnumerateFiles(gdbPath, "*.gdbtablx", System.IO.SearchOption.TopDirectoryOnly).Any()
+                || System.IO.File.Exists(System.IO.Path.Combine(gdbPath, "gdb"));
+
+            return hasIndexOrSystemFile || hasGdbTable;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+}
 }
 

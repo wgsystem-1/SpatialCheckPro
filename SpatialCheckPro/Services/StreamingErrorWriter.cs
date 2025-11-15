@@ -217,6 +217,59 @@ namespace SpatialCheckPro.Services
         }
 
         /// <summary>
+        /// 임시 파일에서 모든 오류를 읽어옵니다 (스트리밍 모드 완료 후 사용)
+        /// </summary>
+        public static async Task<List<ValidationError>> ReadErrorsFromFileAsync(string filePath, ILogger? logger = null)
+        {
+            var errors = new List<ValidationError>();
+            
+            if (!File.Exists(filePath))
+            {
+                logger?.LogWarning("스트리밍 오류 파일을 찾을 수 없습니다: {FilePath}", filePath);
+                return errors;
+            }
+
+            try
+            {
+                using var reader = new StreamReader(filePath, System.Text.Encoding.UTF8);
+                string? line;
+                int lineNumber = 0;
+                
+                while ((line = await reader.ReadLineAsync()) != null)
+                {
+                    lineNumber++;
+                    if (string.IsNullOrWhiteSpace(line))
+                        continue;
+
+                    try
+                    {
+                        var error = JsonSerializer.Deserialize<ValidationError>(line, new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        });
+                        
+                        if (error != null)
+                        {
+                            errors.Add(error);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger?.LogWarning(ex, "스트리밍 파일 라인 {LineNumber} 파싱 실패: {Line}", lineNumber, line);
+                    }
+                }
+
+                logger?.LogInformation("스트리밍 파일에서 {Count}개 오류 읽기 완료: {FilePath}", errors.Count, filePath);
+                return errors;
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError(ex, "스트리밍 파일 읽기 실패: {FilePath}", filePath);
+                return errors;
+            }
+        }
+
+        /// <summary>
         /// 리소스 해제
         /// </summary>
         public void Dispose()

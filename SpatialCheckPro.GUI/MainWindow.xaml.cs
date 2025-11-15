@@ -70,6 +70,7 @@ namespace SpatialCheckPro.GUI
         
         private ValidationSettingsViewModel _validationSettingsViewModel;
 
+
         public MainWindow(
             ILogger<MainWindow> logger,
             SimpleValidationService validationService,
@@ -79,9 +80,9 @@ namespace SpatialCheckPro.GUI
         {
             string debugLog = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "startup_debug.log");
             File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] MainWindow 생성자 시작\n");
-            
+
             InitializeComponent();
-            
+
             // DI를 통해 주입받은 서비스들 설정
             _logger = logger;
             _validationService = validationService;
@@ -89,6 +90,12 @@ namespace SpatialCheckPro.GUI
             _stageSummaryCollectionViewModel = stageSummaryCollectionViewModel;
             _alertAggregationService = alertAggregationService;
             
+            // WelcomeView 이벤트 연결
+            if (WelcomeView != null)
+            {
+                WelcomeView.QuickStartRequested += (s, e) => NavigateToFileSelection(s, new RoutedEventArgs());
+            }
+
             File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] DI 서비스 주입 완료 - ValidationService: {_validationService != null}, QcErrorService: {_qcErrorService != null}, StageSummaryCollectionViewModel: {_stageSummaryCollectionViewModel != null}, AlertAggregationService: {_alertAggregationService != null}\n");
             
             try
@@ -225,28 +232,14 @@ namespace SpatialCheckPro.GUI
         }
 
         /// <summary>
-        /// ValidationSettingsView 인스턴스 찾기
+        /// ValidationSettingsView 인스턴스 찾기 (필요시에만 생성)
         /// </summary>
         private Views.ValidationSettingsView? FindValidationSettingsView()
         {
             try
             {
-                // SettingsTab에서 ValidationSettingsView 찾기
-                if (MainTabControl?.Items != null)
-                {
-                    foreach (var item in MainTabControl.Items)
-                    {
-                        if (item is TabItem tabItem && tabItem.Name == "SettingsTab")
-                        {
-                            // TabItem.Content에 직접 들어있으면 우선 반환
-                            if (tabItem.Content is Views.ValidationSettingsView direct)
-                                return direct;
-
-                            // 아직 템플릿이 적용되지 않았거나 가상화된 경우 시각적 트리에서 탐색
-                            return FindVisualChild<Views.ValidationSettingsView>(tabItem);
-                        }
-                    }
-                }
+                // 설정 화면은 필요할 때만 생성하고 표시하지 않음
+                // 실제 표시는 ValidationSettings_Click에서 처리
                 return null;
             }
             catch (Exception ex)
@@ -358,11 +351,10 @@ namespace SpatialCheckPro.GUI
                 return;
             }
 
-			// 대시보드 탭으로 전환하여 진행 화면을 표시
-			try { MainTabControl.SelectedIndex = 0; } catch { }
+			// 메인 컨텐츠 영역에 진행 화면 표시
 
-            // ValidationProgressView 생성 및 설정
-            var progressView = new Views.ValidationProgressView
+            // CompactValidationProgressView 생성 및 설정
+            var progressView = new Views.CompactValidationProgressView
             {
                 DataContext = _stageSummaryCollectionViewModel
             };
@@ -395,7 +387,7 @@ namespace SpatialCheckPro.GUI
         /// <summary>
         /// 예측 시간을 진행 뷰에 적용합니다
         /// </summary>
-        private async Task ApplyPredictedTimesToProgressView(Views.ValidationProgressView progressView)
+        private async Task ApplyPredictedTimesToProgressView(Views.CompactValidationProgressView progressView)
         {
             try
             {
@@ -443,13 +435,27 @@ namespace SpatialCheckPro.GUI
                     }
                 }
                 
-                // 예측 모델 생성 및 적용
-                var predictor = new Models.ValidationTimePredictor(
-                    Microsoft.Extensions.Logging.Abstractions.NullLogger<Models.ValidationTimePredictor>.Instance);
+                // 메트릭 수집기에서 예측 시간 가져오기 (우선)
+                Dictionary<int, double>? predictedTimes = null;
                 
-                var predictedTimes = predictor.PredictStageTimes(
-                    tableCount, featureCount, schemaFieldCount,
-                    geometryCheckCount, relationRuleCount, attributeColumnCount);
+                var metricsCollector = ((App)Application.Current).GetService<ValidationMetricsCollector>();
+                if (metricsCollector != null)
+                {
+                    predictedTimes = metricsCollector.GetStagePredictions(tableCount, featureCount);
+                    _logger?.LogInformation("메트릭 기반 예측 시간 사용");
+                }
+                
+                // 메트릭이 없으면 기존 예측 모델 사용
+                if (predictedTimes == null || predictedTimes.Count == 0)
+                {
+                    var predictor = new Models.ValidationTimePredictor(
+                        Microsoft.Extensions.Logging.Abstractions.NullLogger<Models.ValidationTimePredictor>.Instance);
+                    
+                    predictedTimes = predictor.PredictStageTimes(
+                        tableCount, featureCount, schemaFieldCount,
+                        geometryCheckCount, relationRuleCount, attributeColumnCount);
+                    _logger?.LogInformation("기본 예측 모델 사용");
+                }
                 
                 // 예측 시간 로그
                 _logger?.LogInformation("예측 시간 계산 완료:");
@@ -520,8 +526,7 @@ namespace SpatialCheckPro.GUI
 			// 현재 검수 결과 설정
 			resultView.SetValidationResult(_currentValidationResult);
 
-			// 대시보드 탭으로 전환하여 결과 화면을 표시
-			try { MainTabControl.SelectedIndex = 0; } catch { }
+			// 메인 컨텐츠 영역에 결과 화면 표시
 			MainContentContainer.Content = resultView;
 			UpdateNavigationButtons("Results");
         }
@@ -539,8 +544,7 @@ namespace SpatialCheckPro.GUI
 				reportView.SetValidationResult(_currentValidationResult);
 			}
 			
-			// 대시보드 탭으로 전환하여 보고서 화면을 표시
-			try { MainTabControl.SelectedIndex = 0; } catch { }
+			// 메인 컨텐츠 영역에 보고서 화면 표시
 			MainContentContainer.Content = reportView;
 			UpdateNavigationButtons("Reports");
         }
@@ -592,9 +596,8 @@ namespace SpatialCheckPro.GUI
                 _selectedFilePath = targetPath;
                 _selectedFilePaths = null;
 
-                try { MainTabControl.SelectedIndex = 0; } catch { }
-
-                var progressView = new Views.ValidationProgressView
+                // 메인 컨텐츠 영역에 진행 화면 표시
+                var progressView = new Views.CompactValidationProgressView
                 {
                     DataContext = _stageSummaryCollectionViewModel
                 };
@@ -625,8 +628,7 @@ namespace SpatialCheckPro.GUI
         /// </summary>
         private void ShowFileSelectionView()
         {
-			// 대시보드 탭으로 전환하여 메인 컨텐츠가 보이도록 함
-			try { MainTabControl.SelectedIndex = 0; } catch { }
+			// 메인 컨텐츠 영역에 파일 선택 화면 표시
             var content = new StackPanel
             {
                 HorizontalAlignment = HorizontalAlignment.Center,
@@ -781,39 +783,37 @@ namespace SpatialCheckPro.GUI
                 if (folderDialog.ShowDialog() == WinForms.DialogResult.OK)
                 {
                     var selectedFolder = folderDialog.SelectedPath;
-                    // 상위 폴더 허용: 하위 .gdb 자동 수집
-                    var gdbList = new List<string>();
-                    try
+                    
+                    // 미리보기 다이얼로그 표시
+                    var previewDialog = new Views.FolderSelectionPreviewDialog(selectedFolder)
                     {
-                        if (selectedFolder.EndsWith(".gdb", StringComparison.OrdinalIgnoreCase))
+                        Owner = this
+                    };
+                    
+                    if (previewDialog.ShowDialog() == true && previewDialog.IsContinue)
+                    {
+                        // 사용자가 계속하기를 선택한 경우
+                        selectedPath = selectedFolder;
+                        _selectedFilePaths = previewDialog.SelectedGdbPaths;
+                        
+                        if (_selectedFilePaths.Count == 0)
                         {
-                            // 단일 .gdb 선택
-                            gdbList.Add(selectedFolder);
-                            selectedPath = selectedFolder;
+                            MessageBox.Show(
+                                "검수 대상 FileGDB가 없습니다.",
+                                "대상 없음",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Warning);
+                            return;
                         }
-                        else
-                        {
-                            // 재귀적으로 .gdb 폴더 수집
-                            gdbList = System.IO.Directory.GetDirectories(selectedFolder, "*.gdb", SearchOption.AllDirectories).ToList();
-                            if (gdbList.Count == 0)
-                            {
-                                MessageBox.Show(
-                                    "선택 경로에 .gdb 폴더가 없습니다. .gdb 또는 이를 포함한 상위 폴더를 선택하세요.",
-                                    "대상 없음",
-                                    MessageBoxButton.OK,
-                                    MessageBoxImage.Warning);
-                                return;
-                            }
-                            selectedPath = selectedFolder;
-                        }
+                        
+                        _logger?.LogInformation("폴더 선택 확정 - 대상: {Count}개 FileGDB", _selectedFilePaths.Count);
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        MessageBox.Show($"경로 검사 중 오류가 발생했습니다: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                        // 사용자가 취소한 경우
+                        _logger?.LogInformation("사용자가 폴더 선택을 취소했습니다");
                         return;
                     }
-
-                    _selectedFilePaths = gdbList.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
                 }
             }
 
@@ -842,14 +842,14 @@ namespace SpatialCheckPro.GUI
 
         #region 검수 실행
 
-        private Views.ValidationProgressView? _currentProgressView;
+        private Views.CompactValidationProgressView? _currentProgressView;
         private System.Threading.CancellationTokenSource? _validationCancellationTokenSource;
         private bool _isValidationRunning = false;
 
         /// <summary>
         /// 검수를 시작합니다
         /// </summary>
-        private async Task StartValidationAsync(Views.ValidationProgressView progressView)
+        private async Task StartValidationAsync(Views.CompactValidationProgressView progressView)
         {
             if (_isValidationRunning)
             {
@@ -875,50 +875,44 @@ namespace SpatialCheckPro.GUI
             try
             {
                 UpdateStatus("검수를 시작합니다...");
-                progressView.AddLogMessage("검수 시작");
-                progressView.AddLogMessage($"대상 파일: {_selectedFilePath}");
+                // 로그 UI 제거로 주석 처리
+                // progressView.AddLogMessage("검수 시작");
+                // progressView.AddLogMessage($"대상 파일: {_selectedFilePath}");
                 
+                // 검수 시작 시간 초기화 (단계 상세 정보의 처리 속도 계산을 위해)
+                progressView.ResetStartTime();
                 var startTime = DateTime.Now;
-                var progressTimer = new DispatcherTimer();
-                progressTimer.Interval = TimeSpan.FromMilliseconds(500);
+                
+                // 소요시간 업데이트 타이머 (1초 간격)
+                var progressTimer = new DispatcherTimer(DispatcherPriority.Render);
+                progressTimer.Interval = TimeSpan.FromSeconds(1); // 1초 간격으로 변경
                 progressTimer.Tick += (s, e) => 
                 {
                     var elapsed = DateTime.Now - startTime;
-                    progressView.UpdateElapsedTime(elapsed);
+                    // Invoke로 동기 호출하여 즉시 반영
+                    Dispatcher.Invoke(() => progressView.UpdateElapsedTime(elapsed), DispatcherPriority.Render);
                 };
                 progressTimer.Start();
 
                 // 검수 서비스의 진행률 이벤트 구독 (정상 해제를 위해 핸들러 보관)
+                int cumulativeErrorCount = 0;
                 progressHandlerLocal = (sender, args) =>
                 {
+                    // Invoke로 동기 호출하여 즉시 반영 (우선순위 높임)
                     Dispatcher.Invoke(() =>
                     {
-                        // 전체 진행률 업데이트
-                        progressView.UpdateProgress(args.OverallProgress, args.StatusMessage);
+                        System.Console.WriteLine($">>> [ProgressHandler] Stage={args.CurrentStage}, StageName={args.StageName}, Progress={args.StageProgress:F1}%, Completed={args.IsStageCompleted}, ProcessedUnits={args.ProcessedUnits}, TotalUnits={args.TotalUnits}");
                         
-                        // 현재 단계 업데이트
-                        progressView.UpdateCurrentStage(args.StageName, args.CurrentStage);
-
-                        // 개별 단계 진행률 갱신 (2,3,4단계 병렬 진행 시 시각화)
-                        try { progressView.UpdateStageProgress(args.CurrentStage, args.StageProgress); } catch { }
-                        
-                        // 단위 정보가 제공되면 EWMA 업데이트
-                        try
-                        {
-                            if (args.ProcessedUnits >= 0 && args.TotalUnits > 0)
-                            {
-                                progressView.UpdateUnits(args.CurrentStage, args.ProcessedUnits, args.TotalUnits);
-                            }
-                        }
-                        catch { }
-                        
-                        // 로그 메시지 추가
-                        progressView.AddLogMessage($"{args.CurrentStage}단계: {args.StatusMessage}");
-                        
-                        // 단계 진행 상황을 StageSummaryCollectionViewModel에 반영
+                        // [해결 방향 1] 호출 순서 변경: ApplyProgress를 먼저 호출하여 CompletedStageCount를 먼저 업데이트
+                        // 단계 진행 상황을 StageSummaryCollectionViewModel에 반영 (먼저 호출)
                         _stageSummaryCollectionViewModel.ApplyProgress(args);
+                        
+                        // 단계 완료 시 상태 강제 설정
                         if (args.IsStageCompleted)
                         {
+                            System.Console.WriteLine($">>> [ProgressHandler] ✅ 단계 {args.CurrentStage} 완료! PartialResult={args.PartialResult != null}");
+                            System.Console.WriteLine($">>> [ProgressHandler] 단계 상태 업데이트 시작: Stage={args.CurrentStage}");
+                            
                             if (args.IsStageSkipped)
                             {
                                 _stageSummaryCollectionViewModel.ForceStageStatus(args.CurrentStage, StageStatus.Skipped, args.StatusMessage);
@@ -936,13 +930,77 @@ namespace SpatialCheckPro.GUI
                             {
                                 _stageSummaryCollectionViewModel.ForceStageStatus(nextStageNumber, StageStatus.Pending, "대기 중");
                             }
+                            
+                            // 부분 결과 저장 및 진행 화면에 표시
+                            if (args.PartialResult != null)
+                            {
+                                _currentValidationResult = args.PartialResult;
+                                System.Console.WriteLine($">>> [ProgressHandler] 부분 결과 저장: ErrorCount={_currentValidationResult.ErrorCount}");
+                                
+                                // 진행 화면에 부분 결과 실시간 표시
+                                try
+                                {
+                                    progressView.UpdatePartialResults(_currentValidationResult);
+                                    System.Console.WriteLine($">>> [ProgressHandler] UpdatePartialResults 호출 완료");
+                                }
+                                catch (Exception ex)
+                                {
+                                    System.Console.WriteLine($">>> [ProgressHandler] ❌ UpdatePartialResults 오류: {ex.Message}");
+                                }
+                            }
+                            else
+                            {
+                                System.Console.WriteLine($">>> [ProgressHandler] ⚠️ PartialResult가 null!");
+                            }
+                            
+                            // 단계 완료 시 오류 카운트 누적
+                            if (args.ErrorCount > 0)
+                            {
+                                cumulativeErrorCount += args.ErrorCount;
+                                progressView.UpdateErrorCount(cumulativeErrorCount);
+                            }
+                            
+                            // 완료 단계 카운터 확인 (업데이트 후)
+                            var completedCount = _stageSummaryCollectionViewModel.CompletedStageCount;
+                            System.Console.WriteLine($">>> [ProgressHandler] 완료 단계 카운터: {completedCount}/6");
                         }
-                    });
+                        
+                        // 전체 진행률 업데이트 (ApplyProgress 이후에 호출하여 최신 CompletedStageCount 반영)
+                        progressView.UpdateProgress(args.OverallProgress, args.StatusMessage);
+                        
+                        // 현재 단계 업데이트
+                        progressView.UpdateCurrentStage(args.StageName, args.CurrentStage);
+
+                        // 개별 단계 진행률 갱신
+                        try { progressView.UpdateStageProgress(args.CurrentStage, args.StageProgress); } catch { }
+                        
+                        // 단위 정보가 제공되면 상세 정보 업데이트 (조건 완화)
+                        try
+                        {
+                            if (args.ProcessedUnits >= 0 && args.TotalUnits >= 0)
+                            {
+                                System.Console.WriteLine($">>> [ProgressHandler] UpdateUnits 호출: Stage={args.CurrentStage}, {args.ProcessedUnits}/{args.TotalUnits}");
+                                progressView.UpdateUnits(args.CurrentStage, args.ProcessedUnits, args.TotalUnits);
+                            }
+                            else
+                            {
+                                System.Console.WriteLine($">>> [ProgressHandler] ⚠️ 단위 정보 부족: ProcessedUnits={args.ProcessedUnits}, TotalUnits={args.TotalUnits}");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Console.WriteLine($">>> [ProgressHandler] ❌ UpdateUnits 오류: {ex.Message}");
+                            _logger?.LogError(ex, "[MainWindow] UpdateUnits 호출 중 오류");
+                        }
+                    }, DispatcherPriority.Render); // Render 우선순위로 즉시 반영
                 };
+                System.Console.WriteLine($"[MainWindow] 이벤트 핸들러 연결 전: progressHandlerLocal={progressHandlerLocal != null}");
+                System.Console.WriteLine($"[MainWindow] ValidationService 인스턴스: {_validationService.GetHashCode()}");
                 _validationService.ProgressUpdated += progressHandlerLocal;
+                System.Console.WriteLine($"[MainWindow] 이벤트 핸들러 연결 완료!");
 
                 // 실제 검수 서비스 호출
-                progressView.AddLogMessage("검수 서비스 실행 중...");
+                // progressView.AddLogMessage("검수 서비스 실행 중...");
                 
                 // 사용자 정의 설정 파일이 있으면 우선 사용, 없으면 기본 설정 사용
                 var tableConfig = !string.IsNullOrEmpty(_customTableConfigPath) ? _customTableConfigPath : _tableConfigPath;
@@ -951,10 +1009,10 @@ namespace SpatialCheckPro.GUI
                 var relationConfig = !string.IsNullOrEmpty(_customRelationConfigPath) ? _customRelationConfigPath : _relationConfigPath;
                 
                 // 사용할 설정 파일 경로 로그 출력
-                progressView.AddLogMessage($"테이블 설정: {(tableConfig != null ? Path.GetFileName(tableConfig) : "기본값")}");
-                progressView.AddLogMessage($"스키마 설정: {(schemaConfig != null ? Path.GetFileName(schemaConfig) : "기본값")}");
-                progressView.AddLogMessage($"지오메트리 설정: {(geometryConfig != null ? Path.GetFileName(geometryConfig) : "기본값")}");
-                progressView.AddLogMessage($"관계 설정: {(relationConfig != null ? Path.GetFileName(relationConfig) : "기본값")}");
+                // progressView.AddLogMessage($"테이블 설정: {(tableConfig != null ? Path.GetFileName(tableConfig) : "기본값")}");
+                // progressView.AddLogMessage($"스키마 설정: {(schemaConfig != null ? Path.GetFileName(schemaConfig) : "기본값")}");
+                // progressView.AddLogMessage($"지오메트리 설정: {(geometryConfig != null ? Path.GetFileName(geometryConfig) : "기본값")}");
+                // progressView.AddLogMessage($"관계 설정: {(relationConfig != null ? Path.GetFileName(relationConfig) : "기본값")}");
                 
                 // 선택된 검수 항목을 서비스에 전달
                 _validationService._selectedStage1Items = _selectedStage1Items;
@@ -964,20 +1022,25 @@ namespace SpatialCheckPro.GUI
                 _validationService._selectedStage5Items = _selectedStage5Items;
                 
                 var token = _validationCancellationTokenSource.Token;
-                _currentValidationResult = await _validationService.ValidateAsync(
-                    _selectedFilePath!, 
-                    tableConfig, 
-                    schemaConfig, 
-                    geometryConfig, 
-                    relationConfig,
-                    !string.IsNullOrEmpty(_customAttributeConfigPath) ? _customAttributeConfigPath : _attributeConfigPath,
-                    !string.IsNullOrEmpty(_customCodelistPath) ? _customCodelistPath : null,
-                    token);
+                
+                // Task.Run을 사용하여 백그라운드 스레드에서 실행
+                _currentValidationResult = await Task.Run(async () => 
+                {
+                    return await _validationService.ValidateAsync(
+                        _selectedFilePath!, 
+                        tableConfig, 
+                        schemaConfig, 
+                        geometryConfig, 
+                        relationConfig,
+                        !string.IsNullOrEmpty(_customAttributeConfigPath) ? _customAttributeConfigPath : _attributeConfigPath,
+                        !string.IsNullOrEmpty(_customCodelistPath) ? _customCodelistPath : null,
+                        token);
+                });
 
                 // 완료
                 progressView.UpdateProgress(100, "검수 완료");
-                progressView.AddLogMessage($"검수 완료 - 결과: {(_currentValidationResult.IsValid ? "성공" : "실패")}");
-                progressView.AddLogMessage($"오류: {_currentValidationResult.ErrorCount}개, 경고: {_currentValidationResult.WarningCount}개");
+                // progressView.AddLogMessage($"검수 완료 - 결과: {(_currentValidationResult.IsValid ? "성공" : "실패")}");
+                // progressView.AddLogMessage($"오류: {_currentValidationResult.ErrorCount}개, 경고: {_currentValidationResult.WarningCount}개");
                 
                 progressTimer.Stop();
                 
@@ -1010,12 +1073,10 @@ namespace SpatialCheckPro.GUI
             }
             catch (OperationCanceledException)
             {
-                progressView?.AddLogMessage("검수가 취소되었습니다.");
                 UpdateStatus("검수가 취소되었습니다.");
             }
             catch (Exception ex)
             {
-                progressView?.AddLogMessage($"검수 중 오류 발생: {ex.Message}");
                 UpdateStatus($"검수 실패: {ex.Message}");
                 MessageBox.Show($"검수 중 오류가 발생했습니다:\n{ex.Message}", "검수 오류", 
                               MessageBoxButton.OK, MessageBoxImage.Error);
@@ -1099,14 +1160,13 @@ namespace SpatialCheckPro.GUI
             {
                 _validationCancellationTokenSource?.Cancel();
                 UpdateStatus("검수를 중단하는 중...");
-                _currentProgressView?.AddLogMessage("사용자 요청으로 검수 중단을 시도합니다");
             }
         }
 
         /// <summary>
         /// 배치 검수를 시작합니다 (.gdb 여러 개 순차 처리)
         /// </summary>
-        private async Task StartBatchValidationAsync(Views.ValidationProgressView progressView)
+        private async Task StartBatchValidationAsync(Views.CompactValidationProgressView progressView)
         {
             if (_isValidationRunning)
             {
@@ -1146,15 +1206,16 @@ namespace SpatialCheckPro.GUI
             try
             {
                 UpdateStatus("배치 검수를 시작합니다...");
-                progressView.AddLogMessage($"배치 검수 시작 - 대상: {targets.Count}개 .gdb");
+                // progressView.AddLogMessage($"배치 검수 시작 - 대상: {targets.Count}개 .gdb");
 
                 var startTime = DateTime.Now;
-                var progressTimer = new DispatcherTimer();
-                progressTimer.Interval = TimeSpan.FromMilliseconds(500);
+                var progressTimer = new DispatcherTimer(DispatcherPriority.Render); // Render 우선순위로 변경
+                progressTimer.Interval = TimeSpan.FromMilliseconds(100); // 100ms 간격
                 progressTimer.Tick += (s, e) => 
                 {
                     var elapsed = DateTime.Now - startTime;
-                    progressView.UpdateElapsedTime(elapsed);
+                    // Invoke로 동기 호출하여 즉시 반영
+                    Dispatcher.Invoke(() => progressView.UpdateElapsedTime(elapsed), DispatcherPriority.Render);
                 };
                 progressTimer.Start();
 
@@ -1175,19 +1236,34 @@ namespace SpatialCheckPro.GUI
                 bool sawStage5Done = false;
                 batchProgressHandler = (sender, args) =>
                 {
-                    Dispatcher.Invoke(() =>
+                    // InvokeAsync로 변경하여 UI 스레드 블로킹 방지
+                    _ = Dispatcher.InvokeAsync(() =>
                     {
                         var completed = Math.Max(0, index);
                         double batchPct = ((completed * 100.0) + args.OverallProgress) / Math.Max(1, total);
                         var status = $"[{Math.Max(1, index + 1)}/{total}] {args.StageName} - {args.StatusMessage}";
                         progressView.UpdateProgress(batchPct, status);
                         progressView.UpdateCurrentStage(args.StageName, args.CurrentStage);
-                        if (args.CurrentStage == 5)  // 5단계 = 관계 검수 (순서 변경)
+                        // 5단계 (CurrentStage = 5) 검수 진행 추적
+                        // 단, RelationValidationProgressEventArgs의 CurrentStage는 RelationValidationStage enum이므로,
+                        // 정수 비교가 아닌 실제 전달된 CurrentStage 값이 5인 경우로 확인
+                        if (args.CurrentStage == 5)
                         {
                             if (args.StageProgress >= 0) sawStage5Start = true;
                             if (args.IsStageCompleted) sawStage5Done = true;
                         }
                         _stageSummaryCollectionViewModel.ApplyProgress(args);
+                        
+                        // 부분 결과 저장 및 진행 화면에 표시 (단계 완료 시)
+                        if (args.IsStageCompleted)
+                        {
+                            if (args.PartialResult != null)
+                            {
+                                _currentValidationResult = args.PartialResult;
+                                progressView.UpdatePartialResults(_currentValidationResult);
+                            }
+                        }
+                        
                         if (args.IsStageCompleted)
                         {
                             if (args.IsStageSkipped)
@@ -1195,7 +1271,7 @@ namespace SpatialCheckPro.GUI
                             else
                                 _stageSummaryCollectionViewModel.ForceStageStatus(args.CurrentStage, args.IsStageSuccessful ? StageStatus.Completed : StageStatus.Failed, args.StatusMessage);
                         }
-                    });
+                    }, DispatcherPriority.Normal);
                 };
 
                 _validationService.ProgressUpdated += batchProgressHandler;
@@ -1212,7 +1288,7 @@ namespace SpatialCheckPro.GUI
                     index = i;
 
                     var gdbPath = targets[i];
-                    progressView.AddLogMessage($"[{i + 1}/{total}] 대상: {gdbPath}");
+                    // progressView.AddLogMessage($"[{i + 1}/{total}] 대상: {gdbPath}");
 
                     // 파일별 단계 UI 초기화
                     Dispatcher.Invoke(() =>
@@ -1245,7 +1321,7 @@ namespace SpatialCheckPro.GUI
                             _stageSummaryCollectionViewModel.ForceStageStatus(5, StageStatus.Completed, "관계 검수 완료");
                             double batchPctNow = ((Math.Max(0, index) * 100.0) + 100.0) / Math.Max(1, total);
                             progressView.UpdateProgress(batchPctNow, "파일 처리 완료");
-                            progressView.AddLogMessage("5단계 진행 표시 보정: 속성 관계 검수 완료로 처리");
+                            // progressView.AddLogMessage("5단계 진행 표시 보정: 속성 관계 검수 완료로 처리");
                         });
                     }
                     else if (sawStage5Start && !sawStage5Done)
@@ -1263,11 +1339,12 @@ namespace SpatialCheckPro.GUI
                     try
                     {
                         var (pdfPath, htmlPath) = GenerateReportsForTarget(vr, gdbPath);
-                        progressView.AddLogMessage($"보고서 생성 완료: PDF={pdfPath}, HTML={htmlPath}");
+                        // progressView.AddLogMessage($"보고서 생성 완료: PDF={pdfPath}, HTML={htmlPath}");
                     }
                     catch (Exception rex)
                     {
-                        progressView.AddLogMessage($"보고서 생성 중 오류: {rex.Message}");
+                        _logger?.LogWarning(rex, "보고서 생성 중 오류가 발생했습니다.");
+                        // progressView.AddLogMessage($"보고서 생성 중 오류: {rex.Message}");
                     }
                 }
 
@@ -1276,7 +1353,7 @@ namespace SpatialCheckPro.GUI
                 if (!token.IsCancellationRequested)
                 {
                     progressView.UpdateProgress(100, "배치 검수 완료");
-                    progressView.AddLogMessage($"배치 검수 완료 - 성공 {successCount}개, 실패 {failCount}개, 총 오류 {totalErrors}개, 총 경고 {totalWarnings}개");
+                    // progressView.AddLogMessage($"배치 검수 완료 - 성공 {successCount}개, 실패 {failCount}개, 총 오류 {totalErrors}개, 총 경고 {totalWarnings}개");
                     UpdateStatus("배치 검수 완료");
 
                     // 결과 화면으로 이동하되, 배치 전체 결과를 전달하여 파일 선택이 가능하도록 설정
@@ -1284,7 +1361,6 @@ namespace SpatialCheckPro.GUI
                     {
                         var resultView = new Views.ValidationResultView();
                         resultView.SetBatchResults(batchResults);
-                        try { MainTabControl.SelectedIndex = 0; } catch { }
                         MainContentContainer.Content = resultView;
                         UpdateNavigationButtons("Results");
                     }
@@ -1295,7 +1371,6 @@ namespace SpatialCheckPro.GUI
                 }
                 else
                 {
-                    progressView.AddLogMessage("배치 검수가 취소되었습니다.");
                     UpdateStatus("배치 검사가 취소되었습니다.");
                 }
 
@@ -1303,7 +1378,6 @@ namespace SpatialCheckPro.GUI
             }
             catch (Exception ex)
             {
-                progressView?.AddLogMessage($"배치 검수 중 오류 발생: {ex.Message}");
                 UpdateStatus($"배치 검수 실패: {ex.Message}");
                 MessageBox.Show($"배치 검수 중 오류가 발생했습니다:\n{ex.Message}", "검수 오류", 
                               MessageBoxButton.OK, MessageBoxImage.Error);
@@ -1326,22 +1400,16 @@ namespace SpatialCheckPro.GUI
         {
             try
             {
-                // 창을 열지 않고 탭으로 전환
-                if (MainTabControl != null)
-                {
-                    foreach (var item in MainTabControl.Items)
-                    {
-                        if (item is System.Windows.Controls.TabItem ti && ti.Name == "SettingsTab")
-                        {
-                            MainTabControl.SelectedItem = ti;
-                            break;
-                        }
-                    }
-                }
+                // 설정 화면을 메인 컨텐츠에 표시
+                var settingsView = new Views.ValidationSettingsView();
+                MainContentContainer.Content = settingsView;
+                UpdateNavigationButtons("Settings");
+                
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"검수 설정 탭 전환 오류: {ex.Message}", "오류", 
+                _logger?.LogError(ex, "검수 설정 화면 표시 오류");
+                MessageBox.Show($"검수 설정 화면 표시 오류: {ex.Message}", "오류", 
                               MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }

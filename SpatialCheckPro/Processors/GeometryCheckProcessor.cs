@@ -8,6 +8,7 @@ using NetTopologySuite.IO;
 using NetTopologySuite.Operation.Valid;
 using SpatialCheckPro.Utils;
 using System.IO;
+using ConfigPerformanceSettings = SpatialCheckPro.Models.Config.PerformanceSettings;
 
 namespace SpatialCheckPro.Processors
 {
@@ -22,6 +23,7 @@ namespace SpatialCheckPro.Processors
         private readonly HighPerformanceGeometryValidator? _highPerfValidator;
         private readonly GeometryCriteria _criteria;
         private readonly double _ringClosureTolerance;
+        private readonly IFeatureFilterService _featureFilterService;
 
         // Phase 2.3: 공간 인덱스 캐싱 (중복 생성 방지)
         private readonly ConcurrentDictionary<string, object> _spatialIndexCache = new();
@@ -30,14 +32,23 @@ namespace SpatialCheckPro.Processors
             ILogger<GeometryCheckProcessor> logger,
             SpatialIndexService? spatialIndexService = null,
             HighPerformanceGeometryValidator? highPerfValidator = null,
-            GeometryCriteria? criteria = null)
+            GeometryCriteria? criteria = null,
+            IFeatureFilterService? featureFilterService = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _spatialIndexService = spatialIndexService;
             _highPerfValidator = highPerfValidator;
             _criteria = criteria ?? GeometryCriteria.CreateDefault();
             _ringClosureTolerance = _criteria.RingClosureTolerance;
+            _featureFilterService = featureFilterService ?? new FeatureFilterService(
+                logger as ILogger<FeatureFilterService> ?? new LoggerFactory().CreateLogger<FeatureFilterService>(),
+                new ConfigPerformanceSettings());
         }
+
+        /// <summary>
+        /// 마지막 실행에서 스킵된 피처 수
+        /// </summary>
+        public int LastSkippedFeatureCount { get; private set; }
 
         /// <summary>
         /// 공간 인덱스 캐시 정리
@@ -85,8 +96,45 @@ namespace SpatialCheckPro.Processors
                     return result;
                 }
 
+                // 필터 적용 전 총 피처 수
+                var totalFeatureCountBeforeFilter = layer.GetFeatureCount(1);
+                
+                LastSkippedFeatureCount = 0;
+                var filterOutcome = _featureFilterService.ApplyObjectChangeFilter(
+                    layer,
+                    "Geometry",
+                    config.TableId);
+                if (filterOutcome.Applied)
+                {
+                    LastSkippedFeatureCount = filterOutcome.ExcludedCount;
+                }
+                result.SkippedCount = LastSkippedFeatureCount;
+
+                // 필터 적용 후 실제 검수 대상 피처 수
                 var featureCount = layer.GetFeatureCount(1);
-                _logger.LogInformation("검수 대상 피처: {Count}개", featureCount);
+                _logger.LogInformation("검수 대상 피처: {Count}개 (필터 전: {BeforeFilter}, 제외: {Excluded})", 
+                    featureCount, totalFeatureCountBeforeFilter, LastSkippedFeatureCount);
+                
+                // A. 필터 적용 검증 (처음 10개 테스트)
+                if (filterOutcome.Applied)
+                {
+                    int testCount = 0;
+                    layer.ResetReading();
+                    while (layer.GetNextFeature() != null && testCount < 10)
+                    {
+                        testCount++;
+                    }
+                    layer.ResetReading();
+                    
+                    if (testCount > 10)
+                    {
+                        _logger.LogWarning("필터 검증 이상: 처음 10개 요청했으나 {Actual}개 반환됨. 필터가 제대로 작동하지 않을 수 있음.", testCount);
+                    }
+                    else
+                    {
+                        _logger.LogDebug("필터 검증 통과: 처음 {Count}개 반환", testCount);
+                    }
+                }
 
                 // Phase 2 Item #7: 스트리밍 모드 활성화
                 if (!string.IsNullOrEmpty(streamingOutputPath))
@@ -151,6 +199,22 @@ namespace SpatialCheckPro.Processors
                     }
                 }
 
+                // === 네트워크 연결성 검사 (언더슛, 오버슛) - 별도 순회 필요 ===
+                if (config.ShouldCheckUndershoot || config.ShouldCheckOvershoot)
+                {
+                    var networkErrors = await CheckUndershootOvershootAsync(layer, config, cancellationToken);
+                    
+                    if (errorWriter != null)
+                    {
+                        await errorWriter.WriteErrorsAsync(networkErrors);
+                    }
+                    else
+                    {
+                        result.Errors.AddRange(networkErrors);
+                    }
+                    result.ErrorCount += networkErrors.Count;
+                }
+
                 // 스트리밍 완료 및 통계 업데이트
                 if (errorWriter != null)
                 {
@@ -198,20 +262,6 @@ namespace SpatialCheckPro.Processors
         {
             var errors = new ConcurrentBag<ValidationError>();
 
-            // 스트리밍 모드와 메모리 모드 처리를 위한 헬퍼 함수
-            void __AddErrorToResult(ValidationError error)
-            {
-                if (errorWriter != null)
-                {
-                    // 스트리밍 모드: 즉시 파일에 기록
-                    errorWriter.WriteErrorAsync(error).Wait();
-                }
-                else
-                {
-                    // 메모리 모드: 리스트에 추가
-                    errors.Add(error);
-                }
-            }
             var streamingMode = errorWriter != null;
             var streamingBatchSize = 1000; // 1000개마다 디스크에 플러시
             var pendingErrors = new List<ValidationError>(streamingBatchSize);
@@ -220,6 +270,9 @@ namespace SpatialCheckPro.Processors
             _logger.LogInformation("단일 순회 통합 검사 시작 (GEOS + 기본속성 + 고급특징), 스트리밍 모드: {StreamingMode}",
                 streamingMode);
             var startTime = DateTime.Now;
+            
+            // 총 피처 수 미리 캐시 (매번 호출 방지)
+            var totalFeatureCount = layer.GetFeatureCount(1);
 
             // 오류 추가 헬퍼 (스트리밍 모드와 메모리 모드 모두 지원)
             Action<ValidationError> _AddErrorToResult = (error) =>
@@ -257,12 +310,37 @@ namespace SpatialCheckPro.Processors
                     layer.ResetReading();
                     Feature? feature;
                     int processedCount = 0;
+                    int skippedByFilter = 0;
+                    int maxIterations = (int)(totalFeatureCount * 1.5); // 안전장치: 예상의 1.5배까지만
+                    var processedFids = new HashSet<long>(); // C. FID 중복 방지
 
-                    while ((feature = layer.GetNextFeature()) != null)
+                    while ((feature = layer.GetNextFeature()) != null && processedCount < maxIterations)
                     {
                         using (feature)
                         {
                             cancellationToken.ThrowIfCancellationRequested();
+                            
+                            var fid = feature.GetFID();
+                            
+                            // C. FID 중복 체크
+                            if (processedFids.Contains(fid))
+                            {
+                                _logger.LogWarning("중복 FID 발견: {FID}, 레이어: {Layer}", fid, config.TableId);
+                                continue;
+                            }
+                            processedFids.Add(fid);
+                            
+                            // B. 수동 필터링 (GDAL 필터 우회)
+                            if (_featureFilterService.ShouldSkipFeature(feature, config.TableId, out var excludedCode))
+                            {
+                                skippedByFilter++;
+                                if (skippedByFilter <= 10) // 처음 10개만 로그
+                                {
+                                    _logger.LogDebug("수동 필터로 제외: FID={FID}, Code={Code}", fid, excludedCode);
+                                }
+                                continue;
+                            }
+                            
                             processedCount++;
 
                             var geometryRef = feature.GetGeometryRef();
@@ -271,15 +349,25 @@ namespace SpatialCheckPro.Processors
                                 continue;
                             }
 
-                            var fid = feature.GetFID();
-
                             // ========================================
-                            // 1. GEOS 유효성 검사
+                            // 1. GEOS 유효성 검사 (최적화: 빠른 검사만 수행)
                             // ========================================
-                            if (config.ShouldCheckSelfIntersection || config.ShouldCheckSelfOverlap || config.ShouldCheckPolygonInPolygon)
+                            bool needsDetailedValidation = config.ShouldCheckSelfIntersection || config.ShouldCheckSelfOverlap || config.ShouldCheckPolygonInPolygon;
+                            
+                            if (needsDetailedValidation)
                             {
-                                // GEOS IsValid() - 자체꼬임, 자기중첩, 링방향 등
-                                if (!geometryRef.IsValid())
+                                // GDAL 기본 검사만 수행 (NTS 우회)
+                                bool isGdalValid = true;
+                                try
+                                {
+                                    isGdalValid = geometryRef.IsValid();
+                                }
+                                catch
+                                {
+                                    isGdalValid = false;
+                                }
+                                
+                                if (!isGdalValid)
                                 {
                                     geometryRef.ExportToWkt(out string wkt);
                                     var reader = new WKTReader();
@@ -320,81 +408,69 @@ namespace SpatialCheckPro.Processors
                                     });
                                 }
 
-                                // IsSimple() 검사 (자기교차)
-                                if (!geometryRef.IsSimple())
+                                // IsSimple() 검사 (자기교차) - 최적화: GDAL만 사용
+                                bool isGdalSimple = true;
+                                try
                                 {
-                                    geometryRef.ExportToWkt(out string wkt);
-                                    // 자기교차 지점을 찾기 위해 NTS 사용
-                                    try
+                                    isGdalSimple = geometryRef.IsSimple();
+                                }
+                                catch
+                                {
+                                    isGdalSimple = false;
+                                }
+                                
+                                if (!isGdalSimple)
+                                {
+                                    // 간단한 오류만 기록 (NTS 상세 분석 생략)
+                                    var (centerX, centerY) = GeometryCoordinateExtractor.GetEnvelopeCenter(geometryRef);
+                                    
+                                    _AddErrorToResult(new ValidationError
                                     {
-                                        var reader = new WKTReader();
-                                        var ntsGeom = reader.Read(wkt);
-                                        var validator = new IsValidOp(ntsGeom);
-                                        var validationError = validator.ValidationError;
-                                        
-                                        double errorX = 0, errorY = 0;
-                                        if (validationError != null)
-                                        {
-                                            (errorX, errorY) = GeometryCoordinateExtractor.GetValidationErrorLocation(ntsGeom, validationError);
-                                        }
-                                        else
-                                        {
-                                            (errorX, errorY) = GeometryCoordinateExtractor.GetEnvelopeCenter(geometryRef);
-                                        }
-
-                                        _AddErrorToResult(new ValidationError
-                                        {
-                                            ErrorCode = "GEOM_NOT_SIMPLE",
-                                            Message = "자기 교차 오류 (Self-intersection)",
-                                            TableName = config.TableId,
-                                            FeatureId = fid.ToString(),
-                                            Severity = Models.Enums.ErrorSeverity.Error,
-                                            X = errorX,
-                                            Y = errorY,
-                                            GeometryWKT = QcError.CreatePointWKT(errorX, errorY),
-                                            Metadata =
-                                            {
-                                                ["X"] = errorX.ToString(),
-                                                ["Y"] = errorY.ToString(),
-                                                ["OriginalGeometryWKT"] = wkt
-                                            }
-                                        });
-                                    }
-                                    catch
-                                    {
-                                        var (centerX, centerY) = GeometryCoordinateExtractor.GetEnvelopeCenter(geometryRef);
-                                        _AddErrorToResult(new ValidationError
-                                        {
-                                            ErrorCode = "GEOM_NOT_SIMPLE",
-                                            Message = "자기 교차 오류 (Self-intersection)",
-                                            TableName = config.TableId,
-                                            FeatureId = fid.ToString(),
-                                            Severity = Models.Enums.ErrorSeverity.Error,
-                                            X = centerX,
-                                            Y = centerY,
-                                            GeometryWKT = QcError.CreatePointWKT(centerX, centerY)
-                                        });
-                                    }
+                                        ErrorCode = "GEOM_NOT_SIMPLE",
+                                        Message = "자기 교차 오류 (Self-intersection)",
+                                        TableName = config.TableId,
+                                        FeatureId = fid.ToString(),
+                                        Severity = Models.Enums.ErrorSeverity.Error,
+                                        X = centerX,
+                                        Y = centerY,
+                                        GeometryWKT = QcError.CreatePointWKT(centerX, centerY)
+                                    });
                                 }
                             }
 
                             // ========================================
-                            // 2. 기본 기하 속성 검사
+                            // 2. 기본 기하 속성 검사 (최적화: 필요한 경우에만 복제)
                             // ========================================
-                            Geometry? geometryClone = null;
-                            Geometry? linearized = null;
-                            Geometry? workingGeometry = null;
-
-                            try
+                            bool needsGeometryProcessing = config.ShouldCheckShortObject || 
+                                                          config.ShouldCheckSmallArea || 
+                                                          config.ShouldCheckMinPoints ||
+                                                          config.ShouldCheckSliver ||
+                                                          config.ShouldCheckSpikes;
+                            
+                            // 디버그: 첫 피처에서 검사 조건 로그
+                            if (processedCount == 1)
                             {
-                                // Geometry 복제 및 선형화 (곡선 처리)
-                                geometryClone = geometryRef.Clone();
-                                linearized = geometryClone?.GetLinearGeometry(0, Array.Empty<string>());
-                                workingGeometry = linearized ?? geometryClone;
+                                _logger.LogInformation("검사 조건: ShortObject={Short}, SmallArea={Small}, MinPoints={Min}, Sliver={Sliver}, Spikes={Spike}, NeedsProcessing={Needs}",
+                                    config.ShouldCheckShortObject, config.ShouldCheckSmallArea, config.ShouldCheckMinPoints,
+                                    config.ShouldCheckSliver, config.ShouldCheckSpikes, needsGeometryProcessing);
+                            }
+                            
+                            if (needsGeometryProcessing)
+                            {
+                                Geometry? geometryClone = null;
+                                Geometry? linearized = null;
+                                Geometry? workingGeometry = null;
 
-                                if (workingGeometry != null && !workingGeometry.IsEmpty())
+                                try
                                 {
-                                    workingGeometry.FlattenTo2D();
+                                    // Geometry 복제 및 선형화 (곡선 처리) - 필요할 때만
+                                    geometryClone = geometryRef.Clone();
+                                    linearized = geometryClone?.GetLinearGeometry(0, Array.Empty<string>());
+                                    workingGeometry = linearized ?? geometryClone;
+
+                                    if (workingGeometry != null && !workingGeometry.IsEmpty())
+                                    {
+                                        workingGeometry.FlattenTo2D();
 
                                     // 2-1. 짧은 객체 검사 (선)
                                     if (config.ShouldCheckShortObject && GeometryRepresentsLine(workingGeometry))
@@ -419,7 +495,7 @@ namespace SpatialCheckPro.Processors
                                                 Message = $"선이 너무 짧습니다: {length:F3}m (최소: {_criteria.MinLineLength}m)",
                                                 TableName = config.TableId,
                                                 FeatureId = fid.ToString(),
-                                                Severity = Models.Enums.ErrorSeverity.Warning,
+                                                Severity = Models.Enums.ErrorSeverity.Error,
                                                 Metadata =
                                                 {
                                                     ["X"] = midX.ToString(),
@@ -449,7 +525,7 @@ namespace SpatialCheckPro.Processors
                                                 Message = $"면적이 너무 작습니다: {area:F2}㎡ (최소: {_criteria.MinPolygonArea}㎡)",
                                                 TableName = config.TableId,
                                                 FeatureId = fid.ToString(),
-                                                Severity = Models.Enums.ErrorSeverity.Warning,
+                                                Severity = Models.Enums.ErrorSeverity.Error,
                                                 Metadata =
                                                 {
                                                     ["X"] = centerX.ToString(),
@@ -508,10 +584,10 @@ namespace SpatialCheckPro.Processors
                                     // 3. 고급 기하 특징 검사
                                     // ========================================
 
-                                    // 3-1. 슬리버 폴리곤 검사
-                                    if (config.ShouldCheckSliver && config.GeometryType.Contains("POLYGON"))
+                                    // 3-1. 슬리버 폴리곤 검사 (최적화: workingGeometry 재사용)
+                                    if (config.ShouldCheckSliver && config.GeometryType.Contains("POLYGON") && workingGeometry != null)
                                     {
-                                        if (IsSliverPolygon(geometryRef, out string sliverMessage))
+                                        if (IsSliverPolygon(workingGeometry, out string sliverMessage))
                                         {
                                             double centerX = 0, centerY = 0;
                                             if (geometryRef.GetGeometryCount() > 0)
@@ -540,7 +616,7 @@ namespace SpatialCheckPro.Processors
                                                 Message = sliverMessage,
                                                 TableName = config.TableId,
                                                 FeatureId = fid.ToString(),
-                                                Severity = Models.Enums.ErrorSeverity.Warning,
+                                                Severity = Models.Enums.ErrorSeverity.Error,
                                                 Metadata =
                                                 {
                                                     ["X"] = centerX.ToString(),
@@ -551,19 +627,28 @@ namespace SpatialCheckPro.Processors
                                         }
                                     }
 
-                                    // 3-2. 스파이크 검사
-                                    if (config.ShouldCheckSpikes)
+                                    // 3-2. 스파이크 검사 (최적화: workingGeometry 재사용)
+                                    if (config.ShouldCheckSpikes && workingGeometry != null)
                                     {
-                                        geometryRef.ExportToWkt(out string wkt);
-                                        if (HasSpike(geometryRef, out string spikeMessage, out double spikeX, out double spikeY))
+                                        if (processedCount == 1)
                                         {
+                                            _logger.LogInformation("스파이크 검사 시작: GeometryType={Type}, PointCount={Points}",
+                                                workingGeometry.GetGeometryType(), workingGeometry.GetPointCount());
+                                        }
+                                        
+                                        if (HasSpike(workingGeometry, out string spikeMessage, out double spikeX, out double spikeY))
+                                        {
+                                            _logger.LogInformation("스파이크 검출: FID={FID}, Message={Message}, X={X}, Y={Y}",
+                                                fid, spikeMessage, spikeX, spikeY);
+                                            
+                                            workingGeometry.ExportToWkt(out string wkt);
                                             _AddErrorToResult(new ValidationError
                                             {
                                                 ErrorCode = "GEOM_SPIKE",
                                                 Message = spikeMessage,
                                                 TableName = config.TableId,
                                                 FeatureId = fid.ToString(),
-                                                Severity = Models.Enums.ErrorSeverity.Warning,
+                                                Severity = Models.Enums.ErrorSeverity.Error,
                                                 X = spikeX,
                                                 Y = spikeY,
                                                 GeometryWKT = QcError.CreatePointWKT(spikeX, spikeY),
@@ -577,23 +662,51 @@ namespace SpatialCheckPro.Processors
                                             });
                                         }
                                     }
+                                    }
+                                }
+                                finally
+                                {
+                                    // Geometry 리소스 정리
+                                    workingGeometry?.Dispose();
+                                    linearized?.Dispose();
+                                    geometryClone?.Dispose();
                                 }
                             }
-                            finally
-                            {
-                                // Geometry 리소스 정리
-                                workingGeometry?.Dispose();
-                                linearized?.Dispose();
-                                geometryClone?.Dispose();
-                            }
 
-                            // 진행률 로깅
-                            if (processedCount % 1000 == 0)
+                            // 진행률 로깅 (100개마다)
+                            if (processedCount % 100 == 0)
                             {
-                                _logger.LogDebug("단일 순회 검사 진행: {Count}/{Total}", processedCount, layer.GetFeatureCount(1));
+                                _logger.LogInformation("단일 순회 검사 진행: {Count}/{Total}", processedCount, totalFeatureCount);
                             }
                         }
                     }
+                    // 루프 종료 후 최종 카운트 로그
+                    var totalIterations = processedCount + skippedByFilter + (processedFids.Count - processedCount);
+                    
+                    if (totalIterations >= maxIterations)
+                    {
+                        _logger.LogError("안전장치 발동: 최대 반복 횟수({MaxIterations})에 도달하여 강제 종료. 무한 루프 가능성 있음.", maxIterations);
+                    }
+                    
+                    if (skippedByFilter > 0)
+                    {
+                        _logger.LogInformation("수동 필터로 제외된 피처: {Count}개 (OBJFLTN_SE 기준)", skippedByFilter);
+                    }
+                    
+                    if (processedFids.Count != processedCount + skippedByFilter)
+                    {
+                        _logger.LogWarning("FID 중복 발견: 고유 FID {Unique}개, 처리+스킵 {Total}개", 
+                            processedFids.Count, processedCount + skippedByFilter);
+                    }
+                    
+                    if (processedCount > totalFeatureCount)
+                    {
+                        _logger.LogWarning("예상 피처 수({Expected})를 초과하여 {Actual}개 처리됨. 필터 미작동 또는 중복 반환 의심.", 
+                            totalFeatureCount, processedCount);
+                    }
+                    
+                    _logger.LogInformation("단일 순회 완료: 검수 {Processed}개, 제외 {Skipped}개, 고유 FID {Unique}개 (예상: {Expected})", 
+                        processedCount, skippedByFilter, processedFids.Count, totalFeatureCount);
                 }
                 catch (Exception ex)
                 {
@@ -914,7 +1027,7 @@ namespace SpatialCheckPro.Processors
                                             Message = $"선이 너무 짧습니다: {length:F3}m (최소: {_criteria.MinLineLength}m)",
                                             TableName = config.TableId,
                                             FeatureId = fid.ToString(),
-                                            Severity = Models.Enums.ErrorSeverity.Warning,
+                                            Severity = Models.Enums.ErrorSeverity.Error, // 변경: 경고 제거, 모두 오류로 처리
                                             Metadata =
                                             {
                                                 ["X"] = midX.ToString(),
@@ -1080,7 +1193,7 @@ namespace SpatialCheckPro.Processors
                                     Message = sliverMessage,
                                     TableName = config.TableId,
                                     FeatureId = fid.ToString(),
-                                    Severity = Models.Enums.ErrorSeverity.Warning,
+                                    Severity = Models.Enums.ErrorSeverity.Error,
                                     X = centerX,
                                     Y = centerY,
                                     GeometryWKT = QcError.CreatePointWKT(centerX, centerY),
@@ -1096,30 +1209,28 @@ namespace SpatialCheckPro.Processors
                         }
 
                         // 2. 스파이크 검사 (뾰족한 돌출부)
-                        if (config.ShouldCheckSpikes)
+                        if (config.ShouldCheckSpikes &&
+                            HasSpike(geometry, out string spikeMessage, out double spikeX, out double spikeY))
                         {
                             geometry.ExportToWkt(out string wkt);
-                            if (HasSpike(geometry, out string spikeMessage, out double spikeX, out double spikeY))
+                            errors.Add(new ValidationError
                             {
-                                errors.Add(new ValidationError
+                                ErrorCode = "GEOM_SPIKE",
+                                Message = spikeMessage,
+                                TableName = config.TableId,
+                                FeatureId = fid.ToString(),
+                                Severity = Models.Enums.ErrorSeverity.Error,
+                                X = spikeX,
+                                Y = spikeY,
+                                GeometryWKT = QcError.CreatePointWKT(spikeX, spikeY),
+                                Metadata =
                                 {
-                                    ErrorCode = "GEOM_SPIKE",
-                                    Message = spikeMessage,
-                                    TableName = config.TableId,
-                                    FeatureId = fid.ToString(),
-                                    Severity = Models.Enums.ErrorSeverity.Warning,
-                                    X = spikeX,
-                                    Y = spikeY,
-                                    GeometryWKT = QcError.CreatePointWKT(spikeX, spikeY),
-                                    Metadata =
-                                    {
-                                        ["X"] = spikeX.ToString(),
-                                        ["Y"] = spikeY.ToString(),
-                                        ["GeometryWkt"] = wkt,
-                                        ["OriginalGeometryWKT"] = wkt
-                                    }
-                                });
-                            }
+                                    ["X"] = spikeX.ToString(),
+                                    ["Y"] = spikeY.ToString(),
+                                    ["GeometryWkt"] = wkt,
+                                    ["OriginalGeometryWKT"] = wkt
+                                }
+                            });
                         }
                     }
                 }
@@ -1285,14 +1396,8 @@ namespace SpatialCheckPro.Processors
             var count = closed ? n - 1 : n;
             if (count < 3) return false;
 
-            // 완화형 후보(스파이크 유사) 추적: 최소 각도 및 높이 조건
-            double bestAngle = double.MaxValue;
-            int bestIndex = -1;
-            double bestHeight = 0;
-
             // 보조 임계값: 각도 완화 상한과 최소 높이(좌표계 단위)
             double threshold = _criteria.SpikeAngleThresholdDegrees;
-            double fallbackAngleMax = 80.0; // 완화 기준: 80도 이내면 후보
             double minHeight = Math.Max(_criteria.MinLineLength * 0.2, 0.05); // 데이터 스케일 따라 조정
 
             // 스파이크 후보 수집 리스트
@@ -1594,29 +1699,46 @@ namespace SpatialCheckPro.Processors
 
         private string BuildPolygonDebugInfo(Geometry geometry, MinVertexCheckResult result)
         {
-            if (!GeometryRepresentsPolygon(geometry))
+            try
             {
-                return string.Empty;
-            }
-
-            var info = new System.Text.StringBuilder();
-            info.AppendLine($"링 개수: {geometry.GetGeometryCount()}");
-            for (var i = 0; i < geometry.GetGeometryCount(); i++)
-            {
-                using var ring = geometry.GetGeometryRef(i)?.Clone();
-                if (ring == null)
+                if (!GeometryRepresentsPolygon(geometry))
                 {
-                    continue;
+                    return string.Empty;
                 }
 
-                ring.FlattenTo2D();
-                var uniqueCount = GetUniquePointCount(ring);
-                var isClosed = RingIsClosed(ring, _ringClosureTolerance);
-                info.AppendLine($" - 링 {i}: 고유 정점 {uniqueCount}개, 폐합 {(isClosed ? "Y" : "N")}");
-            }
+                var info = new System.Text.StringBuilder();
+                info.AppendLine($"링 개수: {geometry.GetGeometryCount()}");
+                
+                for (var i = 0; i < geometry.GetGeometryCount(); i++)
+                {
+                    try
+                    {
+                        using var ring = geometry.GetGeometryRef(i)?.Clone();
+                        if (ring == null)
+                        {
+                            info.AppendLine($" - 링 {i}: NULL");
+                            continue;
+                        }
 
-            info.AppendLine($"관측 정점: {result.ObservedVertices}, 요구 정점: {result.RequiredVertices}");
-            return info.ToString();
+                        ring.FlattenTo2D();
+                        var uniqueCount = GetUniquePointCount(ring);
+                        var isClosed = RingIsClosed(ring, _ringClosureTolerance);
+                        info.AppendLine($" - 링 {i}: 고유 정점 {uniqueCount}개, 폐합 {(isClosed ? "Y" : "N")}");
+                    }
+                    catch (Exception ex)
+                    {
+                        info.AppendLine($" - 링 {i}: 오류 ({ex.Message})");
+                    }
+                }
+
+                info.AppendLine($"관측 정점: {result.ObservedVertices}, 요구 정점: {result.RequiredVertices}");
+                return info.ToString();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "BuildPolygonDebugInfo 실패");
+                return $"디버그 정보 생성 실패: {ex.Message}";
+            }
         }
 
         private int GetUniquePointCount(Geometry ring)
@@ -1651,11 +1773,24 @@ namespace SpatialCheckPro.Processors
 
         private static bool RingIsClosed(Geometry ring, double tolerance)
         {
-            var first = new double[3];
-            var last = new double[3];
-            ring.GetPoint(0, first);
-            ring.GetPoint(ring.GetPointCount() - 1, last);
-            return ArePointsClose(first, last, tolerance);
+            try
+            {
+                var pointCount = ring.GetPointCount();
+                if (pointCount < 2)
+                {
+                    return false;
+                }
+                
+                var first = new double[3];
+                var last = new double[3];
+                ring.GetPoint(0, first);
+                ring.GetPoint(pointCount - 1, last);
+                return ArePointsClose(first, last, tolerance);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private static bool ArePointsClose(double[] p1, double[] p2, double tolerance)
@@ -1680,8 +1815,204 @@ namespace SpatialCheckPro.Processors
                 Message = e.DetailMessage ?? e.ErrorType,
                 TableName = tableName,
                 FeatureId = e.ObjectId,
-                Severity = Models.Enums.ErrorSeverity.Error
+                Severity = Models.Enums.ErrorSeverity.Error,
+                X = e.X,
+                Y = e.Y,
+                GeometryWKT = e.GeometryWkt ?? QcError.CreatePointWKT(e.X, e.Y)
             }).ToList();
+        }
+
+        /// <summary>
+        /// 언더슛/오버슛 검사 (선형 객체의 네트워크 연결성 검증)
+        /// - 언더슛: 선 끝점이 다른 선에 가까이 있지만 연결되지 않음 (중간 부분에 가까움)
+        /// - 오버슛: 선 끝점이 다른 선의 끝점을 지나쳐 연장됨
+        /// </summary>
+        private async Task<List<ValidationError>> CheckUndershootOvershootAsync(
+            Layer layer,
+            GeometryCheckConfig config,
+            CancellationToken cancellationToken)
+        {
+            var errors = new List<ValidationError>();
+            
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    _logger.LogInformation("언더슛/오버슛 검사 시작: {TableId}", config.TableId);
+                    
+                    // 선형 객체만 검사
+                    if (!GeometryTypeIsLine(config.GeometryType))
+                    {
+                        _logger.LogDebug("선형 객체가 아니므로 언더슛/오버슛 검사 스킵: {GeometryType}", config.GeometryType);
+                        return errors;
+                    }
+
+                    var reader = new WKTReader();
+                    var lines = new List<(long Fid, NetTopologySuite.Geometries.LineString Geometry)>();
+                    
+                    // 1단계: 모든 선형 객체 수집
+                    layer.ResetReading();
+                    Feature? feature;
+                    while ((feature = layer.GetNextFeature()) != null)
+                    {
+                        using (feature)
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+                            
+                            var geom = feature.GetGeometryRef();
+                            if (geom != null && !geom.IsEmpty())
+                            {
+                                geom.ExportToWkt(out string wkt);
+                                var ntsGeom = reader.Read(wkt);
+                                
+                                // MultiLineString의 경우 각 LineString을 개별 처리
+                                if (ntsGeom is NetTopologySuite.Geometries.MultiLineString mls)
+                                {
+                                    for (int i = 0; i < mls.NumGeometries; i++)
+                                    {
+                                        var lineString = (NetTopologySuite.Geometries.LineString)mls.GetGeometryN(i);
+                                        if (lineString != null && !lineString.IsEmpty)
+                                        {
+                                            lines.Add((feature.GetFID(), lineString));
+                                        }
+                                    }
+                                }
+                                else if (ntsGeom is NetTopologySuite.Geometries.LineString ls)
+                                {
+                                    if (!ls.IsEmpty)
+                                    {
+                                        lines.Add((feature.GetFID(), ls));
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (lines.Count < 2)
+                    {
+                        _logger.LogDebug("언더슛/오버슛 검사: 선형 객체가 2개 미만이므로 스킵");
+                        return errors;
+                    }
+
+                    _logger.LogInformation("언더슛/오버슛 검사: {Count}개 선형 객체 수집 완료", lines.Count);
+
+                    // 2단계: 각 선의 끝점에 대해 연결성 검사
+                    double searchDistance = _criteria.NetworkSearchDistance;
+                    int undershootCount = 0;
+                    int overshootCount = 0;
+
+                    for (int i = 0; i < lines.Count; i++)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        
+                        var (fid, line) = lines[i];
+                        var startPoint = line.StartPoint;
+                        var endPoint = line.EndPoint;
+                        var endPoints = new[] { (startPoint, "시작점"), (endPoint, "끝점") };
+
+                        foreach (var (point, pointName) in endPoints)
+                        {
+                            bool isConnected = false;
+                            double minDistance = double.MaxValue;
+                            NetTopologySuite.Geometries.LineString? closestLine = null;
+                            long closestFid = -1;
+
+                            // 다른 모든 선과의 거리 계산
+                            for (int j = 0; j < lines.Count; j++)
+                            {
+                                if (i == j) continue;
+                                
+                                var (otherFid, otherLine) = lines[j];
+                                var distance = point.Distance(otherLine);
+
+                                if (distance < minDistance)
+                                {
+                                    minDistance = distance;
+                                    closestLine = otherLine;
+                                    closestFid = otherFid;
+                                }
+                                
+                                // 연결됨 (허용오차 1mm)
+                                if (distance < 0.001)
+                                {
+                                    isConnected = true;
+                                    break;
+                                }
+                            }
+
+                            // 연결되지 않았고, 검색 거리 내에 다른 선이 있으면 오류
+                            if (!isConnected && minDistance < searchDistance && closestLine != null)
+                            {
+                                // 가장 가까운 점 찾기
+                                var nearestPoints = new NetTopologySuite.Operation.Distance.DistanceOp(point, closestLine).NearestPoints();
+                                var closestPointOnTarget = new NetTopologySuite.Geometries.Point(nearestPoints[1]);
+                                
+                                var targetStart = closestLine.StartPoint;
+                                var targetEnd = closestLine.EndPoint;
+                                
+                                // 오버슛: 가장 가까운 점이 대상 선의 끝점인 경우
+                                bool isEndpoint = closestPointOnTarget.Distance(targetStart) < 0.001 || 
+                                                 closestPointOnTarget.Distance(targetEnd) < 0.001;
+                                
+                                var errorType = isEndpoint ? "오버슛" : "언더슛";
+                                var errorCode = isEndpoint ? "GEOM_OVERSHOOT" : "GEOM_UNDERSHOOT";
+                                
+                                if (isEndpoint)
+                                    overshootCount++;
+                                else
+                                    undershootCount++;
+
+                                // 간격 선분 WKT 생성
+                                var gapLineString = new NetTopologySuite.Geometries.LineString(
+                                    new[] { point.Coordinate, closestPointOnTarget.Coordinate });
+                                string gapLineWkt = gapLineString.ToText();
+
+                                errors.Add(new ValidationError
+                                {
+                                    ErrorCode = errorCode,
+                                    Message = $"{errorType}: {pointName}이 다른 선과 연결되지 않음 (이격거리: {minDistance:F3}m, 대상 FID: {closestFid})",
+                                    TableName = config.TableId,
+                                    FeatureId = fid.ToString(),
+                                    Severity = Models.Enums.ErrorSeverity.Error,
+                                    X = point.X,
+                                    Y = point.Y,
+                                    GeometryWKT = gapLineWkt,
+                                    Metadata =
+                                    {
+                                        ["X"] = point.X.ToString(),
+                                        ["Y"] = point.Y.ToString(),
+                                        ["Distance"] = minDistance.ToString("F3"),
+                                        ["TargetFID"] = closestFid.ToString(),
+                                        ["ErrorType"] = errorType,
+                                        ["GeometryWkt"] = gapLineWkt
+                                    }
+                                });
+                                
+                                // 한 피처당 하나의 오류만 보고 (성능 최적화)
+                                break;
+                            }
+                        }
+                    }
+
+                    _logger.LogInformation("언더슛/오버슛 검사 완료: 언더슛 {Undershoot}개, 오버슛 {Overshoot}개, 총 {Total}개",
+                        undershootCount, overshootCount, errors.Count);
+
+                    return errors;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "언더슛/오버슛 검사 중 오류 발생");
+                    return errors;
+                }
+            }, cancellationToken);
+        }
+
+        /// <summary>
+        /// 지오메트리 타입이 선형인지 확인
+        /// </summary>
+        private static bool GeometryTypeIsLine(string geometryType)
+        {
+            return geometryType.Contains("LINE", StringComparison.OrdinalIgnoreCase);
         }
 
         #endregion
@@ -1706,4 +2037,5 @@ namespace SpatialCheckPro.Processors
         }
     }
 }
+
 

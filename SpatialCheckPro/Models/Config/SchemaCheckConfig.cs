@@ -68,13 +68,13 @@ namespace SpatialCheckPro.Models.Config
         /// <summary>
         /// 참조 테이블명
         /// </summary>
-        [Name("참조테이블")]
+        [Name("RefTable")]
         public string ReferenceTable { get; set; } = string.Empty;
 
         /// <summary>
         /// 참조 컬럼명
         /// </summary>
-        [Name("참조컬럼")]
+        [Name("RefColumn")]
         public string ReferenceColumn { get; set; } = string.Empty;
 
 

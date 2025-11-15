@@ -1406,7 +1406,8 @@ namespace SpatialCheckPro.GUI.Views
                 {
                     if (_pdfReportService == null)
                     {
-                        MessageBox.Show("PDF 보고서 서비스를 사용할 수 없습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show("PDF 보고서 기능은 현재 개발 중입니다.\n\n대신 HTML 보고서를 사용해주세요.", 
+                            "기능 제한", MessageBoxButton.OK, MessageBoxImage.Information);
                         return;
                     }
                     _pdfReportService.GeneratePdfReport(_currentValidationResult, sfd.FileName);

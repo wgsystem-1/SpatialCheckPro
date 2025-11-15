@@ -65,5 +65,10 @@ namespace SpatialCheckPro.Models
         /// 추가 메타데이터
         /// </summary>
         public Dictionary<string, object> Metadata { get; set; } = new();
+
+        /// <summary>
+        /// 검수 단계에서 제외된 객체 수
+        /// </summary>
+        public int SkippedCount { get; set; }
     }
 }

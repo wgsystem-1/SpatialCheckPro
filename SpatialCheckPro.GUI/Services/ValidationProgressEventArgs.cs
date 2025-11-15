@@ -56,5 +56,20 @@ namespace SpatialCheckPro.GUI.Services
         /// 현재 단계의 전체 작업 단위 수. 알 수 없으면 -1
         /// </summary>
         public long TotalUnits { get; set; } = -1;
+
+        /// <summary>
+        /// 현재 단계에서 발견된 오류 수
+        /// </summary>
+        public int ErrorCount { get; set; } = 0;
+
+        /// <summary>
+        /// 현재 단계에서 발견된 경고 수
+        /// </summary>
+        public int WarningCount { get; set; } = 0;
+
+        /// <summary>
+        /// 부분 검수 결과 (단계 완료 시 제공)
+        /// </summary>
+        public SpatialCheckPro.Models.ValidationResult? PartialResult { get; set; }
     }
 }

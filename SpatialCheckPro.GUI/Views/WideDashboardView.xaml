@@ -1,0 +1,264 @@
+<UserControl x:Class="SpatialCheckPro.GUI.Views.WideDashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="800" d:DesignWidth="1400"
+             Background="#F9FAFB">
+    
+    <UserControl.Resources>
+        <Style x:Key="KpiCard" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="16,12"/>
+            <Setter Property="Margin" Value="0,0,12,0"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.08" Direction="270"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <Style x:Key="KpiLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#6B7280"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+        
+        <Style x:Key="KpiValue" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+        </Style>
+        
+        <Style x:Key="KpiIcon" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
+        
+        <Style x:Key="ChartCard" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="20"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.08" Direction="270"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+    
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="20">
+            <!-- 헤더 -->
+            <Grid Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="검수 결과 대시보드" FontSize="24" FontWeight="Bold" Foreground="#1F2937"/>
+                    <TextBlock x:Name="SubtitleText" Text="전체 검수 결과를 한눈에 확인하세요" FontSize="14" Foreground="#6B7280" Margin="0,4,0,0"/>
+                </StackPanel>
+            </Grid>
+            
+            <!-- KPI 카드 (7개) -->
+            <Grid Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- 검수 결과 -->
+                <Border Grid.Column="0" Style="{StaticResource KpiCard}">
+                    <StackPanel>
+                        <TextBlock Text="검수 결과" Style="{StaticResource KpiLabel}" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="ValidationResultText" Text="✗" Style="{StaticResource KpiValue}" Foreground="#EF4444"/>
+                        <TextBlock x:Name="ValidationResultLabel" Text="실패" FontSize="12" Foreground="#6B7280" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+                
+                <!-- 총 오류 -->
+                <Border Grid.Column="1" Style="{StaticResource KpiCard}">
+                    <StackPanel>
+                        <TextBlock Text="총 오류" Style="{StaticResource KpiLabel}" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="TotalErrorsText" Text="0" Style="{StaticResource KpiValue}" Foreground="#EF4444"/>
+                        <TextBlock Text="🔴" Style="{StaticResource KpiIcon}"/>
+                    </StackPanel>
+                </Border>
+                
+                <!-- 검수 시간 -->
+                <Border Grid.Column="2" Style="{StaticResource KpiCard}">
+                    <StackPanel>
+                        <TextBlock Text="검수 시간" Style="{StaticResource KpiLabel}" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="ProcessingTimeText" Text="0:00" Style="{StaticResource KpiValue}" Foreground="#3B82F6"/>
+                        <TextBlock Text="⏱️" Style="{StaticResource KpiIcon}"/>
+                    </StackPanel>
+                </Border>
+                
+                <!-- 처리 항목 -->
+                <Border Grid.Column="3" Style="{StaticResource KpiCard}">
+                    <StackPanel>
+                        <TextBlock Text="처리 항목" Style="{StaticResource KpiLabel}" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="ProcessedItemsText" Text="0" Style="{StaticResource KpiValue}" Foreground="#8B5CF6"/>
+                        <TextBlock Text="📊" Style="{StaticResource KpiIcon}"/>
+                    </StackPanel>
+                </Border>
+                
+                <!-- 성공률 -->
+                <Border Grid.Column="4" Style="{StaticResource KpiCard}">
+                    <StackPanel>
+                        <TextBlock Text="성공률" Style="{StaticResource KpiLabel}" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="SuccessRateText" Text="0%" Style="{StaticResource KpiValue}" Foreground="#10B981"/>
+                        <TextBlock Text="📈" Style="{StaticResource KpiIcon}"/>
+                    </StackPanel>
+                </Border>
+                
+                <!-- 검수 테이블 -->
+                <Border Grid.Column="5" Style="{StaticResource KpiCard}">
+                    <StackPanel>
+                        <TextBlock Text="검수 테이블" Style="{StaticResource KpiLabel}" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="TotalTablesText" Text="0" Style="{StaticResource KpiValue}" Foreground="#F59E0B"/>
+                        <TextBlock Text="📋" Style="{StaticResource KpiIcon}"/>
+                    </StackPanel>
+                </Border>
+                
+                <!-- 파일 크기 -->
+                <Border Grid.Column="6" Style="{StaticResource KpiCard}" Margin="0">
+                    <StackPanel>
+                        <TextBlock Text="파일 크기" Style="{StaticResource KpiLabel}" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="FileSizeText" Text="0 MB" Style="{StaticResource KpiValue}" Foreground="#6B7280" FontSize="20"/>
+                        <TextBlock Text="💾" Style="{StaticResource KpiIcon}"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+            
+            <!-- 3분할 차트 영역 -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- 단계별 오류 분포 -->
+                <Border Grid.Column="0" Style="{StaticResource ChartCard}" Margin="0,0,10,0">
+                    <StackPanel>
+                        <TextBlock Text="📊 단계별 오류 분포 (6단계)" FontSize="14" FontWeight="SemiBold" Foreground="#1F2937" Margin="0,0,0,16"/>
+                        
+                        <ItemsControl x:Name="StageErrorsList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="100"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="50"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <TextBlock Grid.Column="0" Text="{Binding StageNumber}" FontSize="12" Foreground="#6B7280" FontWeight="Medium"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding StageName}" FontSize="12" Foreground="#374151"/>
+                                        
+                                        <Grid Grid.Column="2" Margin="8,0">
+                                            <Border Background="#E5E7EB" CornerRadius="3" Height="16"/>
+                                            <Border Background="{Binding ErrorColor}" CornerRadius="3" Height="16" HorizontalAlignment="Left" Width="{Binding BarWidth}"/>
+                                        </Grid>
+                                        
+                                        <TextBlock Grid.Column="3" Text="{Binding ErrorCount}" FontSize="12" FontWeight="Bold" Foreground="{Binding ErrorColor}" HorizontalAlignment="Right"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+                
+                <!-- 오류 타입 Top 5 -->
+                <Border Grid.Column="1" Style="{StaticResource ChartCard}" Margin="5,0,5,0">
+                    <StackPanel>
+                        <TextBlock Text="🏆 오류 타입 Top 5" FontSize="14" FontWeight="SemiBold" Foreground="#1F2937" Margin="0,0,0,16"/>
+                        
+                        <ItemsControl x:Name="ErrorTypesList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="80"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <TextBlock Grid.Column="0" Text="{Binding ErrorType}" FontSize="11" Foreground="#374151"/>
+                                        
+                                        <Grid Grid.Column="1" Margin="8,0">
+                                            <Border Background="#E5E7EB" CornerRadius="3" Height="16"/>
+                                            <Border Background="#EF4444" CornerRadius="3" Height="16" HorizontalAlignment="Left" Width="{Binding BarWidth}"/>
+                                        </Grid>
+                                        
+                                        <TextBlock Grid.Column="2" FontSize="11" FontWeight="Bold" Foreground="#EF4444" HorizontalAlignment="Right">
+                                            <Run Text="{Binding Count}"/>
+                                            <Run Text=" (" FontSize="10" Foreground="#6B7280"/>
+                                            <Run Text="{Binding Percentage, StringFormat={}{0:F0}%}" FontSize="10" Foreground="#6B7280"/>
+                                            <Run Text=")" FontSize="10" Foreground="#6B7280"/>
+                                        </TextBlock>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+                
+                <!-- 테이블별 오류 Top 5 -->
+                <Border Grid.Column="2" Style="{StaticResource ChartCard}" Margin="10,0,0,0">
+                    <StackPanel>
+                        <TextBlock Text="📋 테이블별 오류 Top 5" FontSize="14" FontWeight="SemiBold" Foreground="#1F2937" Margin="0,0,0,16"/>
+                        
+                        <ItemsControl x:Name="TableErrorsList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="180"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="40"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <TextBlock Grid.Column="0" Text="{Binding DisplayName}" FontSize="11" Foreground="#374151" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayName}"/>
+                                        
+                                        <Grid Grid.Column="1" Margin="8,0">
+                                            <Border Background="#E5E7EB" CornerRadius="3" Height="16"/>
+                                            <Border Background="{Binding SeverityColor}" CornerRadius="3" Height="16" HorizontalAlignment="Left" Width="{Binding BarWidth}"/>
+                                        </Grid>
+                                        
+                                        <TextBlock Grid.Column="2" Text="{Binding ErrorCount}" FontSize="12" FontWeight="Bold" Foreground="{Binding SeverityColor}" HorizontalAlignment="Right"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </Grid>
+            
+            <!-- 권장 조치사항 -->
+            <Border Background="#FEF3C7" CornerRadius="8" Padding="16" Margin="0,20,0,0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="💡" FontSize="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="RecommendationText" 
+                              Text="검수 결과를 분석 중입니다..." 
+                              FontSize="13" 
+                              Foreground="#92400E"
+                              TextWrapping="Wrap"
+                              VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

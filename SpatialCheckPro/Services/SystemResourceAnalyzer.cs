@@ -333,6 +333,33 @@ namespace SpatialCheckPro.Services
 
 
     /// <summary>
+    /// 시스템 부하 수준
+    /// </summary>
+    public enum SystemLoadLevel
+    {
+        Low,
+        Medium,
+        High
+    }
+
+    /// <summary>
+    /// 시스템 리소스 분석 결과 모델
+    /// </summary>
+    public class SystemResourceInfo
+    {
+        public int ProcessorCount { get; set; }
+        public double AvailableMemoryGB { get; set; }
+        public double TotalMemoryGB { get; set; }
+        public long CurrentProcessMemoryMB { get; set; }
+        public int RecommendedMaxParallelism { get; set; }
+        public int RecommendedBatchSize { get; set; }
+        public int RecommendedMaxMemoryUsageMB { get; set; }
+        public SystemLoadLevel SystemLoadLevel { get; set; }
+        public double CpuUsagePercent { get; set; }
+        public double MemoryPressureRatio { get; set; }
+    }
+
+    /// <summary>
     /// Windows 메모리 상태 구조체
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]

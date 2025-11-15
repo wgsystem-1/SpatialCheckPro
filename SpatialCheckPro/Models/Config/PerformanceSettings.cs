@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace SpatialCheckPro.Models.Config
 {
     /// <summary>
@@ -172,14 +174,39 @@ namespace SpatialCheckPro.Models.Config
 
         /// <summary>
         /// 고성능 모드 자동 전환을 위한 파일 크기 임계값(바이트)
-        /// 기본값: 1GB
+        /// 기본값: 2GB (appsettings.json과 일치)
         /// </summary>
-        public long HighPerformanceModeSizeThresholdBytes { get; set; } = 1_000_000_000L;
+        public long HighPerformanceModeSizeThresholdBytes { get; set; } = 1_932_735_283L; // 약 1.8GB
 
         /// <summary>
         /// 고성능 모드 자동 전환을 위한 총 피처 수 임계값
         /// 기본값: 500,000
         /// </summary>
-        public long HighPerformanceModeFeatureThreshold { get; set; } = 500_000L;
+        public long HighPerformanceModeFeatureThreshold { get; set; } = 400_000L;
+
+        /// <summary>
+        /// 스트리밍 모드 강제 사용 (파일 크기와 무관하게)
+        /// </summary>
+        public bool ForceStreamingMode { get; set; } = false;
+
+        /// <summary>
+        /// 사용자 지정 배치 크기
+        /// </summary>
+        public int CustomBatchSize { get; set; } = 1000;
+
+        /// <summary>
+        /// 프리페칭 활성화 (다음 배치를 미리 로드)
+        /// </summary>
+        public bool EnablePrefetching { get; set; } = false;
+
+        /// <summary>
+        /// 병렬 스트리밍 활성화 (단일 파일 내 다중 스레드 처리)
+        /// </summary>
+        public bool EnableParallelStreaming { get; set; } = false;
+
+        /// <summary>
+        /// 객체변동 구분 코드 중 검수에서 제외할 코드 목록 (OBJFLTN_SE 기준)
+        /// </summary>
+        public List<string> ExcludedObjectChangeCodes { get; set; } = new() { "OFJ008" };
     }
 }

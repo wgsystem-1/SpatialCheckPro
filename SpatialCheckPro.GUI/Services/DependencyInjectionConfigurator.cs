@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using SpatialCheckPro.Data;
-using SpatialCheckPro.Services.Interfaces;
 using SpatialCheckPro.Services;
 using SpatialCheckPro.Services.RemainingTime;
 using SpatialCheckPro.GUI.Services;
@@ -77,62 +76,8 @@ namespace SpatialCheckPro.GUI.Services
                 return factory.CreateDefaultPerformanceSettings();
             });
             
-            // 지오메트리 검수 기준 등록 (CSV 파일에서 로드)
-            services.AddSingleton<SpatialCheckPro.Models.GeometryCriteria>(serviceProvider =>
-            {
-                string diLog = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "di_criteria.log");
-                
-                try
-                {
-                    System.IO.File.AppendAllText(diLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] GeometryCriteria 등록 시작\n");
-                    
-                    var logger = serviceProvider.GetRequiredService<ILogger<SpatialCheckPro.Models.GeometryCriteria>>();
-                    System.IO.File.AppendAllText(diLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] Logger 획득 완료\n");
-                    
-                    // Config 디렉토리에서 geometry_criteria.csv 로드
-                    var configPath = System.IO.Path.Combine(
-                        AppDomain.CurrentDomain.BaseDirectory,
-                        "Config",
-                        "geometry_criteria.csv");
-                    
-                    System.IO.File.AppendAllText(diLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 파일 경로: {configPath}\n");
-                    System.IO.File.AppendAllText(diLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 파일 존재: {System.IO.File.Exists(configPath)}\n");
-                    
-                    if (System.IO.File.Exists(configPath))
-                    {
-                        System.IO.File.AppendAllText(diLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] LoadFromCsvAsync 호출 시작\n");
-                        
-                        // 동기적 로드로 변경 (데드락 방지)
-                        var criteria = System.Threading.Tasks.Task.Run(async () => 
-                            await SpatialCheckPro.Models.GeometryCriteria.LoadFromCsvAsync(configPath)
-                        ).GetAwaiter().GetResult();
-                        
-                        System.IO.File.AppendAllText(diLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] LoadFromCsvAsync 완료\n");
-                        
-                        logger.LogInformation("지오메트리 검수 기준 로드 완료: {Path}", configPath);
-                        return criteria;
-                    }
-                    else
-                    {
-                        System.IO.File.AppendAllText(diLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 파일 없음, 기본값 사용\n");
-                        logger.LogWarning("지오메트리 검수 기준 파일을 찾을 수 없습니다. 기본값 사용: {Path}", configPath);
-                        return SpatialCheckPro.Models.GeometryCriteria.CreateDefault();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    System.IO.File.AppendAllText(diLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 예외 발생: {ex.Message}\n{ex.StackTrace}\n");
-                    
-                    try
-                    {
-                        var logger = serviceProvider.GetRequiredService<ILogger<SpatialCheckPro.Models.GeometryCriteria>>();
-                        logger.LogError(ex, "지오메트리 검수 기준 로드 실패. 기본값 사용");
-                    }
-                    catch { }
-                    
-                    return SpatialCheckPro.Models.GeometryCriteria.CreateDefault();
-                }
-            });
+            // 지오메트리 검수 기준 등록 (기본값 사용으로 간소화)
+            services.AddSingleton<SpatialCheckPro.Models.GeometryCriteria>(SpatialCheckPro.Models.GeometryCriteria.CreateDefault());
         }
 
         /// <summary>
@@ -172,6 +117,12 @@ namespace SpatialCheckPro.GUI.Services
             
             // 남은 시간 추정기 등록
             services.AddSingleton<IRemainingTimeEstimator, AdaptiveRemainingTimeEstimator>();
+            
+            // 검수 메트릭 수집기 등록
+            services.AddSingleton<ValidationMetricsCollector>();
+            
+            // QC_errors 경로 관리자 등록
+            services.AddSingleton<QcErrorsPathManager>();
         }
 
         /// <summary>
@@ -185,15 +136,15 @@ namespace SpatialCheckPro.GUI.Services
             // 지오메트리 검수 설정 분석 서비스
             services.AddSingleton<GeometryConfigAnalysisService>();
             
-            // 오류 개수 분석 서비스
-            services.AddSingleton<IErrorCountAnalysisService, ErrorCountAnalysisService>();
-            
             // GDAL 데이터 분석 서비스
             services.AddSingleton<GdalDataAnalysisService>();
             
             // 공간 인덱스 서비스
             services.AddSingleton<SpatialIndexService>();
             
+            // 피처 필터 서비스
+            services.AddSingleton<IFeatureFilterService, FeatureFilterService>();
+
             // QC 오류 관련 서비스들
             services.AddSingleton<QcErrorDataService>();
             services.AddSingleton<QcErrorService>();
@@ -225,6 +176,11 @@ namespace SpatialCheckPro.GUI.Services
             
             // GDB to SQLite 변환기
             services.AddSingleton<GdbToSqliteConverter>();
+
+            // *** 대용량 파일 처리 서비스 ***
+            services.AddSingleton<SpatialCheckPro.Services.ILargeFileProcessor, SpatialCheckPro.Services.LargeFileProcessor>();
+
+            // *** FileAnalysisService는 DI 컨테이너에 등록하지 않고 직접 생성하여 순환 참조 방지 ***
             
             // 유니크 키 및 외래 키 검증기
             services.AddSingleton<IUniqueKeyValidator, BasicUniqueKeyValidator>();
@@ -251,6 +207,9 @@ namespace SpatialCheckPro.GUI.Services
         {
             // 검수 관련 서비스들은 이미 핵심 서비스에서 등록됨
             // 추가적인 검수 관련 서비스가 있다면 여기에 등록
+
+            // 지오메트리 검수 프로세서
+            services.AddSingleton<IGeometryCheckProcessor, GeometryCheckProcessor>();
         }
 
         /// <summary>
@@ -258,22 +217,11 @@ namespace SpatialCheckPro.GUI.Services
         /// </summary>
         private static void ConfigurePerformanceServices(IServiceCollection services)
         {
-            // 시스템 리소스 분석기 (다른 성능 서비스들보다 먼저 등록)
-            services.AddSingleton<SystemResourceAnalyzer>();
-            
-            // 중앙집중식 리소스 모니터
-            services.AddSingleton<CentralizedResourceMonitor>();
-            
             // 메모리 최적화 서비스
             services.AddSingleton<MemoryOptimizationService>();
             
             // 병렬 처리 관리자들
             services.AddSingleton<ParallelProcessingManager>();
-            services.AddSingleton<AdvancedParallelProcessingManager>();
-            services.AddSingleton<StageParallelProcessingManager>();
-            
-            // 병렬 성능 모니터
-            services.AddSingleton<ParallelPerformanceMonitor>();
             
             // 고성능 지오메트리 검증기
             services.AddSingleton<HighPerformanceGeometryValidator>();

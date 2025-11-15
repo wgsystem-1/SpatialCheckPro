@@ -1,94 +1,95 @@
 ﻿RuleId,Enabled,TableId,TableName,FieldName,CheckType,Parameters,Severity,Note
-ATTR_CODE_BULD,Y,TN_BULD,건물,BLDG_SE,CodeList,건물구분V6,MAJOR,건물 용도 코드리스트 (codelist.csv 참조)
-ATTR_NOTZERO_FLOOR,Y,TN_BULD,건물,BLDG_NOFL,NotZero,,MAJOR,층수 0 금지
-ATTR_PNU_17LEN,Y,TN_BULD,건물,PNU,Regex,^[0-9]{17}$,MAJOR,PNU 17자리
-ATTR_ALPT_LT2000,Y,TN_ALPT,표고점,ALPT_HGT,Range,0.0000001..1999.9999,MAJOR,표고점높이 0 금지 및 2000 미만
-CTRLN_HGT_LT2000,Y,TN_CTRLN,등고선,CTRLN_HGT,Range,0.0000001..1999.9999,MAJOR,등고선높이 2000 미만
-CTRLN_HGT_MUL5,Y,TN_CTRLN,등고선,CTRLN_HGT,MultipleOf,5,MAJOR,등고선높이 5의 배수
-CTRLN_HGT_MUL25_CODE,Y,TN_CTRLN,등고선,CTRLN_HGT,IfCodeThenMultipleOf,CTRLN_SE;CTS001|CTS101;CTRLN_HGT;25,MAJOR,CTS001/CTS101이면 25의 배수여야 함
-ATTR_BLDG_NM_NOTJAMO,Y,TN_BULD,건물,FEAT_NM,NotJamoOnly,,MAJOR,건물명에 자음/모음 포함 금지
-ATTR_BLDG_NM_REGEXNOT_JAMO,Y,TN_BULD,건물,FEAT_NM,RegexNot,.*[ㄱ-ㅎㅏ-ㅣ].*,MAJOR,건물명에 자음/모음 포함 금지(정규식)
-ATTR_BLDG_NM_NOTJAMO,Y,TN_BULD,건물,batc_nm,NotJamoOnly,,MAJOR,건물부명에 자음/모음 포함 금지
-ATTR_BLDG_NM_REGEXNOT_JAMO,Y,TN_BULD,건물,batc_nm,RegexNot,.*[ㄱ-ㅎㅏ-ㅣ].*,MAJOR,건물부명에 자음/모음 포함 금지(정규식)
-CTRLN_ROAD_BT_RDS014_EQ15,Y,TN_RODWAY_CTLN,도로중심선,ROAD_BT,IfCodeThenNumericEquals,ROAD_SE;RDS014;ROAD_BT;1.5,MAJOR,도로구분 RDS014이면 도로폭 1.5 고정
-CTRLN_ROAD_BT_RDS010_RANGE,Y,TN_RODWAY_CTLN,도로중심선,ROAD_BT,IfCodeThenBetweenExclusive,ROAD_SE;RDS010;ROAD_BT;1.5..3.0,MAJOR,도로구분 RDS010이면 1.5초과 3.0미만
-CTRLN_ROADSE_NAME_NO_NOTNULL,Y,TN_RODWAY_CTLN,도로중심선,ROAD_SE,IfCodeThenNotNullAll,ROAD_SE;RDS001|RDS002|RDS003;FEAT_NM|ROAD_NO,MAJOR,특정 도로구분이면 명칭/번호 필수
-BULD_FEAT_NM_NULL,Y,TN_BULD,건물,FEAT_NM,IfCodeThenNull,BLDG_SE;BDG001;FEAT_NM,MAJOR,건물용도 BDG001인 경우 지형지물명칭은 NULL이어야 함
-BULD_batc_nm_NULL,Y,TN_BULD,건물,batc_nm,IfCodeThenNull,BLDG_SE;BDG001;batc_nm,MAJOR,건물용도 BDG001인 경우 건물부명칭은 NULL이어야 함
-RIVER_CTLN_FEAT_NM_NOTNULL,Y,TN_RIVER_CTLN,하천중심선,FEAT_NM,IfCodeThenNotNullAll,RVR_SE;RVR001|RVR002;FEAT_NM,MAJOR,하천구분이 국가하천(RVR001) 또는 지방하천(RVR002)인 경우 지형지물명칭 필수
-ALL_TABLE_OBJECTID_NOTNULL,Y,*,모든테이블,OBJECTID,NotNull,,MAJOR,모든 테이블의 OBJECTID는 필수값이어야 함
-객체변동구분_Code,Y,*,객체변동구분,objfltn_se,CodeList,객체변동구분V6,MAJOR,
-건물구분_Code,Y,tn_buld,건물구분,bldg_se,CodeList,건물구분V6,MAJOR,
-건물기호구분_Code,Y,tn_buld,건물기호구분,bdgsymb_se,CodeList,건물기호구분V6,MAJOR,
-건물부속시설구분_Code,Y,tn_buld,건물부속시설구분,bldg_af_se,CodeList,건물부속시설구분V6,MAJOR,
-건물용도구분_Code,Y,tn_buld,건물용도구분,bdgusg_se,CodeList,건물용도구분V6,MAJOR,
-경지경계구분_Code,Y,tn_fmlnd_bndry,경지경계구분,fmld_bn_se,CodeList,경지경계구분V6,MAJOR,
-관리기관코드_Code,Y,tn_rlroad_ctln,관리기관코드,mnginst_cd,CodeList,관리기관코드V6,MAJOR,
-교통시설정보구분_Codetn_rlroad_ctln,Y,tn_rlroad_ctln,교통시설정보구분,tfc_info_se,CodeList,교통시설정보구분V6,MAJOR,
-교통시설정보구분_Codetn_rodway_bndry,Y,tn_rodway_bndry,교통시설정보구분,tfc_info_se,CodeList,교통시설정보구분V6,MAJOR,
-교통시설정보구분_Codetn_rodway_bndryln,Y,tn_rodway_bndryln,교통시설정보구분,tfc_info_se,CodeList,교통시설정보구분V6,MAJOR,
-교통시설정보구분_Codetn_rodway_ctln,Y,tn_rodway_ctln,교통시설정보구분,tfc_info_se,CodeList,교통시설정보구분V6,MAJOR,
-기준점구분_Code,Y,tn_ctrlpnt,기준점구분,ctlpt_se,CodeList,기준점구분V6,MAJOR,
-기준점등급_Code,Y,tn_ctrlpnt,기준점등급,ctlpt_grd,CodeList,기준점등급V6,MAJOR,
-나루구분_Code,Y,tn_ferdk,나루구분,fdk_se,CodeList,나루구분V6,MAJOR,
-나무구분_Code,Y,tn_ptvgt_fclty,나무구분,tr_se,CodeList,나무구분V6,MAJOR,
-도로구분_Codetn_rodway_bndry,Y,tn_rodway_bndry,도로구분,road_se,CodeList,도로구분V6,MAJOR,
-도로구분_Codetn_rodway_bndryln,Y,tn_rodway_bndryln,도로구분,road_se,CodeList,도로구분V6,MAJOR,
-도로구분_Codetn_rodway_ctln,Y,tn_rodway_ctln,도로구분,road_se,CodeList,도로구분V6,MAJOR,
-등고선구분_Code,Y,tn_ctrln,등고선구분,ctrln_se,CodeList,등고선구분V6,MAJOR,
-면형공항시설구분_Code,Y,tn_arafc,면형공항시설구분,pg_apfc_se,CodeList,면형공항시설구분V6,MAJOR,
-면형구조시설구분_Code,Y,tn_arsfc,면형구조시설구분,pg_stfc_se,CodeList,면형구조시설구분V6,MAJOR,
-면형도로시설구분_Code,Y,tn_arrfc,면형도로시설구분,pg_rdfc_se,CodeList,면형도로시설구분V6,MAJOR,
-면형도로시설위상관계구분_Code,Y,tn_arrfc,면형도로시설위상관계구분,pgrfcph_se,CodeList,면형도로시설위상관계구분V6,MAJOR,
-면형도로시설재질구분_Code,Y,tn_arrfc,면형도로시설재질구분,pgrfcmt_se,CodeList,면형도로시설재질구분V6,MAJOR,
-면형수로시설구분_Code,Y,tn_arwtcors_fclty,면형수로시설구분,pg_wtfc_se,CodeList,면형수로시설구분V6,MAJOR,
-면형지형구분_Code,Y,tn_arpgr,면형지형구분,pg_tpf_se,CodeList,면형지형구분V6,MAJOR,
-면형철도시설구분_Code,Y,tn_arwfc,면형철도시설구분,pg_rlfc_se,CodeList,면형철도시설구분V6,MAJOR,
-면형항만시설구분_Code,Y,tn_arhfc,면형항만시설구분,pg_ptfc_se,CodeList,면형항만시설구분V6,MAJOR,
-목장구분_Code,Y,tn_farm,목장구분,farm_se,CodeList,목장구분V6,MAJOR,
-보도경계면구분_Code,Y,tn_ftpth_bndry,보도경계면구분,ftp_bng_se,CodeList,보도경계면구분V6,MAJOR,
-보도구분_Code,Y,tn_arrfc,보도구분,ftp_se,CodeList,보도구분V6,MAJOR,
-보도중심선구분_Code,Y,tn_ftpth_ctln,보도중심선구분,ftp_cl_se,CodeList,보도중심선구분V6,MAJOR,
-분리대유무_Code,Y,tn_rodway_ctln,분리대유무,mdbar_en,CodeList,분리대유무V1,MAJOR,
-사용상태_Code,Y,tn_rodway_bndry,사용상태,use_stts,CodeList,사용상태V6,MAJOR,
-선형공항시설구분_Code,Y,tn_lnafc,선형공항시설구분,ln_apfc_se,CodeList,선형공항시설구분V6,MAJOR,
-선형구조시설구분_Code,Y,tn_lnsfc,선형구조시설구분,ln_stfc_se,CodeList,선형구조시설구분V6,MAJOR,
-선형도로시설구분_Code,Y,tn_lnrfc,선형도로시설구분,ln_rdfc_se,CodeList,선형도로시설구분V6,MAJOR,
-선형도로시설구조구분_Code,Y,tn_lnrfc,선형도로시설구조구분,lnrfcst_se,CodeList,선형도로시설구조구분V6,MAJOR,
-선형수로시설구분_Code,Y,tn_lnwtcors_fclty,선형수로시설구분,ln_wtfc_se,CodeList,선형수로시설구분V6,MAJOR,
-선형지형구분_Code,Y,tn_lnpgr,선형지형구분,ln_tpf_se,CodeList,선형지형구분V6,MAJOR,
-수정측량방법구분_Code,Y,*,수정측량방법구분,mdsvymt_se,CodeList,수정측량방법구분V1,MAJOR,
-시설구역경계구분_Code,Y,tn_fclty_zone_bndry,시설구역경계구분,fclt_zb_se,CodeList,시설구역경계구분V6,MAJOR,
-일방통행구분_Code,Y,tn_rodway_ctln,일방통행구분,osps_se,CodeList,일방통행구분V6,MAJOR,
-자동차전용도로구분_Code,Y,tn_rodway_ctln,자동차전용도로구분,mtrwy_se,CodeList,자동차전용도로구분V6,MAJOR,
-자전거도로중심선구분_Code,Y,tn_bcycl_ctln,자전거도로중심선구분,bcrd_cl_se,CodeList,자전거도로중심선구분V6,MAJOR,
-재질구분V6_Codetn_buld_adcls,Y,tn_buld_adcls,재질구분,mtr_se,CodeList,재질구분V6,MAJOR,
-재질구분V6_Codetn_lnpgr,Y,tn_lnpgr,재질구분,mtr_se,CodeList,재질구분V6,MAJOR,
-재질구분V6_Codetn_lnsfc,Y,tn_lnsfc,재질구분,mtr_se,CodeList,재질구분V6,MAJOR,
-재질구분V6_Codetn_lnwtcors_fclty,Y,tn_lnwtcors_fclty,재질구분,mtr_se,CodeList,재질구분V6,MAJOR,
-점형공항시설구분_Codetn_ptafc,Y,tn_ptafc,점형공항시설구분,pt_apfc_se,CodeList,점형공항시설구분V6,MAJOR,
-점형구조시설구분_Codetn_ptsfc,Y,tn_ptsfc,점형구조시설구분,pt_stfc_se,CodeList,점형구조시설구분V6,MAJOR,
-점형도로시설구분_Codetn_ptrfc,Y,tn_ptrfc,점형도로시설구분,pt_rdfc_se,CodeList,점형도로시설구분V6,MAJOR,
-점형수로시설구분_Codetn_ptwtcors_fclty,Y,tn_ptwtcors_fclty,점형수로시설구분,pt_wtfc_se,CodeList,점형수로시설구분V6,MAJOR,
-점형식생시설구분_Codetn_ptvgt_fclty,Y,tn_ptvgt_fclty,점형식생시설구분,pt_vgfc_se,CodeList,점형식생시설구분V6,MAJOR,
-점형지형구분_Code,Y,tn_ptpgr,점형지형구분,pt_tpf_se,CodeList,점형지형구분V6,MAJOR,
-점형철도시설구분_Code,Y,tn_ptwfc,점형철도시설구분,pt_rlfc_se,CodeList,점형철도시설구분V6,MAJOR,
-점형항만시설구분_Code,Y,tn_pthfc,점형항만시설구분,pt_ptfc_se,CodeList,점형항만시설구분V6,MAJOR,
-제작방법_Code,Y,tn_ctrlpnt,제작방법,fbctn_mthd,CodeList,제작방법V6,MAJOR,
-주건물구분_Code,Y,tn_buld,주건물구분,mnbldg_se,CodeList,주건물구분V6,MAJOR,
-철도구분_Code,Y,tn_rlroad_ctln,철도구분,rlw_se,CodeList,철도구분V6,MAJOR,
-철도사용상태_Code,Y,tn_rlroad_ctln,철도사용상태,rlw_usstts,CodeList,철도사용상태V6,MAJOR,
-철도선로유형구분_Code,Y,tn_rlroad_ctln,철도선로유형구분,rlrwtyp_se,CodeList,철도선로유형구분V6,MAJOR,
-철도표현구분_Code,Y,tn_rlroad_ctln,철도표현구분,rlexprs_se,CodeList,철도표현구분V6,MAJOR,
-축척구분_Code,Y,*,축척구분,rdscl_se,CodeList,축척구분V6,MAJOR,
-포장재질구분_Codetn_bcycl_ctln,Y,tn_bcycl_ctln,포장재질구분,pvm_mtr_se,CodeList,포장재질구분V6,MAJOR,
-포장재질구분_Codetn_ftpth_bndry,Y,tn_ftpth_bndry,포장재질구분,pvm_mtr_se,CodeList,포장재질구분V6,MAJOR,
-포장재질구분_Codetn_ftpth_ctln,Y,tn_ftpth_ctln,포장재질구분,pvm_mtr_se,CodeList,포장재질구분V6,MAJOR,
-포장재질구분_Codetn_rodway_ctln,Y,tn_rodway_ctln,포장재질구분,pvm_mtr_se,CodeList,포장재질구분V6,MAJOR,
-표고점구분_Code,Y,tn_alpt,표고점구분,alpt_se,CodeList,표고점구분V6,MAJOR,
-하천구분_Codetn_river_bndry,Y,tn_river_bndry,하천구분,rvr_se,CodeList,하천구분V6,MAJOR,
-하천구분_Codetn_river_ctln,Y,tn_river_ctln,하천구분,rvr_se,CodeList,하천구분V6,MAJOR,
-하천구분_Codetn_river_rt,Y,tn_river_rt,하천구분,rvr_se,CodeList,하천구분V6,MAJOR,
-해안선구분_Code,Y,tn_shorline,해안선구분,shrln_se,CodeList,해안선구분V6,MAJOR,
-해안선출처_Code,Y,tn_shorline,해안선출처,shrln_src,CodeList,해안선출처V6,MAJOR,
-해안선형태_Code,Y,tn_shorline,해안선형태,shrln_shp,CodeList,해안선형태V6,MAJOR,
+ATTR_CODE_BULD,Y,tn_buld,건물,bldg_se,CodeList,건물구분V6,MAJOR,건물 용도 코드리스트 (codelist.csv 참조)
+ATTR_NOTZERO_FLOOR,Y,tn_buld,건물,bldg_nofl,NotZero,,MAJOR,층수 0 금지
+ATTR_PNU_17LEN,Y,tn_buld,건물,pnu,Regex,^[0-9]{17}$,MAJOR,PNU 17자리
+ATTR_ALPT_LT2000,Y,tn_alpt,표고점,alpt_hgt,Range,0.0000001..1999.9999,MAJOR,표고점높이 0 금지 및 2000 미만
+CTRLN_HGT_LT2000,Y,tn_ctrln,등고선,ctrln_hgt,Range,0.0000001..1999.9999,MAJOR,등고선높이 2000 미만
+CTRLN_HGT_MUL5,Y,tn_ctrln,등고선,ctrln_hgt,MultipleOf,5,MAJOR,등고선높이 5의 배수
+CTRLN_HGT_MUL25_CODE,Y,tn_ctrln,등고선,ctrln_hgt,IfCodeThenMultipleOf,ctrln_se;CTS001|CTS101;CTRLN_HGT;25,MAJOR,CTS001/CTS101이면 25의 배수여야 함
+ATTR_FEATNM_KR_TYPO,Y,*,전체,feat_nm,KoreanTypo,,MAJOR,지형지물명칭 명칭오타 검사
+ATTR_BATCNM_KR_TYPO,Y,*,전체,batc_nm,KoreanTypo,,MAJOR,지형지물부명칭 명칭오타 검사
+ATTR_BLDHGT_BASE_GT_MAX,Y,tn_buld,건물,bldhgt_hgt,buld_height_base_vs_max,,MAJOR,기본높이가 최고높이보다 큰 오류 검출
+ATTR_BLDHGT_MAX_GT_FAC,Y,tn_buld,건물,blfcht_hgt,buld_height_max_vs_facility,,MAJOR,최고높이가 시설물높이보다 큰 오류 검출
+CTRLN_ROAD_BT_RDS014_EQ15,Y,tn_rodway_ctln,도로중심선,road_bt,IfCodeThenNumericEquals,road_se;RDS014;ROAD_BT;1.5,MAJOR,도로구분 RDS014이면 도로폭 1.5 고정
+CTRLN_ROAD_BT_RDS010_RANGE,Y,tn_rodway_ctln,도로중심선,road_bt,IfCodeThenBetweenExclusive,road_se;RDS010;ROAD_BT;1.5..3.0,MAJOR,도로구분 RDS010이면 1.5초과 3.0미만
+CTRLN_ROADSE_NAME_NO_NOTNULL,Y,tn_rodway_ctln,도로중심선,road_se,IfCodeThenNotNullAll,road_se;RDS001|RDS002|RDS003;FEAT_NM|ROAD_NO,MAJOR,특정 도로구분이면 명칭/번호 필수
+BULD_FEAT_NM_NULL,Y,tn_buld,건물,feat_nm,IfCodeThenNull,bldg_se;BDG001;FEAT_NM,MAJOR,건물용도 BDG001인 경우 지형지물명칭은 NULL이어야 함
+BULD_batc_nm_NULL,Y,tn_buld,건물,batc_nm,IfCodeThenNull,bldg_se;BDG001;batc_nm,MAJOR,건물용도 BDG001인 경우 건물부명칭은 NULL이어야 함
+RIVER_CTLN_FEAT_NM_NOTNULL,Y,tn_river_ctln,하천중심선,feat_nm,IfCodeThenNotNullAll,rvr_se;RVR001|RVR002;FEAT_NM,MAJOR,하천구분이 국가하천(RVR001) 또는 지방하천(RVR002)인 경우 지형지물명칭 필수
+RIVER_CTLN_RVR_NO_NOTNULL,Y,tn_river_ctln,하천중심선,feat_nm,IfCodeThenNotNullAll,rvr_se;RVR001|RVR002;rvr_no,MAJOR,하천구분이 국가하천(RVR001) 또는 지방하천(RVR002)인 경우 하천번호호 필수
+ALL_TABLE_OBJECTID_NOTNULL,Y,*,모든테이블,objectid,NotNull,,MAJOR,모든 테이블의 OBJECTID는 필수값이어야 함
+객체변동구분_Code,Y,*,객체변동구분,objfltn_se,CodeList,객체변동구분V6,MAJOR,객체변동구분V6_코드리스트 점검
+건물구분_Code,Y,tn_buld,건물구분,bldg_se,CodeList,건물구분V6,MAJOR,건물구분V6_코드리스트 점검
+건물기호구분_Code,Y,tn_buld,건물기호구분,bdgsymb_se,CodeList,건물기호구분V6,MAJOR,건물기호구분V6_코드리스트 점검
+건물부속시설구분_Code,Y,tn_buld_adcls,건물부속시설구분,bldg_af_se,CodeList,건물부속시설구분V6,MAJOR,건물부속시설구분V6_코드리스트 점검
+건물용도구분_Code,Y,tn_buld,건물용도구분,bdgusg_se,CodeList,건물용도구분V6,MAJOR,건물용도구분V6_코드리스트 점검
+경지경계구분_Code,Y,tn_fmlnd_bndry,경지경계구분,fmld_bn_se,CodeList,경지경계구분V6,MAJOR,경지경계구분V6_코드리스트 점검
+관리기관코드_Code,Y,tn_rlroad_ctln,관리기관코드,mnginst_cd,CodeList,관리기관코드V6,MAJOR,관리기관코드V6_코드리스트 점검
+교통시설정보구분_Codetn_rlroad_ctln,Y,tn_rlroad_ctln,교통시설정보구분,tfc_info_se,CodeList,교통시설정보구분V6,MAJOR,교통시설정보구분V6_코드리스트 점검
+교통시설정보구분_Codetn_rodway_bndry,Y,tn_rodway_bndry,교통시설정보구분,tfc_info_se,CodeList,교통시설정보구분V6,MAJOR,교통시설정보구분V6_코드리스트 점검
+교통시설정보구분_Codetn_rodway_bndryln,Y,tn_rodway_bndryln,교통시설정보구분,tfc_info_se,CodeList,교통시설정보구분V6,MAJOR,교통시설정보구분V6_코드리스트 점검
+교통시설정보구분_Codetn_rodway_ctln,Y,tn_rodway_ctln,교통시설정보구분,tfc_info_se,CodeList,교통시설정보구분V6,MAJOR,교통시설정보구분V6_코드리스트 점검
+기준점구분_Code,Y,tn_ctrlpnt,기준점구분,ctlpt_se,CodeList,기준점구분V6,MAJOR,기준점구분V6_코드리스트 점검
+기준점등급_Code,Y,tn_ctrlpnt,기준점등급,ctlpt_grd,CodeList,기준점등급V6,MAJOR,기준점등급V6_코드리스트 점검
+나루구분_Code,Y,tn_ferdk,나루구분,fdk_se,CodeList,나루구분V6,MAJOR,나루구분V6_코드리스트 점검
+나무구분_Code,Y,tn_ptvgt_fclty,나무구분,tr_se,CodeList,나무구분V6,MAJOR,나무구분V6_코드리스트 점검
+도로구분_Codetn_rodway_bndry,Y,tn_rodway_bndry,도로구분,road_se,CodeList,도로구분V6,MAJOR,도로구분V6_코드리스트 점검
+도로구분_Codetn_rodway_bndryln,Y,tn_rodway_bndryln,도로구분,road_se,CodeList,도로구분V6,MAJOR,도로구분V6_코드리스트 점검
+도로구분_Codetn_rodway_ctln,Y,tn_rodway_ctln,도로구분,road_se,CodeList,도로구분V6,MAJOR,도로구분V6_코드리스트 점검
+등고선구분_Code,Y,tn_ctrln,등고선구분,ctrln_se,CodeList,등고선구분V6,MAJOR,등고선구분V6_코드리스트 점검
+면형공항시설구분_Code,Y,tn_arafc,면형공항시설구분,pg_apfc_se,CodeList,면형공항시설구분V6,MAJOR,면형공항시설구분V6_코드리스트 점검
+면형구조시설구분_Code,Y,tn_arsfc,면형구조시설구분,pg_stfc_se,CodeList,면형구조시설구분V6,MAJOR,면형구조시설구분V6_코드리스트 점검
+면형도로시설구분_Code,Y,tn_arrfc,면형도로시설구분,pg_rdfc_se,CodeList,면형도로시설구분V6,MAJOR,면형도로시설구분V6_코드리스트 점검
+면형도로시설위상관계구분_Code,Y,tn_arrfc,면형도로시설위상관계구분,pgrfcph_se,CodeList,면형도로시설위상관계구분V6,MAJOR,면형도로시설위상관계구분V6_코드리스트 점검
+면형도로시설재질구분_Code,Y,tn_arrfc,면형도로시설재질구분,pgrfcmt_se,CodeList,면형도로시설재질구분V6,MAJOR,면형도로시설재질구분V6_코드리스트 점검
+면형수로시설구분_Code,Y,tn_arwtcors_fclty,면형수로시설구분,pg_wtfc_se,CodeList,면형수로시설구분V6,MAJOR,면형수로시설구분V6_코드리스트 점검
+면형지형구분_Code,Y,tn_arpgr,면형지형구분,pg_tpf_se,CodeList,면형지형구분V6,MAJOR,면형지형구분V6_코드리스트 점검
+면형철도시설구분_Code,Y,tn_arwfc,면형철도시설구분,pg_rlfc_se,CodeList,면형철도시설구분V6,MAJOR,면형철도시설구분V6_코드리스트 점검
+면형항만시설구분_Code,Y,tn_arhfc,면형항만시설구분,pg_ptfc_se,CodeList,면형항만시설구분V6,MAJOR,면형항만시설구분V6_코드리스트 점검
+목장구분_Code,Y,tn_farm,목장구분,farm_se,CodeList,목장구분V6,MAJOR,목장구분V6_코드리스트 점검
+보도경계면구분_Code,Y,tn_ftpth_bndry,보도경계면구분,ftp_bng_se,CodeList,보도경계면구분V6,MAJOR,보도경계면구분V6_코드리스트 점검
+보도구분_Code,Y,tn_arrfc,보도구분,ftp_se,CodeList,보도구분V6,MAJOR,보도구분V6_코드리스트 점검
+보도중심선구분_Code,Y,tn_ftpth_ctln,보도중심선구분,ftp_cl_se,CodeList,보도중심선구분V6,MAJOR,보도중심선구분V6_코드리스트 점검
+분리대유무_Code,Y,tn_rodway_ctln,분리대유무,mdbar_en,CodeList,분리대유무V1,MAJOR,분리대유무V1_코드리스트 점검
+사용상태_Code,Y,tn_rodway_bndry,사용상태,use_stts,CodeList,사용상태V6,MAJOR,사용상태V6_코드리스트 점검
+선형공항시설구분_Code,Y,tn_lnafc,선형공항시설구분,ln_apfc_se,CodeList,선형공항시설구분V6,MAJOR,선형공항시설구분V6_코드리스트 점검
+선형구조시설구분_Code,Y,tn_lnsfc,선형구조시설구분,ln_stfc_se,CodeList,선형구조시설구분V6,MAJOR,선형구조시설구분V6_코드리스트 점검
+선형도로시설구분_Code,Y,tn_lnrfc,선형도로시설구분,ln_rdfc_se,CodeList,선형도로시설구분V6,MAJOR,선형도로시설구분V6_코드리스트 점검
+선형도로시설구조구분_Code,Y,tn_lnrfc,선형도로시설구조구분,lnrfcst_se,CodeList,선형도로시설구조구분V6,MAJOR,선형도로시설구조구분V6_코드리스트 점검
+선형수로시설구분_Code,Y,tn_lnwtcors_fclty,선형수로시설구분,ln_wtfc_se,CodeList,선형수로시설구분V6,MAJOR,선형수로시설구분V6_코드리스트 점검
+선형지형구분_Code,Y,tn_lnpgr,선형지형구분,ln_tpf_se,CodeList,선형지형구분V6,MAJOR,선형지형구분V6_코드리스트 점검
+수정측량방법구분_Code,Y,*,수정측량방법구분,mdsvymt_se,CodeList,수정측량방법구분V1,MAJOR,수정측량방법구분V1_코드리스트 점검
+시설구역경계구분_Code,Y,tn_fclty_zone_bndry,시설구역경계구분,fclt_zb_se,CodeList,시설구역경계구분V6,MAJOR,시설구역경계구분V6_코드리스트 점검
+일방통행구분_Code,Y,tn_rodway_ctln,일방통행구분,osps_se,CodeList,일방통행구분V6,MAJOR,일방통행구분V6_코드리스트 점검
+자동차전용도로구분_Code,Y,tn_rodway_ctln,자동차전용도로구분,mtrwy_se,CodeList,자동차전용도로구분V6,MAJOR,자동차전용도로구분V6_코드리스트 점검
+자전거도로중심선구분_Code,Y,tn_bcycl_ctln,자전거도로중심선구분,bcrd_cl_se,CodeList,자전거도로중심선구분V6,MAJOR,자전거도로중심선구분V6_코드리스트 점검
+재질구분V6_Codetn_buld_adcls,Y,tn_buld_adcls,재질구분,mtr_se,CodeList,재질구분V6,MAJOR,재질구분V6_코드리스트 점검
+재질구분V6_Codetn_lnpgr,Y,tn_lnpgr,재질구분,mtr_se,CodeList,재질구분V6,MAJOR,재질구분V6_코드리스트 점검
+재질구분V6_Codetn_lnsfc,Y,tn_lnsfc,재질구분,mtr_se,CodeList,재질구분V6,MAJOR,재질구분V6_코드리스트 점검
+재질구분V6_Codetn_lnwtcors_fclty,Y,tn_lnwtcors_fclty,재질구분,mtr_se,CodeList,재질구분V6,MAJOR,재질구분V6_코드리스트 점검
+점형공항시설구분_Codetn_ptafc,Y,tn_ptafc,점형공항시설구분,pt_apfc_se,CodeList,점형공항시설구분V6,MAJOR,점형공항시설구분V6_코드리스트 점검
+점형구조시설구분_Codetn_ptsfc,Y,tn_ptsfc,점형구조시설구분,pt_stfc_se,CodeList,점형구조시설구분V6,MAJOR,점형구조시설구분V6_코드리스트 점검
+점형도로시설구분_Codetn_ptrfc,Y,tn_ptrfc,점형도로시설구분,pt_rdfc_se,CodeList,점형도로시설구분V6,MAJOR,점형도로시설구분V6_코드리스트 점검
+점형수로시설구분_Codetn_ptwtcors_fclty,Y,tn_ptwtcors_fclty,점형수로시설구분,pt_wtfc_se,CodeList,점형수로시설구분V6,MAJOR,점형수로시설구분V6_코드리스트 점검
+점형식생시설구분_Codetn_ptvgt_fclty,Y,tn_ptvgt_fclty,점형식생시설구분,pt_vgfc_se,CodeList,점형식생시설구분V6,MAJOR,점형식생시설구분V6_코드리스트 점검
+점형지형구분_Code,Y,tn_ptpgr,점형지형구분,pt_tpf_se,CodeList,점형지형구분V6,MAJOR,점형지형구분V6_코드리스트 점검
+점형철도시설구분_Code,Y,tn_ptwfc,점형철도시설구분,pt_rlfc_se,CodeList,점형철도시설구분V6,MAJOR,점형철도시설구분V6_코드리스트 점검
+점형항만시설구분_Code,Y,tn_pthfc,점형항만시설구분,pt_ptfc_se,CodeList,점형항만시설구분V6,MAJOR,점형항만시설구분V6_코드리스트 점검
+제작방법_Code,Y,tn_ctrlpnt,제작방법,fbctn_mthd,CodeList,제작방법V6,MAJOR,제작방법V6_코드리스트 점검
+주건물구분_Code,Y,tn_buld,주건물구분,mnbldg_se,CodeList,주건물구분V6,MAJOR,주건물구분V6_코드리스트 점검
+철도구분_Code,Y,tn_rlroad_ctln,철도구분,rlw_se,CodeList,철도구분V6,MAJOR,철도구분V6_코드리스트 점검
+철도사용상태_Code,Y,tn_rlroad_ctln,철도사용상태,rlw_usstts,CodeList,철도사용상태V6,MAJOR,철도사용상태V6_코드리스트 점검
+철도선로유형구분_Code,Y,tn_rlroad_ctln,철도선로유형구분,rlrwtyp_se,CodeList,철도선로유형구분V6,MAJOR,철도선로유형구분V6_코드리스트 점검
+철도표현구분_Code,Y,tn_rlroad_ctln,철도표현구분,rlexprs_se,CodeList,철도표현구분V6,MAJOR,철도표현구분V6_코드리스트 점검
+축척구분_Code,Y,*,축척구분,rdscl_se,CodeList,축척구분V6,MAJOR,축척구분V6_코드리스트 점검
+포장재질구분_Codetn_bcycl_ctln,Y,tn_bcycl_ctln,포장재질구분,pvm_mtr_se,CodeList,포장재질구분V6,MAJOR,포장재질구분V6_코드리스트 점검
+포장재질구분_Codetn_ftpth_bndry,Y,tn_ftpth_bndry,포장재질구분,pvm_mtr_se,CodeList,포장재질구분V6,MAJOR,포장재질구분V6_코드리스트 점검
+포장재질구분_Codetn_ftpth_ctln,Y,tn_ftpth_ctln,포장재질구분,pvm_mtr_se,CodeList,포장재질구분V6,MAJOR,포장재질구분V6_코드리스트 점검
+포장재질구분_Codetn_rodway_ctln,Y,tn_rodway_ctln,포장재질구분,pvm_mtr_se,CodeList,포장재질구분V6,MAJOR,포장재질구분V6_코드리스트 점검
+표고점구분_Code,Y,tn_alpt,표고점구분,alpt_se,CodeList,표고점구분V6,MAJOR,표고점구분V6_코드리스트 점검
+하천구분_Codetn_river_bndry,Y,tn_river_bndry,하천구분,rvr_se,CodeList,하천구분V6,MAJOR,하천구분V6_코드리스트 점검
+하천구분_Codetn_river_ctln,Y,tn_river_ctln,하천구분,rvr_se,CodeList,하천구분V6,MAJOR,하천구분V6_코드리스트 점검
+하천구분_Codetn_river_rt,Y,tn_river_rt,하천구분,rvr_se,CodeList,하천구분V6,MAJOR,하천구분V6_코드리스트 점검
+해안선구분_Code,Y,tn_shorline,해안선구분,shrln_se,CodeList,해안선구분V6,MAJOR,해안선구분V6_코드리스트 점검
+해안선출처_Code,Y,tn_shorline,해안선출처,shrln_src,CodeList,해안선출처V6,MAJOR,해안선출처V6_코드리스트 점검
+해안선형태_Code,Y,tn_shorline,해안선형태,shrln_shp,CodeList,해안선형태V6,MAJOR,해안선형태V6_코드리스트 점검

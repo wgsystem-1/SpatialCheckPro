@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using SpatialCheckPro.Services;
+using SpatialCheckPro.Utils;
 
 namespace SpatialCheckPro.Processors
 {
@@ -23,6 +24,7 @@ namespace SpatialCheckPro.Processors
         private readonly SpatialCheckPro.Models.Config.PerformanceSettings _performanceSettings;
         private readonly StreamingGeometryProcessor? _streamingProcessor;
         private readonly SpatialCheckPro.Models.GeometryCriteria _geometryCriteria;
+        private readonly IFeatureFilterService _featureFilterService;
         
         /// <summary>
         /// Union 지오메트리 캐시 (성능 최적화)
@@ -44,14 +46,23 @@ namespace SpatialCheckPro.Processors
             SpatialCheckPro.Models.GeometryCriteria geometryCriteria,
             ParallelProcessingManager? parallelProcessingManager = null,
             SpatialCheckPro.Models.Config.PerformanceSettings? performanceSettings = null,
-            StreamingGeometryProcessor? streamingProcessor = null)
+            StreamingGeometryProcessor? streamingProcessor = null,
+            IFeatureFilterService? featureFilterService = null)
         {
             _logger = logger;
             _geometryCriteria = geometryCriteria ?? SpatialCheckPro.Models.GeometryCriteria.CreateDefault();
             _parallelProcessingManager = parallelProcessingManager;
             _performanceSettings = performanceSettings ?? new SpatialCheckPro.Models.Config.PerformanceSettings();
             _streamingProcessor = streamingProcessor;
+            _featureFilterService = featureFilterService ?? new FeatureFilterService(
+                logger as ILogger<FeatureFilterService> ?? new LoggerFactory().CreateLogger<FeatureFilterService>(),
+                _performanceSettings);
         }
+
+        /// <summary>
+        /// 마지막 실행에서 제외된 피처 수
+        /// </summary>
+        public int LastSkippedFeatureCount { get; private set; }
 
         /// <summary>
         /// 관계 검수 진행률 업데이트 이벤트
@@ -74,10 +85,11 @@ namespace SpatialCheckPro.Processors
             var processed = (int)Math.Min(int.MaxValue, Math.Max(0, processedLong));
             var total = (int)Math.Min(int.MaxValue, Math.Max(0, totalLong));
             var pct = total > 0 ? (int)Math.Min(100, Math.Round(processed * 100.0 / (double)total)) : (completed ? 100 : 0);
-            ProgressUpdated?.Invoke(this, new RelationValidationProgressEventArgs
+            
+            var eventArgs = new RelationValidationProgressEventArgs
             {
                 CurrentStage = RelationValidationStage.SpatialRelationValidation,
-                StageName = string.IsNullOrWhiteSpace(caseType) ? "관계 검수" : caseType,
+                StageName = string.IsNullOrWhiteSpace(caseType) ? "공간 관계 검수" : caseType,
                 OverallProgress = pct,
                 StageProgress = completed ? 100 : pct,
                 StatusMessage = completed
@@ -90,7 +102,10 @@ namespace SpatialCheckPro.Processors
                 IsStageSuccessful = successful,
                 ErrorCount = 0,
                 WarningCount = 0
-            });
+            };
+            
+            _logger.LogDebug("진행률 이벤트 발생: {RuleId}, {Progress}%, {Message}", ruleId, pct, eventArgs.StatusMessage);
+            ProgressUpdated?.Invoke(this, eventArgs);
         }
 
         public async Task<ValidationResult> ProcessAsync(string filePath, RelationCheckConfig config, CancellationToken cancellationToken = default)
@@ -105,6 +120,24 @@ namespace SpatialCheckPro.Processors
             {
                 return new ValidationResult { IsValid = false, ErrorCount = 1, Message = "FileGDB를 열 수 없습니다" };
             }
+
+            LastSkippedFeatureCount = 0;
+            for (int i = 0; i < ds.GetLayerCount(); i++)
+            {
+                var datasetLayer = ds.GetLayerByIndex(i);
+                if (datasetLayer == null)
+                {
+                    continue;
+                }
+
+                var layerName = datasetLayer.GetName() ?? $"Layer_{i}";
+                var filterResult = _featureFilterService.ApplyObjectChangeFilter(datasetLayer, "Relation", layerName);
+                if (filterResult.Applied && filterResult.ExcludedCount > 0)
+                {
+                    LastSkippedFeatureCount += filterResult.ExcludedCount;
+                }
+            }
+            overall.SkippedCount = LastSkippedFeatureCount;
 
             // 레이어 헬퍼
             Layer? FindLayer(string name)
@@ -233,6 +266,9 @@ namespace SpatialCheckPro.Processors
 
         /// <summary>
         /// 지오메트리에서 중심점 좌표를 추출합니다
+        /// - Polygon: PointOnSurface (내부 보장) → Centroid → Envelope 중심
+        /// - Line: 중간 정점
+        /// - Point: 그대로
         /// </summary>
         private static (double X, double Y) ExtractCentroid(Geometry? geometry)
         {
@@ -241,9 +277,29 @@ namespace SpatialCheckPro.Processors
 
             try
             {
-                var envelope = new Envelope();
-                geometry.GetEnvelope(envelope);
-                return ((envelope.MinX + envelope.MaxX) / 2.0, (envelope.MinY + envelope.MaxY) / 2.0);
+                var geomType = geometry.GetGeometryType();
+                var flatType = (wkbGeometryType)((int)geomType & 0xFF); // Flatten to 2D type
+
+                // Polygon 또는 MultiPolygon: 내부 중심점 사용
+                if (flatType == wkbGeometryType.wkbPolygon || flatType == wkbGeometryType.wkbMultiPolygon)
+                {
+                    return GeometryCoordinateExtractor.GetPolygonInteriorPoint(geometry);
+                }
+
+                // LineString 또는 MultiLineString: 중간 정점
+                if (flatType == wkbGeometryType.wkbLineString || flatType == wkbGeometryType.wkbMultiLineString)
+                {
+                    return GeometryCoordinateExtractor.GetLineStringMidpoint(geometry);
+                }
+
+                // Point: 첫 번째 정점
+                if (flatType == wkbGeometryType.wkbPoint || flatType == wkbGeometryType.wkbMultiPoint)
+                {
+                    return GeometryCoordinateExtractor.GetFirstVertex(geometry);
+                }
+
+                // 기타: Envelope 중심
+                return GeometryCoordinateExtractor.GetEnvelopeCenter(geometry);
             }
             catch
             {
@@ -351,7 +407,7 @@ namespace SpatialCheckPro.Processors
                 token.ThrowIfCancellationRequested();
                 processedPoints++;
                 
-                if (processedPoints % 500 == 0 || processedPoints == pointCount)
+                if (processedPoints % 50 == 0 || processedPoints == pointCount)
                 {
                     RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, 
                         processedPoints, pointCount);
@@ -477,7 +533,7 @@ namespace SpatialCheckPro.Processors
             {
                 token.ThrowIfCancellationRequested();
                 processedCount++;
-                if (processedCount % 500 == 0 || processedCount == totalFeatures)
+                if (processedCount % 50 == 0 || processedCount == totalFeatures)
                 {
                     RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, processedCount, totalFeatures);
                 }
@@ -589,7 +645,7 @@ namespace SpatialCheckPro.Processors
             {
                 token.ThrowIfCancellationRequested();
                 processedCount++;
-                if (processedCount % 500 == 0 || processedCount == totalFeatures)
+                if (processedCount % 50 == 0 || processedCount == totalFeatures)
                 {
                     RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, processedCount, totalFeatures);
                 }
@@ -1073,23 +1129,42 @@ namespace SpatialCheckPro.Processors
                 _logger.LogInformation("AttributeFilter 적용: Layer={Layer}, Filter='{Filter}' -> Normalized='{Norm}', RC={RC}, 전체={Before} -> 필터후={After}", 
                     layer.GetName(), fieldFilter, normalized, rc, beforeCount, afterCount);
                 
-                // 필터 적용 후 샘플 데이터 확인
+                // 필터 적용 후 샘플 데이터 확인 (필드 존재 여부 확인)
                 if (afterCount > 0)
                 {
                     layer.ResetReading();
                     var sampleValues = new List<string>();
                     Feature? sampleF;
                     int sampleCount = 0;
+                    
+                    // 필터에 사용된 필드명 추출
+                    var filterFieldName = ExtractFirstFieldNameFromFilter(normalized);
+                    
                     while ((sampleF = layer.GetNextFeature()) != null && sampleCount < 5)
                     {
                         using (sampleF)
                         {
-                            var roadSe = sampleF.GetFieldAsString("road_se") ?? string.Empty;
-                            sampleValues.Add(roadSe);
-                            sampleCount++;
+                            try
+                            {
+                                if (!string.IsNullOrEmpty(filterFieldName))
+                                {
+                                    var fieldValue = GetFieldValueSafe(sampleF, filterFieldName);
+                                    sampleValues.Add(fieldValue ?? "NULL");
+                                }
+                                sampleCount++;
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogDebug(ex, "샘플 데이터 확인 중 오류");
+                            }
                         }
                     }
-                    _logger.LogInformation("필터 적용 후 샘플 road_se 값들: {Values}", string.Join(", ", sampleValues));
+                    
+                    if (sampleValues.Any())
+                    {
+                        _logger.LogInformation("필터 적용 후 샘플 {Field} 값들: {Values}", 
+                            filterFieldName, string.Join(", ", sampleValues));
+                    }
                 }
                 
                 // SetAttributeFilter 반환코드 의미:
@@ -1138,6 +1213,41 @@ namespace SpatialCheckPro.Processors
                 set.Add(fd.GetName());
             }
             return set;
+        }
+        
+        private static string? GetFieldValueSafe(Feature feature, string fieldName)
+        {
+            try
+            {
+                var defn = feature.GetDefnRef();
+                for (int i = 0; i < defn.GetFieldCount(); i++)
+                {
+                    using var fd = defn.GetFieldDefn(i);
+                    if (fd.GetName().Equals(fieldName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return feature.IsFieldNull(i) ? null : feature.GetFieldAsString(i);
+                    }
+                }
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+        
+        private static string ExtractFirstFieldNameFromFilter(string filter)
+        {
+            try
+            {
+                // "field_name IN (...)" 또는 "field_name = value" 패턴에서 필드명 추출
+                var match = Regex.Match(filter, @"^\s*([A-Za-z_][A-Za-z0-9_]*)\s+(?:IN|=|<>|>=|<=|>|<)", RegexOptions.IgnoreCase);
+                return match.Success ? match.Groups[1].Value : string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
         }
 
         private static HashSet<string> GetExpressionIdentifiers(string filter)
@@ -1326,7 +1436,7 @@ namespace SpatialCheckPro.Processors
             {
                 token.ThrowIfCancellationRequested();
                 idx++;
-                if (idx % 200 == 0 || idx == total)
+                if (idx % 50 == 0 || idx == total)
                 {
                     RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, idx, total);
                 }

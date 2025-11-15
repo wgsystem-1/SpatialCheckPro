@@ -16,7 +16,6 @@ using Microsoft.Extensions.DependencyInjection;
 using System.ComponentModel;
 using System.Windows.Data;
 using SpatialCheckPro.Models;
-using SpatialCheckPro.Services.Interfaces;
 using SpatialCheckPro.GUI.Services;
 using System.IO;
 using iTextSharp.text;
@@ -26,6 +25,41 @@ using MigraDoc.Rendering;
 
 namespace SpatialCheckPro.GUI.Views
 {
+    /// <summary>
+    /// 배치 결과 선택 항목
+    /// </summary>
+    public class BatchResultItem
+    {
+        public int Index { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// 속성 관계 오류 항목
+    /// </summary>
+    public class AttributeRelationErrorItem
+    {
+        public string TableName { get; set; } = string.Empty;
+        public string FieldName { get; set; } = string.Empty;
+        public string RuleName { get; set; } = string.Empty;
+        public string ObjectId { get; set; } = string.Empty;
+        public string ExpectedValue { get; set; } = string.Empty;
+        public string ActualValue { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// 공간 관계 오류 항목
+    /// </summary>
+    public class SpatialRelationErrorItem
+    {
+        public string SourceLayer { get; set; } = string.Empty;
+        public string RelationType { get; set; } = string.Empty;
+        public string ErrorType { get; set; } = string.Empty;
+        public string SourceObjectId { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+    }
+
     /// <summary>
     /// 지도 네비게이션 이벤트 인수
     /// </summary>
@@ -87,7 +121,6 @@ namespace SpatialCheckPro.GUI.Views
         private readonly ILogger<ValidationResultView> _logger;
         private ICollectionView? _resultsView;
         private System.Timers.Timer? _filterDebounceTimer;
-        private ErrorCountAnalysisResult? _analysisResult;
 
         // 보고서 생성 요청 이벤트 사용처가 없어 제거하여 경고 방지
 
@@ -106,6 +139,9 @@ namespace SpatialCheckPro.GUI.Views
             // 필터 디바운스 타이머
             _filterDebounceTimer = new System.Timers.Timer(300) { AutoReset = false };
             _filterDebounceTimer.Elapsed += (_, __) => Dispatcher.Invoke(ApplyAdvancedFilter);
+            
+            // 와이드 대시보드 초기화
+            InitializeWideDashboard();
 
             // 이벤트 바인딩(존재하는 경우에만)
             TryWireAdvancedFilterEvents();
@@ -249,115 +285,35 @@ namespace SpatialCheckPro.GUI.Views
         /// 검수 결과를 설정합니다
         /// </summary>
         /// <param name="result">검수 결과</param>
+        private WideDashboardView? _wideDashboard;
+        
+        /// <summary>
+        /// 와이드 대시보드를 초기화합니다
+        /// </summary>
+        private void InitializeWideDashboard()
+        {
+            try
+            {
+                var wideDashboard = new WideDashboardView();
+                WideDashboardContainer.Content = wideDashboard;
+                _wideDashboard = wideDashboard;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "와이드 대시보드 초기화 실패");
+            }
+        }
+        
         public void SetValidationResult(SpatialCheckPro.Models.ValidationResult result)
         {
             _validationResult = result;
+            
+            // 와이드 대시보드 업데이트
+            _wideDashboard?.SetValidationResult(result);
+            
             UpdateUI();
         }
 
-        /// <summary>
-        /// 오류 개수 분석 실행 버튼 클릭 이벤트
-        /// </summary>
-        private async void RunAnalysisButton_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (_validationResult == null)
-                {
-                    MessageBox.Show("분석할 검수 결과가 없습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                // 분석 버튼 비활성화
-                RunAnalysisButton.IsEnabled = false;
-                RunAnalysisButton.Content = "분석 중...";
-
-                // FileGDB 경로 확인
-                var gdbPath = _validationResult.TargetFile;
-                if (string.IsNullOrEmpty(gdbPath) || !Directory.Exists(gdbPath))
-                {
-                    MessageBox.Show("FileGDB 경로를 찾을 수 없습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                // 분석 서비스 가져오기
-                var app = Application.Current as App;
-                var analysisService = app?.GetService<IErrorCountAnalysisService>();
-                if (analysisService == null)
-                {
-                    MessageBox.Show("분석 서비스를 찾을 수 없습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                // 분석 실행
-                _analysisResult = await analysisService.AnalyzeErrorCountsAsync(_validationResult, gdbPath);
-
-                // 결과 업데이트
-                UpdateAnalysisResults();
-
-                MessageBox.Show($"분석이 완료되었습니다.\n\n{_analysisResult.Summary}", "분석 완료", 
-                    MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "오류 개수 분석 실패");
-                MessageBox.Show($"분석 중 오류가 발생했습니다:\n{ex.Message}", "오류", 
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            finally
-            {
-                // 분석 버튼 활성화
-                RunAnalysisButton.IsEnabled = true;
-                RunAnalysisButton.Content = "오류 개수 분석 실행";
-            }
-        }
-
-        /// <summary>
-        /// 분석 결과를 UI에 업데이트합니다
-        /// </summary>
-        private void UpdateAnalysisResults()
-        {
-            if (_analysisResult == null) return;
-
-            try
-            {
-                // 요약 정보 업데이트
-                ValidationErrorCountText.Text = _analysisResult.ValidationResultErrorCount.ToString();
-                SavedErrorCountText.Text = _analysisResult.SavedPointErrorCount.ToString();
-                MissingErrorCountText.Text = _analysisResult.MissingErrorCount.ToString();
-                SaveSuccessRateText.Text = $"{_analysisResult.SaveSuccessRate:F1}%";
-                AnalysisSummaryText.Text = _analysisResult.Summary;
-
-                // 단계별 분석 결과 업데이트
-                StageAnalysisDataGrid.ItemsSource = _analysisResult.StageAnalyses;
-
-                // 오류 타입별 분석 결과 업데이트 (모든 단계의 오류 타입을 평면화)
-                var allErrorTypeAnalyses = _analysisResult.StageAnalyses
-                    .SelectMany(stage => stage.ErrorTypeAnalyses.Select(errorType => new
-                    {
-                        StageNumber = stage.StageNumber,
-                        ErrorType = errorType.ErrorType,
-                        ErrorTypeName = errorType.ErrorTypeName,
-                        ValidationErrorCount = errorType.ValidationErrorCount,
-                        SavedErrorCount = errorType.SavedErrorCount,
-                        MissingErrorCount = errorType.MissingErrorCount,
-                        SaveSuccessRate = errorType.SaveSuccessRate
-                    }))
-                    .ToList();
-
-                ErrorTypeAnalysisDataGrid.ItemsSource = allErrorTypeAnalyses;
-
-                // 저장되지 않은 오류 상세 업데이트
-                MissingErrorDataGrid.ItemsSource = _analysisResult.MissingErrorDetails;
-
-                _logger?.LogInformation("분석 결과 UI 업데이트 완료: 검수결과 {ValidationCount}개, 저장된 {SavedCount}개, 누락 {MissingCount}개", 
-                    _analysisResult.ValidationResultErrorCount, _analysisResult.SavedPointErrorCount, _analysisResult.MissingErrorCount);
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "분석 결과 UI 업데이트 실패");
-            }
-        }
 
         /// <summary>
         /// 배치 결과 목록과 함께 설정합니다(선택 가능)
@@ -370,7 +326,7 @@ namespace SpatialCheckPro.GUI.Views
                 if (BatchResultSelector != null)
                 {
                     BatchResultSelector.ItemsSource = results
-                        .Select((r, idx) => new { Index = idx, Name = System.IO.Path.GetFileName(r.TargetFile) })
+                        .Select((r, idx) => new BatchResultItem { Index = idx, Name = System.IO.Path.GetFileName(r.TargetFile) })
                         .ToList();
                     BatchResultSelector.DisplayMemberPath = "Name";
                     BatchResultSelector.SelectedValuePath = "Index";
@@ -672,23 +628,10 @@ namespace SpatialCheckPro.GUI.Views
                 _logger?.LogInformation("검수 결과 UI 업데이트 시작: ValidationId={ValidationId}, ErrorCount={ErrorCount}, WarningCount={WarningCount}", 
                     _validationResult.ValidationId, _validationResult.ErrorCount, _validationResult.WarningCount);
 
-                // 요약 정보 업데이트
-                // 대시보드의 검수 상태는 결과의 성공/실패 여부와 무관하게 "완료"로 표기
-                ValidationStatusText.Text = "완료";
+                // 기존 대시보드 UI 요소들이 제거되어 주석 처리
+                // ValidationStatusText, ElapsedTimeText, ErrorCountText, WarningCountText는 와이드 대시보드에서 처리
                 
-                // 검수 시간을 적절한 형식으로 표시
-                var startTime = _validationResult.StartedAt;
-                var endTime = _validationResult.CompletedAt ?? DateTime.Now;
-                var processingTime = endTime - startTime;
-
-                ElapsedTimeText.Text = processingTime.ToString(@"h\:mm\:ss");
-                
-                // 오류/경고 수 표기 복원
-                ErrorCountText.Text = _validationResult.ErrorCount.ToString();
-                WarningCountText.Text = _validationResult.WarningCount.ToString();
-
-                _logger?.LogInformation("기본 정보 업데이트 완료: 상태={Status}, 시간={Time}, 오류={Errors}, 경고={Warnings}", 
-                    ValidationStatusText.Text, ElapsedTimeText.Text, ErrorCountText.Text, WarningCountText.Text);
+                _logger?.LogInformation("기본 정보 업데이트 완료: 오류={Errors}", _validationResult.ErrorCount);
 
                 // 탭별 데이터 그리드 업데이트
                 UpdateTabDataGrids();
@@ -794,7 +737,7 @@ namespace SpatialCheckPro.GUI.Views
                     }
 
                     var attrItems = attributes
-                            .Select(w => new
+                            .Select(w => new AttributeRelationErrorItem
                             {
                                 TableName = string.IsNullOrWhiteSpace(w.TableName) ? (w.SourceTable ?? string.Empty) : w.TableName,
                             FieldName = !string.IsNullOrWhiteSpace(w.FieldName) ? w.FieldName : (w.Metadata != null && w.Metadata.TryGetValue("FieldName", out var fn) ? Convert.ToString(fn) ?? string.Empty : string.Empty),
@@ -829,27 +772,8 @@ namespace SpatialCheckPro.GUI.Views
 
             try
             {
-                // 0단계: FileGDB 검증 요약
-                if (_validationResult.FileGdbCheckResult != null)
-                {
-                    var fgdbResult = _validationResult.FileGdbCheckResult;
-                    DashStage0StatusText.Text = fgdbResult.Status == CheckStatus.Passed ? "성공" : 
-                                              fgdbResult.Status == CheckStatus.Failed ? "실패" : "경고";
-                    DashStage0ErrorCountText.Text = fgdbResult.ErrorCount.ToString();
-                    DashStage0WarningCountText.Text = fgdbResult.WarningCount.ToString();
-                    
-                    // 상태에 따른 색상 변경
-                    DashStage0StatusText.Foreground = fgdbResult.Status == CheckStatus.Passed ? 
-                        new SolidColorBrush(System.Windows.Media.Color.FromRgb(34, 197, 94)) : // 초록색
-                        new SolidColorBrush(System.Windows.Media.Color.FromRgb(220, 38, 38)); // 빨간색
-                }
-                else
-                {
-                    DashStage0StatusText.Text = "미실행";
-                    DashStage0ErrorCountText.Text = "0";
-                    DashStage0WarningCountText.Text = "0";
-                    DashStage0StatusText.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(107, 114, 128)); // 회색
-                }
+                // 기존 대시보드 UI 요소들이 제거되어 주석 처리
+                // DashStage0StatusText 등은 와이드 대시보드에서 처리
 
                 // 1단계 요약
                 if (_validationResult.TableCheckResult != null)
@@ -866,7 +790,6 @@ namespace SpatialCheckPro.GUI.Views
                 {
                     Stage2TotalColumnsText.Text = _validationResult.SchemaCheckResult.TotalColumnCount.ToString();
                     Stage2ErrorCountText.Text = _validationResult.SchemaCheckResult.ErrorCount.ToString();
-                    Stage2WarningCountText.Text = _validationResult.SchemaCheckResult.WarningCount.ToString();
                 }
 
                 // 3단계 요약 로직 추가
@@ -874,7 +797,29 @@ namespace SpatialCheckPro.GUI.Views
                 {
                     Stage3TableCountText.Text = _validationResult.GeometryCheckResult.TotalTableCount.ToString();
                     Stage3ErrorSumText.Text = _validationResult.GeometryCheckResult.ErrorCount.ToString();
-                    Stage3WarningSumText.Text = _validationResult.GeometryCheckResult.WarningCount.ToString();
+                }
+
+                // 4단계 요약 (속성 관계 검수)
+                if (_validationResult.AttributeRelationCheckResult != null)
+                {
+                    var attrResult = _validationResult.AttributeRelationCheckResult;
+                    
+                    // 검사된 규칙 수
+                    if (Stage5RuleCountText != null)
+                    {
+                        var ruleCount = attrResult.ProcessedRulesCount > 0 
+                            ? attrResult.ProcessedRulesCount 
+                            : (attrResult.Metadata != null && attrResult.Metadata.TryGetValue("ProcessedRulesCount", out var rc) 
+                                ? Convert.ToInt32(rc) 
+                                : 0);
+                        Stage5RuleCountText.Text = ruleCount.ToString();
+                    }
+                    
+                    // 오류 개수
+                    if (AttributeErrorCountText != null)
+                    {
+                        AttributeErrorCountText.Text = attrResult.ErrorCount.ToString();
+                    }
                 }
             }
             catch (Exception ex) 
@@ -892,115 +837,10 @@ namespace SpatialCheckPro.GUI.Views
 
             try
             {
-                // 1단계
-                if (_validationResult.TableCheckResult != null)
-                {
-                    DashStage1TotalTablesText.Text = _validationResult.TableCheckResult.TotalTableCount.ToString();
-
-                    var tableResults = _validationResult.TableCheckResult.TableResults ?? new List<TableValidationItem>();
-                    var missingDefinedCount = tableResults.Count(t => string.Equals(t.TableExistsCheck, "N", StringComparison.OrdinalIgnoreCase));
-                    var undefinedTablesCount = tableResults.Count(t => string.Equals(t.ExpectedFeatureType?.Trim() ?? string.Empty, "정의되지 않음", StringComparison.OrdinalIgnoreCase));
-                    var zeroFeatureTablesCount = tableResults.Count(t => string.Equals(t.TableExistsCheck, "Y", StringComparison.OrdinalIgnoreCase) && (t.FeatureCount ?? 0) == 0);
-
-                    DashStage1MissingDefinedTablesText.Text = missingDefinedCount.ToString();
-                    DashStage1UndefinedTablesText.Text = undefinedTablesCount.ToString();
-                    DashStage1ZeroFeatureTablesText.Text = zeroFeatureTablesCount.ToString();
-                }
-
-                // 2단계
-                if (_validationResult.SchemaCheckResult != null)
-                {
-                    var dashTotalCols = _validationResult.SchemaCheckResult.TotalColumnCount;
-                    if (dashTotalCols == 0)
-                    {
-                        dashTotalCols = _validationResult.SchemaCheckResult.SchemaResults?.Count ?? 0; // 폴백: 실제 검사 컬럼 수
-                    }
-                    DashStage2TotalColumnsText.Text = dashTotalCols.ToString();
-                    DashStage2ErrorCountText.Text = _validationResult.SchemaCheckResult.ErrorCount.ToString();
-                    DashStage2WarningCountText.Text = _validationResult.SchemaCheckResult.WarningCount.ToString();
-                }
-
-                // 3단계
-                if (_validationResult.GeometryCheckResult?.GeometryResults != null)
-                {
-                    var results = _validationResult.GeometryCheckResult.GeometryResults;
-                    // 개별 오류 수 업데이트
-                    DashStage3DuplicateText.Text = results.Sum(r => r.DuplicateCount).ToString();
-                    DashStage3OverlapText.Text = results.Sum(r => r.OverlapCount).ToString();
-                    DashStage3SelfIntersectionText.Text = results.Sum(r => r.SelfIntersectionCount).ToString();
-                    DashStage3SelfOverlapText.Text = results.Sum(r => r.SelfOverlapCount).ToString();
-                    DashStage3SliverText.Text = results.Sum(r => r.SliverCount).ToString();
-                    DashStage3SpikeText.Text = results.Sum(r => r.SpikeCount).ToString();
-                    DashStage3ShortObjectText.Text = results.Sum(r => r.ShortObjectCount).ToString();
-                    DashStage3SmallAreaText.Text = results.Sum(r => r.SmallAreaCount).ToString();
-                    DashStage3HoleText.Text = results.Sum(r => r.PolygonInPolygonCount).ToString();
-                    DashStage3MinPointText.Text = results.Sum(r => r.MinPointCount).ToString();
-                    DashStage3UndershootText.Text = results.Sum(r => r.UndershootCount).ToString();
-                    DashStage3OvershootText.Text = results.Sum(r => r.OvershootCount).ToString();
-                    
-                    // 실제 검수 규칙 수 계산 (설정 파일 기반)
-                    int actualTotalRules = CalculateActualGeometryRules();
-                    int totalErrors = results.Sum(r => r.DuplicateCount + r.OverlapCount + r.SelfIntersectionCount + 
-                                                   r.SelfOverlapCount + r.SliverCount + r.SpikeCount + 
-                                                   r.ShortObjectCount + r.SmallAreaCount + r.PolygonInPolygonCount + 
-                                                   r.MinPointCount + r.UndershootCount + r.OvershootCount);
-                    
-                    DashStage3RuleCountText.Text = actualTotalRules.ToString();
-                    DashStage3TotalErrorText.Text = totalErrors.ToString();
-                }
-                else
-                {
-                    DashStage3DuplicateText.Text = "0";
-                    DashStage3OverlapText.Text = "0";
-                    DashStage3SelfIntersectionText.Text = "0";
-                    DashStage3SelfOverlapText.Text = "0";
-                    DashStage3SliverText.Text = "0";
-                    DashStage3SpikeText.Text = "0";
-                    DashStage3ShortObjectText.Text = "0";
-                    DashStage3SmallAreaText.Text = "0";
-                    DashStage3HoleText.Text = "0";
-                    DashStage3MinPointText.Text = "0";
-                    DashStage3UndershootText.Text = "0";
-                    DashStage3OvershootText.Text = "0";
-                    
-                    // 검사한 규칙 수와 총 오류 수 초기화
-                    DashStage3RuleCountText.Text = "0";
-                    DashStage3TotalErrorText.Text = "0";
-                }
-
-                // 4단계 (속성 관계) 
-                if (_validationResult.AttributeRelationCheckResult != null)
-                {
-                    var attrErr = _validationResult.AttributeRelationCheckResult.ErrorCount;
-                    var attrWarn = _validationResult.AttributeRelationCheckResult.WarningCount;
-                    if (AttributeErrorCountText != null) AttributeErrorCountText.Text = attrErr.ToString();
-                    if (AttributeWarnCountText != null) AttributeWarnCountText.Text = attrWarn.ToString();
-                    if (DashStage4AttrErrorText != null) DashStage4AttrErrorText.Text = attrErr.ToString();
-                    if (DashStage4AttrWarnText != null) DashStage4AttrWarnText.Text = attrWarn.ToString();
-
-                    // 검사된 규칙 수(4단계) - Metadata 대신 직접 속성 참조
-                    var ruleCount = _validationResult.AttributeRelationCheckResult.ProcessedRulesCount;
-                    if (DashStage4RuleCountText != null) DashStage4RuleCountText.Text = ruleCount.ToString();
-                    if (Stage5RuleCountText != null) Stage5RuleCountText.Text = ruleCount.ToString();
-                }
-
-                // 5단계 (공간 관계)
-                if (_validationResult.RelationCheckResult != null)
-                {
-                    var spatialErrors = _validationResult.RelationCheckResult.Errors?.Count ?? 0;
-                    var spatialWarn = _validationResult.RelationCheckResult.WarningCount;
-                    
-                    // 5단계 오류/경고 수 표시
-                    if (SpatialErrorCountText != null) SpatialErrorCountText.Text = spatialErrors.ToString();
-                    if (SpatialWarnCountText != null) SpatialWarnCountText.Text = spatialWarn.ToString();
-                    if (DashSpatialErrorCountText != null) DashSpatialErrorCountText.Text = spatialErrors.ToString();
-                    if (DashSpatialWarnCountText != null) DashSpatialWarnCountText.Text = spatialWarn.ToString();
-
-                    // 검사된 규칙 수: Metadata 대신 직접 속성 참조
-                    var spatialRuleCount = _validationResult.RelationCheckResult.ProcessedRulesCount;
-                    if (TotalRulesText != null) TotalRulesText.Text = spatialRuleCount.ToString();
-                    if (DashTotalRulesText != null) DashTotalRulesText.Text = spatialRuleCount.ToString();
-                }
+                // 와이드 대시보드만 업데이트 (기존 대시보드 UI 요소들은 제거됨)
+                _wideDashboard?.SetValidationResult(_validationResult);
+                
+                _logger.LogInformation("와이드 대시보드 업데이트 완료");
             }
             catch (Exception ex)
             {
@@ -1051,7 +891,7 @@ namespace SpatialCheckPro.GUI.Views
                 // 공간 관계 오류: ErrorCode가 "REL_"로 시작하고, 테이블/객체ID가 존재하는 항목
                 var spatialItems = errors
                     .Where(e => !string.IsNullOrWhiteSpace(e.ErrorCode) && e.ErrorCode.StartsWith("REL_", StringComparison.OrdinalIgnoreCase))
-                    .Select(e => new
+                    .Select(e => new SpatialRelationErrorItem
                     {
                         SourceLayer = string.IsNullOrWhiteSpace(e.TableName) ? (e.SourceTable ?? string.Empty) : e.TableName,
                         RelationType = e.Metadata != null && e.Metadata.TryGetValue("RelationType", out var rt) ? Convert.ToString(rt) ?? string.Empty : string.Empty,
@@ -1064,28 +904,52 @@ namespace SpatialCheckPro.GUI.Views
                 SpatialRelationErrorsGrid.ItemsSource = spatialItems;
                 SpatialErrorCountText.Text = spatialItems.Count.ToString();
 
-                // 검사된 규칙 수 표시 (메타데이터에 저장된 SpatialRuleCount 사용)
+                // 검사된 규칙 수 표시
                 try
                 {
                     var ruleCount = 0;
-                    if (relationCheckResult.Metadata != null && relationCheckResult.Metadata.TryGetValue("SpatialRuleCount", out var cntObj))
+                    
+                    // 1순위: ProcessedRulesCount 속성 사용
+                    if (relationCheckResult.ProcessedRulesCount > 0)
+                    {
+                        ruleCount = relationCheckResult.ProcessedRulesCount;
+                    }
+                    // 2순위: 메타데이터에서 SpatialRuleCount 조회
+                    else if (relationCheckResult.Metadata != null && relationCheckResult.Metadata.TryGetValue("SpatialRuleCount", out var cntObj))
                     {
                         // 숫자/문자 모두 안전하게 처리
                         if (cntObj is int i) ruleCount = i;
                         else if (cntObj is long l) ruleCount = (int)l;
                         else if (cntObj is string s && int.TryParse(s, out var parsed)) ruleCount = parsed;
                     }
+                    // 3순위: 오류 목록에서 고유 RuleId 카운트
+                    else if (errors.Any())
+                    {
+                        var uniqueRules = errors
+                            .Where(e => e.Metadata != null && e.Metadata.ContainsKey("RuleId"))
+                            .Select(e => e.Metadata["RuleId"])
+                            .Distinct()
+                            .Count();
+                        if (uniqueRules > 0) ruleCount = uniqueRules;
+                    }
+                    
                     if (TotalRulesText != null)
                     {
                         TotalRulesText.Text = ruleCount.ToString();
                     }
+                    
+                    _logger?.LogInformation("5단계 검사된 규칙 수: {RuleCount} (ProcessedRulesCount={PRC})", 
+                        ruleCount, relationCheckResult.ProcessedRulesCount);
                 }
-                catch { /* 규칙 수 표시는 필수 아님 */ }
+                catch (Exception ex)
+                {
+                    _logger?.LogWarning(ex, "규칙 수 표시 중 오류 발생");
+                }
 
                 // 속성 관계 오류: 공간 오류 외 나머지(규칙 기반) 항목
                 var attrItems = errors
                     .Where(e => string.IsNullOrWhiteSpace(e.ErrorCode) || !e.ErrorCode.StartsWith("REL_", StringComparison.OrdinalIgnoreCase))
-                    .Select(e => new
+                    .Select(e => new AttributeRelationErrorItem
                     {
                         TableName = string.IsNullOrWhiteSpace(e.TableName) ? (e.SourceTable ?? string.Empty) : e.TableName,
                         FieldName = e.Metadata != null && e.Metadata.TryGetValue("FieldName", out var fn) ? Convert.ToString(fn) ?? string.Empty : (e.FieldName ?? string.Empty),
@@ -1580,19 +1444,11 @@ namespace SpatialCheckPro.GUI.Views
                 grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
                 grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-                // 오류 목록 표시
+                // 오류 목록 표시 - 익명 타입 대신 GeometryErrorDetail 직접 사용
                 var listBox = new ListBox
                 {
                     Margin = new Thickness(10),
-                    ItemsSource = errorDetails.Select((error, index) => new
-                    {
-                        Index = index + 1,
-                        ObjectId = error.ObjectId,
-                        ErrorValue = error.ErrorValue,
-                        Location = error.Location,
-                        DetailMessage = error.DetailMessage,
-                        Error = error
-                    }).ToList()
+                    ItemsSource = errorDetails
                 };
 
                 // 리스트박스 아이템 템플릿 설정
@@ -1604,7 +1460,7 @@ namespace SpatialCheckPro.GUI.Views
                 var titleFactory = new FrameworkElementFactory(typeof(TextBlock));
                 titleFactory.SetBinding(TextBlock.TextProperty, new Binding("ObjectId") 
                 { 
-                    StringFormat = "#{0} OBJECTID: {1}" 
+                    StringFormat = "OBJECTID: {0}" 
                 });
                 titleFactory.SetValue(TextBlock.FontWeightProperty, FontWeights.Bold);
                 factory.AppendChild(titleFactory);
@@ -1723,11 +1579,8 @@ namespace SpatialCheckPro.GUI.Views
         /// </summary>
         private void LoadRealValidationResults()
         {
-            // 기본 상태 표시
-            ValidationStatusText.Text = "검수 결과 없음";
-            ElapsedTimeText.Text = "0초";
-            ErrorCountText.Text = "0";
-            WarningCountText.Text = "0";
+            // 기본 상태 표시 (기존 UI 요소 제거되어 주석 처리)
+            // ValidationStatusText, ElapsedTimeText, ErrorCountText, WarningCountText는 제거됨
 
             // 빈 결과 목록 초기화
             _allResults = new List<ValidationResultItem>();

@@ -36,7 +36,44 @@
                 </UniformGrid>
             </GroupBox>
 
-            <!-- 성능 모드 UI 제거: 고성능 모드는 자동 판단에 의해 동작 -->
+            <!-- 고급 성능 설정 -->
+            <GroupBox Header="고급 성능 설정 (수동 모드)" Margin="0,0,0,15" Padding="15">
+                <StackPanel>
+                    <CheckBox x:Name="ForceStreamingModeCheck" Content="스트리밍 모드 강제 사용 (파일 크기와 무관하게 스트리밍 처리)" Margin="0,0,0,10"/>
+                    <TextBlock Text="스트리밍 모드를 강제로 사용합니다. 메모리 사용량을 줄이고 대용량 파일 처리를 최적화합니다." Foreground="Gray" FontSize="12" Margin="20,0,0,15"/>
+
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="배치 크기 (개):" VerticalAlignment="Center"/>
+                        <TextBox x:Name="BatchSizeTextBox" Grid.Column="1" Width="80" Text="1000" Margin="10,0,0,0"/>
+                    </Grid>
+
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="최대 메모리 사용량 (MB):" VerticalAlignment="Center"/>
+                        <TextBox x:Name="MemoryUsageTextBox" Grid.Column="1" Width="80" Text="512" Margin="10,0,0,0"/>
+                    </Grid>
+
+                    <TextBlock Text="고급 옵션:" FontWeight="Bold" Margin="0,15,0,10"/>
+                    <CheckBox x:Name="EnablePrefetchingCheck" Content="프리페칭 활성화 (다음 배치를 미리 로드하여 성능 향상)" Margin="0,0,0,8"/>
+                    <CheckBox x:Name="EnableParallelStreamingCheck" Content="병렬 스트리밍 활성화 (단일 파일 내 다중 스레드 처리)" Margin="0,0,0,15"/>
+
+                    <Border Background="#F3F4F6" BorderBrush="#D1D5DB" BorderThickness="1" CornerRadius="4" Padding="10">
+                        <StackPanel>
+                            <TextBlock Text="💡 권장 설정:" FontWeight="Bold" Margin="0,0,0,8"/>
+                            <TextBlock Text="• 대용량 파일 (2GB+): 스트리밍 모드 강제 사용 + 프리페칭 활성화" FontSize="12" Margin="0,0,0,4"/>
+                            <TextBlock Text="• 고성능 시스템: 병렬 스트리밍 활성화" FontSize="12" Margin="0,0,0,4"/>
+                            <TextBlock Text="• 메모리 제한 환경: 배치 크기 감소 + 메모리 사용량 제한" FontSize="12"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </GroupBox>
 
             <!-- 설정 미리보기 탭 (디자인 스타일 적용) -->
             <GroupBox Header="설정 미리보기 (체크 해제 시 해당 행 스킵)" Margin="0,0,0,15" Padding="10">

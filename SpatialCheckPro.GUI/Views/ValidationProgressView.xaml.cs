@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Threading;
 using SpatialCheckPro.GUI.Constants;
 using SpatialCheckPro.GUI.ViewModels;
+using SpatialCheckPro.GUI.Converters;
 
 namespace SpatialCheckPro.GUI.Views
 {
@@ -15,8 +16,8 @@ namespace SpatialCheckPro.GUI.Views
     {
         public event EventHandler? ValidationStopRequested;
         private StageSummaryCollectionViewModel _stageSummaries;
+        private readonly RemainingTimeViewModel _remainingTimeViewModel;
         private DispatcherTimer? _elapsedTimer;
-        private DispatcherTimer? _resourceMonitorTimer;
         private DateTime _startTime;
         
         public ValidationProgressView()
@@ -24,8 +25,8 @@ namespace SpatialCheckPro.GUI.Views
             InitializeComponent();
             DataContextChanged += OnDataContextChanged;
             _stageSummaries = EnsureStageSummaryViewModel();
+            _remainingTimeViewModel = new RemainingTimeViewModel();
             InitializeElapsedTimer();
-            InitializeResourceMonitorTimer();
             ResetHeader();
         }
 
@@ -69,6 +70,7 @@ namespace SpatialCheckPro.GUI.Views
             CurrentStageText.Text = "대기 중";
             EstimatedTimeText.Text = "계산 중...";
             CompletedStagesText.Text = $"0 / {_stageSummaries.Stages.Count}";
+            _remainingTimeViewModel?.Reset();
         }
         
         /// <summary>
@@ -106,6 +108,14 @@ namespace SpatialCheckPro.GUI.Views
             var stage = _stageSummaries.GetStage(stageNumber);
             stage?.ForceProgress(percentage);
             UpdateRemainingTime();
+            
+            // 진행률이 변경될 때마다 예상 시간 업데이트
+            if (_stageSummaries.RemainingTotalEta.HasValue && _remainingTimeViewModel != null)
+            {
+                _remainingTimeViewModel.UpdateEstimatedTime(
+                    _stageSummaries.RemainingTotalEta.Value, 
+                    _stageSummaries.RemainingEtaConfidence);
+            }
         }
 
         public void UpdateUnits(int stageNumber, long processedUnits, long totalUnits)
@@ -125,9 +135,22 @@ namespace SpatialCheckPro.GUI.Views
 
         private void UpdateRemainingTime()
         {
-            EstimatedTimeText.Text = _stageSummaries.RemainingTotalEta.HasValue
-                ? FormatRemainingLabel(_stageSummaries.RemainingTotalEta.Value.TotalSeconds)
-                : "계산 중...";
+            if (_stageSummaries.RemainingTotalEta.HasValue)
+            {
+                var remainingTime = _stageSummaries.RemainingTotalEta.Value;
+                var confidence = _stageSummaries.RemainingEtaConfidence;
+                
+                // RemainingTimeViewModel에 예상 시간 설정
+                _remainingTimeViewModel.SetEstimatedTime(remainingTime, confidence);
+                
+                // 직접 업데이트 방식으로 변경 (더 간단하고 안정적)
+                UpdateRemainingTimeDisplay();
+            }
+            else
+            {
+                EstimatedTimeText.Text = "계산 중...";
+                EstimatedTimeText.ClearValue(TextBlock.DataContextProperty);
+            }
         }
 
         private static string FormatRemainingLabel(double seconds)
@@ -141,139 +164,80 @@ namespace SpatialCheckPro.GUI.Views
         }
 
         /// <summary>
-        /// 로그 메시지를 추가합니다
+        /// 로그 메시지를 추가합니다 (Deprecated - 로그 UI가 제거됨)
         /// </summary>
         /// <param name="message">로그 메시지</param>
         public void AddLogMessage(string message)
         {
-            var timestamp = DateTime.Now.ToString("HH:mm:ss");
-            var logEntry = $"[{timestamp}] {message}";
-            
-            if (string.IsNullOrEmpty(LogTextBlock.Text) || LogTextBlock.Text == "검수 로그가 여기에 표시됩니다...")
-            {
-                LogTextBlock.Text = logEntry;
-            }
-            else
-            {
-                LogTextBlock.Text += Environment.NewLine + logEntry;
-            }
-            
-            // 스크롤을 맨 아래로 이동
-            LogScrollViewer.ScrollToEnd();
+            // 로그 UI가 제거되었으므로 아무 동작도 하지 않음
+            // 이 메서드는 호환성을 위해 유지되며, 향후 제거될 예정
         }
 
         public void UpdateElapsedTime(TimeSpan elapsed)
         {
             ElapsedTimeText.Text = elapsed.ToString("hh\\:mm\\:ss");
+            
+            // 남은 시간도 함께 업데이트
+            UpdateRemainingTimeDisplay();
         }
-
-        /// <summary>
-        /// 리소스 모니터링 타이머 초기화
-        /// </summary>
-        private void InitializeResourceMonitorTimer()
+        
+        private void UpdateRemainingTimeDisplay()
         {
-            _resourceMonitorTimer?.Stop();
-            _resourceMonitorTimer = new DispatcherTimer
+            if (_remainingTimeViewModel != null)
             {
-                Interval = TimeSpan.FromSeconds(2) // 2초마다 업데이트
-            };
-            _resourceMonitorTimer.Tick += (_, __) => UpdateResourceMetrics();
-            _resourceMonitorTimer.Start();
-        }
-
-        /// <summary>
-        /// 리소스 메트릭 업데이트 (Phase 2 UI)
-        /// </summary>
-        private void UpdateResourceMetrics()
-        {
-            try
-            {
-                // CPU 사용률 업데이트
-                var cpuUsage = _stageSummaries.CpuUsagePercent;
-                CpuUsageText.Text = cpuUsage.ToString("F0");
-                CpuProgressBar.Value = cpuUsage;
-
-                // CPU 상태 색상 업데이트
-                if (cpuUsage > 80)
+                EstimatedTimeText.Text = _remainingTimeViewModel.DisplayText;
+                
+                // 초과 시 빨간색으로 표시
+                if (_remainingTimeViewModel.IsOverdue)
                 {
-                    CpuIndicator.Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xEF, 0x44, 0x44)); // Red
-                    CpuStatusText.Text = "높음 (80% 이상)";
-                }
-                else if (cpuUsage > 70)
-                {
-                    CpuIndicator.Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF9, 0x73, 0x16)); // Orange
-                    CpuStatusText.Text = "보통 (70-80%)";
+                    EstimatedTimeText.Foreground = new System.Windows.Media.SolidColorBrush(
+                        System.Windows.Media.Color.FromRgb(239, 68, 68)); // #EF4444
                 }
                 else
                 {
-                    CpuIndicator.Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x22, 0xC5, 0x5E)); // Green
-                    CpuStatusText.Text = "적정 범위 (50-70%)";
+                    EstimatedTimeText.Foreground = new System.Windows.Media.SolidColorBrush(
+                        System.Windows.Media.Color.FromRgb(31, 41, 55)); // #1F2937
                 }
-
-                // 메모리 압박 업데이트
-                var memoryPressure = _stageSummaries.MemoryPressurePercent;
-                MemoryPressureText.Text = memoryPressure.ToString("F0");
-                if (FindName("MemoryProgressBar") is System.Windows.Controls.ProgressBar memBar)
-                    memBar.Value = memoryPressure;
-
-                // 메모리 상태 색상 업데이트
-                if (memoryPressure > 80)
+                
+                // 추가 정보 업데이트
+                EstimatedEndTimeText.Text = _remainingTimeViewModel.EstimatedEndTimeText;
+                SpeedIndicatorText.Text = _remainingTimeViewModel.SpeedIndicatorText;
+                
+                // 속도에 따른 색상 변경
+                if (_remainingTimeViewModel.SpeedRatio < 0.8)
                 {
-                    MemoryIndicator.Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xEF, 0x44, 0x44)); // Red
-                    MemoryStatusText.Text = "높음 (80% 이상)";
+                    SpeedIndicatorText.Foreground = new System.Windows.Media.SolidColorBrush(
+                        System.Windows.Media.Color.FromRgb(239, 68, 68)); // 느림 - 빨간색
                 }
-                else if (memoryPressure > 60)
+                else if (_remainingTimeViewModel.SpeedRatio > 1.2)
                 {
-                    MemoryIndicator.Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF9, 0x73, 0x16)); // Orange
-                    MemoryStatusText.Text = "보통 (60-80%)";
+                    SpeedIndicatorText.Foreground = new System.Windows.Media.SolidColorBrush(
+                        System.Windows.Media.Color.FromRgb(16, 185, 129)); // 빠름 - 초록색
                 }
                 else
                 {
-                    MemoryIndicator.Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x22, 0xC5, 0x5E)); // Green
-                    MemoryStatusText.Text = "낮음 (60% 미만)";
+                    SpeedIndicatorText.Foreground = new System.Windows.Media.SolidColorBrush(
+                        System.Windows.Media.Color.FromRgb(107, 114, 128)); // 정상 - 회색
                 }
-
-                // 병렬도 업데이트
-                ParallelismCurrentText.Text = _stageSummaries.CurrentParallelism.ToString();
-                ParallelismMaxText.Text = _stageSummaries.MaxParallelism.ToString();
-
-                // 캐시 히트율 업데이트
-                var cacheHitRatio = _stageSummaries.CacheHitRatio * 100;
-                CacheHitRatioText.Text = cacheHitRatio.ToString("F0");
-                CachedItemsText.Text = $"Layer: {_stageSummaries.CachedLayerCount}개 | Schema: {_stageSummaries.CachedSchemaCount}개";
-
-                // 스트리밍 모드 업데이트
-                if (_stageSummaries.StreamingModeActive)
+                
+                // 남은 작업량은 외부에서 설정
+                if (!string.IsNullOrEmpty(_remainingTimeViewModel.RemainingWorkText))
                 {
-                    if (FindName("StreamingStatusBadge") is System.Windows.Controls.ContentControl badge)
-                    {
-                        badge.Content = "활성";
-                        badge.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x22, 0xC5, 0x5E)); // Green
-                    }
-                    StreamedErrorCountText.Text = _stageSummaries.StreamedErrorCount.ToString("N0");
-                    if (FindName("StreamingFilePathText") is System.Windows.Controls.TextBlock pathText)
-                        pathText.Text = System.IO.Path.GetFileName(_stageSummaries.StreamingFilePath);
+                    RemainingWorkText.Text = _remainingTimeViewModel.RemainingWorkText;
                 }
-                else
-                {
-                    if (FindName("StreamingStatusBadge") is System.Windows.Controls.ContentControl badge)
-                    {
-                        badge.Content = "비활성";
-                        badge.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x94, 0xA3, 0xB8)); // Gray
-                    }
-                    StreamedErrorCountText.Text = "0";
-                    if (FindName("StreamingFilePathText") is System.Windows.Controls.TextBlock pathText)
-                        pathText.Text = "없음";
-                }
-
-                // 배치 처리 업데이트
-                BatchSizeText.Text = _stageSummaries.BatchSize.ToString("N0");
-                if (FindName("BatchThroughputText") is System.Windows.Controls.TextBlock throughputText)
-                    throughputText.Text = _stageSummaries.BatchThroughput.ToString("N0");
             }
-            catch (Exception)
+        }
+        
+        /// <summary>
+        /// 남은 작업량 업데이트
+        /// </summary>
+        public void UpdateRemainingWork(int remainingTables, int remainingFeatures, double percentComplete)
+        {
+            if (_remainingTimeViewModel != null)
             {
-                // UI 업데이트 실패는 무시 (요소가 아직 로드되지 않았을 수 있음)
+                var workText = $"남은 작업: 테이블 {remainingTables}개, 피처 {remainingFeatures:N0}개 ({100 - percentComplete:F1}%)";
+                _remainingTimeViewModel.RemainingWorkText = workText;
+                UpdateRemainingTimeDisplay();
             }
         }
 

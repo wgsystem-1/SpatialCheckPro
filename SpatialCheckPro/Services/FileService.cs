@@ -14,7 +14,7 @@ namespace SpatialCheckPro.Services
     {
         private readonly ILogger<FileService> _logger;
         private readonly ILargeFileProcessor _largeFileProcessor;
-        private const long LARGE_FILE_THRESHOLD = 2L * 1024 * 1024 * 1024; // 2GB
+        private const long LARGE_FILE_THRESHOLD = 1_932_735_283L; // 약 1.8GB
 
         /// <summary>
         /// 지원되는 파일 확장자 목록

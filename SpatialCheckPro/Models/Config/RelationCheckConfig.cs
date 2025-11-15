@@ -1,4 +1,5 @@
 using SpatialCheckPro.Models.Enums;
+using CsvHelper.Configuration.Attributes;
 
 namespace SpatialCheckPro.Models.Config
 {
@@ -10,52 +11,62 @@ namespace SpatialCheckPro.Models.Config
         /// <summary>
         /// 규칙 ID
         /// </summary>
+        [Name("RuleId")]
         public string RuleId { get; set; } = string.Empty;
 
         /// <summary>
         /// 사용 여부 (Y/N)
         /// </summary>
+        [Name("Enabled")]
         public string Enabled { get; set; } = "Y";
 
         /// <summary>
         /// 케이스 유형 (PointInsidePolygon | LineWithinPolygon | PolygonNotWithinPolygon)
         /// </summary>
+        [Name("CaseType")]
         public string CaseType { get; set; } = string.Empty;
 
         // 기존 CSV 기반 속성들 (하위 호환성 유지)
         /// <summary>
         /// 메인 테이블 ID
         /// </summary>
+        [Name("MainTableId")]
         public string MainTableId { get; set; } = string.Empty;
 
         /// <summary>
         /// 메인 테이블명
         /// </summary>
+        [Name("MainTableName")]
         public string MainTableName { get; set; } = string.Empty;
 
         /// <summary>
         /// 관련 테이블 ID
         /// </summary>
+        [Name("RelatedTableId")]
         public string RelatedTableId { get; set; } = string.Empty;
 
         /// <summary>
         /// 관련 테이블명
         /// </summary>
+        [Name("RelatedTableName")]
         public string RelatedTableName { get; set; } = string.Empty;
 
         /// <summary>
         /// 선택적 필드 필터 (예: PG_RDFC_SE IN (PRC002,PRC003))
         /// </summary>
+        [Name("FieldFilter")]
         public string? FieldFilter { get; set; }
 
         /// <summary>
         /// 허용 오차 (CaseType에 따라 의미 다름)
         /// </summary>
+        [Name("Tolerance")]
         public double? Tolerance { get; set; }
 
         /// <summary>
         /// 비고/설명
         /// </summary>
+        [Name("Note")]
         public string? Note { get; set; }
 
         /// <summary>

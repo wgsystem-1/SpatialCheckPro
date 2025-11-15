@@ -10,6 +10,7 @@ using SpatialCheckPro.GUI.Services;
 using SpatialCheckPro.Models.Enums;
 using SpatialCheckPro.Services.RemainingTime;
 using SpatialCheckPro.Services.RemainingTime.Models;
+using System.Windows;
 
 namespace SpatialCheckPro.GUI.ViewModels
 {
@@ -26,20 +27,6 @@ namespace SpatialCheckPro.GUI.ViewModels
         private ValidationRunContext _currentContext = new();
         private OverallEtaResult _cachedOverallEta = new(null, 0, Array.Empty<StageEtaResult>());
 
-        // Phase 2 UI Metrics
-        private double _cpuUsagePercent;
-        private double _memoryPressurePercent;
-        private int _currentParallelism;
-        private int _maxParallelism;
-        private double _cacheHitRatio;
-        private int _cachedLayerCount;
-        private int _cachedSchemaCount;
-        private bool _streamingModeActive;
-        private int _streamedErrorCount;
-        private string _streamingFilePath = string.Empty;
-        private int _batchSize;
-        private int _batchThroughput;
-
         /// <summary>
         /// 단계 요약 목록
         /// </summary>
@@ -51,10 +38,23 @@ namespace SpatialCheckPro.GUI.ViewModels
         /// </summary>
         public ReadOnlyObservableCollection<AlertViewModel> Alerts { get; }
 
+        private int _completedStageCount = 0;
+
         /// <summary>
         /// 완료된 단계 수
         /// </summary>
-        public int CompletedStageCount => _stages.Count(stage => stage.Status is StageStatus.Completed or StageStatus.CompletedWithWarnings or StageStatus.Skipped);
+        public int CompletedStageCount
+        {
+            get => _completedStageCount;
+            private set
+            {
+                if (_completedStageCount != value)
+                {
+                    _completedStageCount = value;
+                    OnPropertyChanged(nameof(CompletedStageCount));
+                }
+            }
+        }
 
         /// <summary>
         /// 현재 실행 중인 단계
@@ -73,79 +73,6 @@ namespace SpatialCheckPro.GUI.ViewModels
         }
 
         public double RemainingEtaConfidence => _cachedOverallEta.Confidence;
-
-        // Phase 2 UI Properties
-        public double CpuUsagePercent
-        {
-            get => _cpuUsagePercent;
-            set { _cpuUsagePercent = value; OnPropertyChanged(nameof(CpuUsagePercent)); }
-        }
-
-        public double MemoryPressurePercent
-        {
-            get => _memoryPressurePercent;
-            set { _memoryPressurePercent = value; OnPropertyChanged(nameof(MemoryPressurePercent)); }
-        }
-
-        public int CurrentParallelism
-        {
-            get => _currentParallelism;
-            set { _currentParallelism = value; OnPropertyChanged(nameof(CurrentParallelism)); }
-        }
-
-        public int MaxParallelism
-        {
-            get => _maxParallelism;
-            set { _maxParallelism = value; OnPropertyChanged(nameof(MaxParallelism)); }
-        }
-
-        public double CacheHitRatio
-        {
-            get => _cacheHitRatio;
-            set { _cacheHitRatio = value; OnPropertyChanged(nameof(CacheHitRatio)); }
-        }
-
-        public int CachedLayerCount
-        {
-            get => _cachedLayerCount;
-            set { _cachedLayerCount = value; OnPropertyChanged(nameof(CachedLayerCount)); }
-        }
-
-        public int CachedSchemaCount
-        {
-            get => _cachedSchemaCount;
-            set { _cachedSchemaCount = value; OnPropertyChanged(nameof(CachedSchemaCount)); }
-        }
-
-        public bool StreamingModeActive
-        {
-            get => _streamingModeActive;
-            set { _streamingModeActive = value; OnPropertyChanged(nameof(StreamingModeActive)); }
-        }
-
-        public int StreamedErrorCount
-        {
-            get => _streamedErrorCount;
-            set { _streamedErrorCount = value; OnPropertyChanged(nameof(StreamedErrorCount)); }
-        }
-
-        public string StreamingFilePath
-        {
-            get => _streamingFilePath;
-            set { _streamingFilePath = value; OnPropertyChanged(nameof(StreamingFilePath)); }
-        }
-
-        public int BatchSize
-        {
-            get => _batchSize;
-            set { _batchSize = value; OnPropertyChanged(nameof(BatchSize)); }
-        }
-
-        public int BatchThroughput
-        {
-            get => _batchThroughput;
-            set { _batchThroughput = value; OnPropertyChanged(nameof(BatchThroughput)); }
-        }
 
         /// <summary>
         /// 수집 뷰모델 생성자
@@ -174,6 +101,7 @@ namespace SpatialCheckPro.GUI.ViewModels
             }
             _alerts.Clear();
             _cachedOverallEta = new OverallEtaResult(null, 0, Array.Empty<StageEtaResult>());
+            UpdateCompletedStageCount();
             OnPropertyChanged(nameof(RemainingTotalEta));
             OnPropertyChanged(nameof(RemainingEtaConfidence));
         }
@@ -225,7 +153,16 @@ namespace SpatialCheckPro.GUI.ViewModels
                 _stages.Add(stage);
             }
 
+            var oldStatus = stage.Status;
             stage.ApplyProgress(args.StageProgress, args.StatusMessage, args.IsStageCompleted, args.IsStageSuccessful, args.IsStageSkipped, args.ProcessedUnits, args.TotalUnits);
+
+            // [해결 방향 2] 상태 변경 감지 개선: isCompleted 플래그로 직접 판단
+            // 단계가 완료되었거나 상태가 변경된 경우 무조건 업데이트
+            if (args.IsStageCompleted || oldStatus != stage.Status)
+            {
+                UpdateCompletedStageCount();
+                System.Console.WriteLine($"[ApplyProgress] 완료 단계 수 업데이트: {CompletedStageCount}/6 (Stage={args.CurrentStage}, IsCompleted={args.IsStageCompleted}, OldStatus={oldStatus}, NewStatus={stage.Status})");
+            }
 
             var etaResult = _etaEstimator.UpdateProgress(new StageProgressSample
             {
@@ -286,6 +223,7 @@ namespace SpatialCheckPro.GUI.ViewModels
         public void ForceStageStatus(int stageNumber, StageStatus status, string message)
         {
             var stage = GetOrCreateStage(stageNumber);
+            var oldStatus = stage.Status;
             stage.ForceStatus(status);
             if (!string.IsNullOrWhiteSpace(message))
             {
@@ -309,6 +247,17 @@ namespace SpatialCheckPro.GUI.ViewModels
                 _cachedOverallEta = _etaEstimator.GetOverallEta();
                 OnPropertyChanged(nameof(RemainingTotalEta));
                 OnPropertyChanged(nameof(RemainingEtaConfidence));
+            }
+            
+            // [해결 방향 2] 완료 상태로 변경된 경우 무조건 업데이트
+            var isCompletedStatus = status is StageStatus.Completed or StageStatus.CompletedWithWarnings or StageStatus.Skipped;
+            var wasCompletedStatus = oldStatus is StageStatus.Completed or StageStatus.CompletedWithWarnings or StageStatus.Skipped;
+            
+            // 완료 상태가 변경되었거나 상태가 변경된 경우 업데이트
+            if (isCompletedStatus != wasCompletedStatus || oldStatus != stage.Status)
+            {
+                UpdateCompletedStageCount();
+                System.Console.WriteLine($"[ForceStageStatus] 완료 단계 수 업데이트: {CompletedStageCount}/6 (Stage={stageNumber}, Status={status}, OldStatus={oldStatus})");
             }
         }
 
@@ -386,11 +335,36 @@ namespace SpatialCheckPro.GUI.ViewModels
 
         private void OnAlertsAggregated(object? sender, IReadOnlyCollection<AlertViewModel> aggregatedAlerts)
         {
-            _alerts.Clear();
-            foreach (var alert in aggregatedAlerts)
+            void UpdateAlerts()
             {
-                _alerts.Add(alert);
+                _alerts.Clear();
+                foreach (var alert in aggregatedAlerts)
+                {
+                    _alerts.Add(alert);
+                }
             }
+
+            if (Application.Current?.Dispatcher?.CheckAccess() == true)
+            {
+                UpdateAlerts();
+            }
+            else if (Application.Current?.Dispatcher != null)
+            {
+                Application.Current.Dispatcher.Invoke(UpdateAlerts);
+            }
+            else
+            {
+                UpdateAlerts();
+            }
+        }
+
+        /// <summary>
+        /// 완료 단계 수를 업데이트합니다
+        /// </summary>
+        private void UpdateCompletedStageCount()
+        {
+            var newCount = _stages.Count(stage => stage.Status is StageStatus.Completed or StageStatus.CompletedWithWarnings or StageStatus.Skipped);
+            CompletedStageCount = newCount;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

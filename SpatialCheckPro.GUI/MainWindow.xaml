@@ -121,36 +121,11 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
-            <TabControl x:Name="MainTabControl" Style="{StaticResource ModernTabControl}" Margin="-76,0,-64,0">
-                <TabItem Header="대시보드" Style="{StaticResource ModernTabItem}">
-                    <ContentControl x:Name="MainContentContainer" Margin="0,0,-1,0" Height="793">
-                        <!-- 기본 환영 메시지 -->
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <!-- 메인 로고 및 제목 -->
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
-                                <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="국가기본도 File GDB 검수 프로그램" 
-                                          FontSize="40" 
-                                          FontWeight="Bold" 
-                                          Foreground="#1F2937" FontFamily="HYGothic-Extra"/>
-                                    <TextBlock Text="National Base Map File GDB Validation Prorgam" 
-                                          FontSize="14" 
-                                          Foreground="#6B7280" 
-                                          Margin="0,2,0,0" VerticalAlignment="Center" HorizontalAlignment="Center" FontFamily="HYGothic-Extra"/>
-                                </StackPanel>
-                            </StackPanel>
-
-                            <!-- 설명 텍스트 -->
-
-                            <!-- 빠른 시작 버튼들 -->
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
-                        </StackPanel>
-                    </ContentControl>
-                </TabItem>
-                <TabItem x:Name="SettingsTab" Header="검수 환경 설정" Style="{StaticResource ModernTabItem}">
-                    <local:ValidationSettingsView/>
-                </TabItem>
-            </TabControl>
+            <!-- 메인 컨텐츠 영역 -->
+            <ContentControl x:Name="MainContentContainer" Margin="0,0,0,0">
+                <!-- 기본 환영 화면 -->
+                <local:WelcomeView x:Name="WelcomeView"/>
+            </ContentControl>
         </Grid>
 
         <!-- 메인 레이아웃 -->

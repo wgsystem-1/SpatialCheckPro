@@ -23,6 +23,7 @@ namespace SpatialCheckPro.Extensions
             // 파일 처리 서비스 등록
             services.AddScoped<IFileService, FileService>();
             services.AddScoped<ILargeFileProcessor, LargeFileProcessor>();
+            services.AddScoped<FileAnalysisService>();
 
             return services;
         }

@@ -31,6 +31,11 @@ namespace SpatialCheckPro.Models
         public int ProcessedFeatureCount { get; set; }
 
         /// <summary>
+        /// 제외된 객체 수
+        /// </summary>
+        public int SkippedFeatureCount { get; set; }
+
+        /// <summary>
         /// 중복 객체 수
         /// </summary>
         public int DuplicateCount { get; set; }
@@ -114,7 +119,7 @@ namespace SpatialCheckPro.Models
         {
             get
             {
-                if (ProcessedFeatureCount == 0) return "스킵";
+                if (ProcessedFeatureCount == 0 && SkippedFeatureCount > 0) return "스킵";
                 if (IsValid) return "통과";
                 return "오류";
             }

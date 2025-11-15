@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using OSGeo.OGR;
 using System.Globalization;
 using SpatialCheckPro.Services;
+using SpatialCheckPro.Utils;
 
 namespace SpatialCheckPro.Processors
 {
@@ -16,14 +17,26 @@ namespace SpatialCheckPro.Processors
     {
         private readonly ILogger<AttributeCheckProcessor> _logger;
         private Dictionary<string, HashSet<string>>? _codelistCache;
+        private readonly IFeatureFilterService _featureFilterService;
 
-        public AttributeCheckProcessor(ILogger<AttributeCheckProcessor> logger)
+        public AttributeCheckProcessor(ILogger<AttributeCheckProcessor> logger, IFeatureFilterService? featureFilterService = null)
         {
             _logger = logger;
+            _featureFilterService = featureFilterService ?? new FeatureFilterService(
+                logger as ILogger<FeatureFilterService> ?? new LoggerFactory().CreateLogger<FeatureFilterService>(),
+                new SpatialCheckPro.Models.Config.PerformanceSettings());
         }
 
         /// <summary>
+        /// 마지막 속성 검수에서 제외된 피처 수
+        /// </summary>
+        public int LastSkippedFeatureCount { get; private set; }
+
+        /// <summary>
         /// Feature의 지오메트리에서 중심점 좌표를 추출합니다
+        /// - Polygon: PointOnSurface (내부 보장) → Centroid → Envelope 중심
+        /// - Line: 중간 정점
+        /// - Point: 그대로
         /// </summary>
         private (double X, double Y) ExtractCentroid(Feature feature)
         {
@@ -33,9 +46,29 @@ namespace SpatialCheckPro.Processors
                 if (geometry == null)
                     return (0, 0);
 
-                var envelope = new Envelope();
-                geometry.GetEnvelope(envelope);
-                return ((envelope.MinX + envelope.MaxX) / 2.0, (envelope.MinY + envelope.MaxY) / 2.0);
+                var geomType = geometry.GetGeometryType();
+                var flatType = (wkbGeometryType)((int)geomType & 0xFF); // Flatten to 2D type
+
+                // Polygon 또는 MultiPolygon: 내부 중심점 사용
+                if (flatType == wkbGeometryType.wkbPolygon || flatType == wkbGeometryType.wkbMultiPolygon)
+                {
+                    return GeometryCoordinateExtractor.GetPolygonInteriorPoint(geometry);
+                }
+
+                // LineString 또는 MultiLineString: 중간 정점
+                if (flatType == wkbGeometryType.wkbLineString || flatType == wkbGeometryType.wkbMultiLineString)
+                {
+                    return GeometryCoordinateExtractor.GetLineStringMidpoint(geometry);
+                }
+
+                // Point: 첫 번째 정점
+                if (flatType == wkbGeometryType.wkbPoint || flatType == wkbGeometryType.wkbMultiPoint)
+                {
+                    return GeometryCoordinateExtractor.GetFirstVertex(geometry);
+                }
+
+                // 기타: Envelope 중심
+                return GeometryCoordinateExtractor.GetEnvelopeCenter(geometry);
             }
             catch
             {
@@ -118,6 +151,23 @@ namespace SpatialCheckPro.Processors
             using var ds = Ogr.Open(gdbPath, 0);
             if (ds == null) return errors;
 
+            LastSkippedFeatureCount = 0;
+            for (int i = 0; i < ds.GetLayerCount(); i++)
+            {
+                var layer = ds.GetLayerByIndex(i);
+                if (layer == null)
+                {
+                    continue;
+                }
+
+                var layerName = layer.GetName() ?? $"Layer_{i}";
+                var filterResult = _featureFilterService.ApplyObjectChangeFilter(layer, "Attribute", layerName);
+                if (filterResult.Applied && filterResult.ExcludedCount > 0)
+                {
+                    LastSkippedFeatureCount += filterResult.ExcludedCount;
+                }
+            }
+
             // GDB의 모든 레이어 로깅
             _logger.LogInformation("GDB에 포함된 레이어 목록:");
             for (int i = 0; i < ds.GetLayerCount(); i++)
@@ -136,6 +186,38 @@ namespace SpatialCheckPro.Processors
                 _logger.LogDebug("속성 검수 규칙 처리 시작: RuleId={RuleId}, TableId={TableId}, FieldName={FieldName}, CheckType={CheckType}", 
                     rule.RuleId, rule.TableId, rule.FieldName, rule.CheckType);
 
+                // 와일드카드 지원: TableId가 "*"인 경우 모든 레이어에 적용
+                if (rule.TableId == "*")
+                {
+                    int appliedLayerCount = 0;
+                    int ruleErrorCount = 0;
+                    
+                    _logger.LogInformation("와일드카드 규칙 시작: RuleId={RuleId}, 모든 레이어에 적용", rule.RuleId);
+                    
+                    for (int i = 0; i < ds.GetLayerCount(); i++)
+                    {
+                        var wildcardLayer = ds.GetLayerByIndex(i);
+                        if (wildcardLayer == null) continue;
+                        
+                        var layerName = wildcardLayer.GetName();
+                        
+                        // 각 레이어에 대해 규칙 적용
+                        var layerErrors = await ProcessSingleLayerRuleAsync(gdbPath, wildcardLayer, rule, token);
+                        if (layerErrors.Count > 0)
+                        {
+                            errors.AddRange(layerErrors);
+                            ruleErrorCount += layerErrors.Count;
+                            appliedLayerCount++;
+                        }
+                    }
+                    
+                    _logger.LogInformation("와일드카드 규칙 완료: RuleId={RuleId}, 적용 레이어={AppliedCount}/{TotalCount}, 검출 오류={ErrorCount}개",
+                        rule.RuleId, appliedLayerCount, ds.GetLayerCount(), ruleErrorCount);
+                    
+                    continue; // 다음 규칙으로
+                }
+
+                // 일반 규칙: 특정 테이블 지정
                 var layer = GetLayerByIdOrName(ds, rule.TableId, rule.TableName);
                 if (layer == null)
                 {
@@ -188,6 +270,45 @@ namespace SpatialCheckPro.Processors
                     continue;
                 }
 
+                var checkType = rule.CheckType?.Trim() ?? string.Empty;
+                int objIndex = -1;
+                int lowestIndex = -1;
+                int baseIndex = -1;
+                int maxIndex = -1;
+                int facilityIndex = -1;
+
+                if (checkType.Equals("buld_height_base_vs_max", StringComparison.OrdinalIgnoreCase) ||
+                    checkType.Equals("buld_height_max_vs_facility", StringComparison.OrdinalIgnoreCase))
+                {
+                    objIndex = GetFieldIndexIgnoreCase(defn, "OBJFLTN_SE");
+                    lowestIndex = GetFieldIndexIgnoreCase(defn, "BLDLWT_HGT");
+                    baseIndex = GetFieldIndexIgnoreCase(defn, "BLDBSC_HGT");
+                    maxIndex = GetFieldIndexIgnoreCase(defn, "BLDHGT_HGT");
+                    if (checkType.Equals("buld_height_max_vs_facility", StringComparison.OrdinalIgnoreCase))
+                    {
+                        facilityIndex = GetFieldIndexIgnoreCase(defn, "BLFCHT_HGT");
+                    }
+
+                    var missingFields = new List<string>();
+                    if (objIndex < 0) missingFields.Add("OBJFLTN_SE");
+                    if (lowestIndex < 0) missingFields.Add("BLDLWT_HGT");
+                    if (baseIndex < 0) missingFields.Add("BLDBSC_HGT");
+                    if (maxIndex < 0) missingFields.Add("BLDHGT_HGT");
+                    if (checkType.Equals("buld_height_max_vs_facility", StringComparison.OrdinalIgnoreCase) && facilityIndex < 0)
+                    {
+                        missingFields.Add("BLFCHT_HGT");
+                    }
+
+                    if (missingFields.Any())
+                    {
+                        _logger.LogWarning("속성 검수: 건물 높이 검증에 필요한 필드가 누락되었습니다. TableId={TableId}, RuleId={RuleId}, Fields={Fields}",
+                            rule.TableId,
+                            rule.RuleId,
+                            string.Join(", ", missingFields));
+                        continue;
+                    }
+                }
+
                 layer.ResetReading();
                 Feature? f;
                 while ((f = layer.GetNextFeature()) != null)
@@ -198,7 +319,25 @@ namespace SpatialCheckPro.Processors
                         // NULL은 규칙별로 다르게 해석할 수 있도록 null 보전
                         string? value = f.IsFieldNull(fieldIndex) ? null : f.GetFieldAsString(fieldIndex);
 
-                        var checkType = rule.CheckType?.Trim() ?? string.Empty;
+                        if (checkType.Equals("buld_height_base_vs_max", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var error = EvaluateBuldBaseHigherThanMax(f, rule, fid, objIndex, lowestIndex, baseIndex, maxIndex);
+                            if (error != null)
+                            {
+                                errors.Add(error);
+                            }
+                            continue;
+                        }
+
+                        if (checkType.Equals("buld_height_max_vs_facility", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var error = EvaluateBuldMaxHigherThanFacility(f, rule, fid, objIndex, lowestIndex, baseIndex, maxIndex, facilityIndex);
+                            if (error != null)
+                            {
+                                errors.Add(error);
+                            }
+                            continue;
+                        }
 
                         if (checkType.Equals("ifmultipleofthencodein", StringComparison.OrdinalIgnoreCase))
                         {
@@ -586,22 +725,83 @@ namespace SpatialCheckPro.Processors
                     return errors;
                 }
 
-                var fieldIndex = GetFieldIndexIgnoreCase(layer.GetLayerDefn(), rule.FieldName);
+                var layerDefn = layer.GetLayerDefn();
+                var fieldIndex = GetFieldIndexIgnoreCase(layerDefn, rule.FieldName);
                 if (fieldIndex == -1)
                 {
                     _logger.LogWarning("필드를 찾을 수 없습니다: TableId={TableId}, FieldName={FieldName}", rule.TableId, rule.FieldName);
                     return errors;
                 }
 
-                // 필터는 현재 AttributeCheckConfig에 없으므로 제거
+                var checkType = rule.CheckType?.Trim() ?? string.Empty;
+                int objIndex = -1;
+                int lowestIndex = -1;
+                int baseIndex = -1;
+                int maxIndex = -1;
+                int facilityIndex = -1;
 
-                // 레코드 처리
+                if (checkType.Equals("buld_height_base_vs_max", StringComparison.OrdinalIgnoreCase) ||
+                    checkType.Equals("buld_height_max_vs_facility", StringComparison.OrdinalIgnoreCase))
+                {
+                    objIndex = GetFieldIndexIgnoreCase(layerDefn, "OBJFLTN_SE");
+                    lowestIndex = GetFieldIndexIgnoreCase(layerDefn, "BLDLWT_HGT");
+                    baseIndex = GetFieldIndexIgnoreCase(layerDefn, "BLDBSC_HGT");
+                    maxIndex = GetFieldIndexIgnoreCase(layerDefn, "BLDHGT_HGT");
+                    if (checkType.Equals("buld_height_max_vs_facility", StringComparison.OrdinalIgnoreCase))
+                    {
+                        facilityIndex = GetFieldIndexIgnoreCase(layerDefn, "BLFCHT_HGT");
+                    }
+
+                    var missingFields = new List<string>();
+                    if (objIndex < 0) missingFields.Add("OBJFLTN_SE");
+                    if (lowestIndex < 0) missingFields.Add("BLDLWT_HGT");
+                    if (baseIndex < 0) missingFields.Add("BLDBSC_HGT");
+                    if (maxIndex < 0) missingFields.Add("BLDHGT_HGT");
+                    if (checkType.Equals("buld_height_max_vs_facility", StringComparison.OrdinalIgnoreCase) && facilityIndex < 0)
+                    {
+                        missingFields.Add("BLFCHT_HGT");
+                    }
+
+                    if (missingFields.Any())
+                    {
+                        _logger.LogWarning("건물 높이 검증에 필요한 필드를 찾을 수 없습니다: TableId={TableId}, RuleId={RuleId}, Fields={Fields}",
+                            rule.TableId,
+                            rule.RuleId,
+                            string.Join(", ", missingFields));
+                        return errors;
+                    }
+                }
+
                 layer.ResetReading();
                 Feature? feature = layer.GetNextFeature();
                 while (feature != null)
                 {
                     var fid = feature.GetFID();
                     var value = feature.GetFieldAsString(fieldIndex);
+
+                    if (checkType.Equals("buld_height_base_vs_max", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var error = EvaluateBuldBaseHigherThanMax(feature, rule, fid.ToString(CultureInfo.InvariantCulture), objIndex, lowestIndex, baseIndex, maxIndex);
+                        if (error != null)
+                        {
+                            errors.Add(error);
+                        }
+                        feature.Dispose();
+                        feature = layer.GetNextFeature();
+                        continue;
+                    }
+
+                    if (checkType.Equals("buld_height_max_vs_facility", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var error = EvaluateBuldMaxHigherThanFacility(feature, rule, fid.ToString(CultureInfo.InvariantCulture), objIndex, lowestIndex, baseIndex, maxIndex, facilityIndex);
+                        if (error != null)
+                        {
+                            errors.Add(error);
+                        }
+                        feature.Dispose();
+                        feature = layer.GetNextFeature();
+                        continue;
+                    }
 
                     if (!CheckValue(rule, value, _codelistCache))
                     {
@@ -680,12 +880,248 @@ namespace SpatialCheckPro.Processors
             return null;
         }
 
+        private ValidationError? EvaluateBuldBaseHigherThanMax(
+            Feature feature,
+            AttributeCheckConfig rule,
+            string featureId,
+            int objIndex,
+            int lowestIndex,
+            int baseIndex,
+            int maxIndex)
+        {
+            var objCode = GetTrimmedString(feature, objIndex);
+            if (IsExcludedObjectChange(objCode))
+            {
+                return null;
+            }
+
+            var lowest = ToNullableDouble(feature, lowestIndex);
+            var baseHeight = ToNullableDouble(feature, baseIndex);
+            var maxHeight = ToNullableDouble(feature, maxIndex);
+
+            if (HasNullOrZero(lowest, baseHeight, maxHeight))
+            {
+                return null;
+            }
+
+            if (lowest!.Value >= baseHeight!.Value)
+            {
+                return null;
+            }
+
+            if (!(maxHeight <= baseHeight && (maxHeight!.Value - baseHeight.Value) <= -2.0))
+            {
+                return null;
+            }
+
+            var denom = maxHeight.Value - lowest.Value;
+            var severity = ParseSeverity(rule.Severity);
+            var (x, y) = ExtractCentroid(feature);
+            var metadata = CreateHeightMetadata(lowest.Value, baseHeight.Value, maxHeight.Value, null);
+
+            if (IsApproximatelyZero(denom))
+            {
+                metadata["Issue"] = "DenominatorZero";
+                return CreateHeightValidationError(
+                    rule,
+                    featureId,
+                    severity,
+                    x,
+                    y,
+                    $"최고높이({maxHeight.Value:F2}m)와 최저높이({lowest.Value:F2}m)의 차이가 0이어서 검증 기준을 적용할 수 없습니다. (기본높이 {baseHeight.Value:F2}m)",
+                    metadata);
+            }
+
+            var ratio = ((baseHeight.Value - lowest.Value) / denom) * 100.0 - 100.0;
+            metadata["DeviationPercent"] = ratio;
+
+            if (Math.Abs(ratio) < 20.0)
+            {
+                return null;
+            }
+
+            return CreateHeightValidationError(
+                rule,
+                featureId,
+                severity,
+                x,
+                y,
+                $"기본높이({baseHeight.Value:F2}m)가 최고높이({maxHeight.Value:F2}m)보다 높습니다. 편차 {ratio:F2}% (최저높이 {lowest.Value:F2}m).",
+                metadata);
+        }
+
+        private ValidationError? EvaluateBuldMaxHigherThanFacility(
+            Feature feature,
+            AttributeCheckConfig rule,
+            string featureId,
+            int objIndex,
+            int lowestIndex,
+            int baseIndex,
+            int maxIndex,
+            int facilityIndex)
+        {
+            var objCode = GetTrimmedString(feature, objIndex);
+            if (IsExcludedObjectChange(objCode))
+            {
+                return null;
+            }
+
+            var lowest = ToNullableDouble(feature, lowestIndex);
+            var baseHeight = ToNullableDouble(feature, baseIndex);
+            var maxHeight = ToNullableDouble(feature, maxIndex);
+            var facilityHeight = ToNullableDouble(feature, facilityIndex);
+
+            if (HasNullOrZero(lowest, baseHeight, maxHeight, facilityHeight))
+            {
+                return null;
+            }
+
+            if (lowest!.Value >= baseHeight!.Value)
+            {
+                return null;
+            }
+
+            if (maxHeight <= baseHeight && (maxHeight!.Value - baseHeight.Value) <= -2.0)
+            {
+                var diff = maxHeight.Value - lowest.Value;
+                if (IsApproximatelyZero(diff) || Math.Abs(((baseHeight.Value - lowest.Value) / diff) * 100.0 - 100.0) >= 20.0)
+                {
+                    return null;
+                }
+            }
+
+            if (!(facilityHeight <= maxHeight && (facilityHeight!.Value - maxHeight.Value) <= -2.0))
+            {
+                return null;
+            }
+
+            var denom = facilityHeight.Value - lowest.Value;
+            var severity = ParseSeverity(rule.Severity);
+            var (x, y) = ExtractCentroid(feature);
+            var metadata = CreateHeightMetadata(lowest.Value, baseHeight.Value, maxHeight.Value, facilityHeight.Value);
+
+            if (IsApproximatelyZero(denom))
+            {
+                metadata["Issue"] = "DenominatorZero";
+                return CreateHeightValidationError(
+                    rule,
+                    featureId,
+                    severity,
+                    x,
+                    y,
+                    $"시설물높이({facilityHeight.Value:F2}m)와 최저높이({lowest.Value:F2}m)의 차이가 0이어서 검증 기준을 적용할 수 없습니다. (최고높이 {maxHeight.Value:F2}m)",
+                    metadata);
+            }
+
+            var ratio = ((maxHeight.Value - lowest.Value) / denom) * 100.0 - 100.0;
+            metadata["DeviationPercent"] = ratio;
+
+            if (Math.Abs(ratio) < 20.0)
+            {
+                return null;
+            }
+
+            return CreateHeightValidationError(
+                rule,
+                featureId,
+                severity,
+                x,
+                y,
+                $"최고높이({maxHeight.Value:F2}m)가 시설물높이({facilityHeight.Value:F2}m)보다 높습니다. 편차 {ratio:F2}% (최저높이 {lowest.Value:F2}m).",
+                metadata);
+        }
+
+        private ValidationError CreateHeightValidationError(
+            AttributeCheckConfig rule,
+            string featureId,
+            ErrorSeverity severity,
+            double x,
+            double y,
+            string message,
+            Dictionary<string, object> metadata)
+        {
+            return new ValidationError
+            {
+                ErrorCode = rule.CheckType ?? string.Empty,
+                Message = message,
+                TableName = rule.TableId,
+                TableId = rule.TableId,
+                FeatureId = featureId,
+                FieldName = rule.FieldName,
+                Severity = severity,
+                X = x,
+                Y = y,
+                GeometryWKT = QcError.CreatePointWKT(x, y),
+                Metadata = metadata
+            };
+        }
+
+        private static Dictionary<string, object> CreateHeightMetadata(
+            double lowest,
+            double baseHeight,
+            double maxHeight,
+            double? facilityHeight)
+        {
+            var metadata = new Dictionary<string, object>
+            {
+                ["LowestHeight"] = lowest,
+                ["BaseHeight"] = baseHeight,
+                ["MaxHeight"] = maxHeight
+            };
+
+            if (facilityHeight.HasValue)
+            {
+                metadata["FacilityHeight"] = facilityHeight.Value;
+            }
+
+            return metadata;
+        }
+
+        private static bool IsExcludedObjectChange(string? code) =>
+            string.Equals(code, "OFJ008", StringComparison.OrdinalIgnoreCase);
+
+        private static string GetTrimmedString(Feature feature, int index)
+        {
+            if (index < 0 || feature.IsFieldNull(index))
+            {
+                return string.Empty;
+            }
+
+            return (feature.GetFieldAsString(index) ?? string.Empty).Trim();
+        }
+
+        private static double? ToNullableDouble(Feature feature, int index)
+        {
+            if (index < 0 || feature.IsFieldNull(index))
+            {
+                return null;
+            }
+
+            var raw = feature.GetFieldAsString(index);
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return null;
+            }
+
+            if (double.TryParse(raw, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var value))
+            {
+                return value;
+            }
+
+            return null;
+        }
+
+        private static bool HasNullOrZero(params double?[] values) =>
+            values.Any(v => !v.HasValue || IsApproximatelyZero(v.Value));
+
+        private static bool IsApproximatelyZero(double value) => Math.Abs(value) < 1e-6;
+
         private static ErrorSeverity ParseSeverity(string? s)
         {
             var up = s?.ToUpperInvariant();
             if (up == "CRIT" || up == "CRITICAL") return ErrorSeverity.Critical;
             if (up == "MAJOR") return ErrorSeverity.Error; // 매핑: Major→Error
-            if (up == "MINOR") return ErrorSeverity.Warning; // 매핑: Minor→Warning
+            if (up == "MINOR") return ErrorSeverity.Error; // 변경: Minor도 Error로 처리 (경고 제거)
             if (up == "INFO") return ErrorSeverity.Info;
             return ErrorSeverity.Error;
         }
@@ -748,6 +1184,15 @@ namespace SpatialCheckPro.Processors
                         // 자음/모음이 포함된 경우 false (오류) - 혼합된 경우도 포함
                         return !System.Text.RegularExpressions.Regex.IsMatch(s, ".*[ㄱ-ㅎㅏ-ㅣ].*");
                     }
+                case "koreantypo":
+                    {
+                        var s = (value ?? string.Empty).Trim();
+                        if (string.IsNullOrEmpty(s)) return true;
+                        // 한글 자모 또는 물음표가 포함되면 오류로 판단
+                        var hasJamo = System.Text.RegularExpressions.Regex.IsMatch(s, "[ㄱ-ㅎㅏ-ㅣ]");
+                        var hasQuestion = s.Contains('?') || s.Contains('？');
+                        return !(hasJamo || hasQuestion);
+                    }
                 case "notzero":
                     {
                         if (!double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var v)) return false;
@@ -771,6 +1216,87 @@ namespace SpatialCheckPro.Processors
             if (!double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var v)) return false;
             var q = Math.Round(v / baseVal);
             return Math.Abs(v - q * baseVal) < 1e-9;
+        }
+
+        /// <summary>
+        /// 단일 레이어에 대해 속성 검수 규칙을 적용합니다 (와일드카드 지원용)
+        /// </summary>
+        private async Task<List<ValidationError>> ProcessSingleLayerRuleAsync(
+            string gdbPath,
+            Layer layer,
+            AttributeCheckConfig rule,
+            CancellationToken token)
+        {
+            var errors = new List<ValidationError>();
+
+            try
+            {
+                var layerName = layer.GetName();
+                var defn = layer.GetLayerDefn();
+
+                // 필드 존재 여부 확인
+                int fieldIndex = GetFieldIndexIgnoreCase(defn, rule.FieldName);
+                if (fieldIndex == -1)
+                {
+                    // 필드가 없으면 스킵 (와일드카드이므로 정상)
+                    _logger.LogDebug("와일드카드 규칙: 레이어 {LayerName}에 필드 {FieldName} 없음, 스킵", layerName, rule.FieldName);
+                    return errors;
+                }
+
+                var checkType = rule.CheckType?.Trim() ?? string.Empty;
+
+                // 간단한 검수 타입만 지원 (복잡한 조건부 검수는 명시적 테이블 지정 필요)
+                layer.ResetReading();
+                Feature? f;
+                int processedCount = 0;
+                
+                while ((f = layer.GetNextFeature()) != null)
+                {
+                    using (f)
+                    {
+                        token.ThrowIfCancellationRequested();
+                        processedCount++;
+                        
+                        var fid = f.GetFID().ToString(CultureInfo.InvariantCulture);
+                        string? value = f.IsFieldNull(fieldIndex) ? null : f.GetFieldAsString(fieldIndex);
+
+                        // CheckValue를 사용한 간단한 검증
+                        bool isValid = CheckValue(rule, value, _codelistCache);
+                        
+                        if (!isValid)
+                        {
+                            var (x, y) = ExtractCentroid(f);
+                            errors.Add(new ValidationError
+                            {
+                                ErrorCode = rule.CheckType ?? "ATTR_CHECK",
+                                Message = $"{rule.FieldName} 값이 규칙을 위반했습니다: '{value}'",
+                                TableName = layerName, // 실제 레이어명 사용
+                                FeatureId = fid,
+                                FieldName = rule.FieldName,
+                                ActualValue = value,
+                                Severity = ParseSeverity(rule.Severity),
+                                X = x,
+                                Y = y,
+                                GeometryWKT = QcError.CreatePointWKT(x, y)
+                            });
+                        }
+                    }
+                }
+
+                if (errors.Count > 0)
+                {
+                    _logger.LogDebug("와일드카드 규칙: 레이어 {LayerName}에서 {ErrorCount}개 오류 검출 (처리 피처: {ProcessedCount}개)",
+                        layerName, errors.Count, processedCount);
+                }
+
+                return errors;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "와일드카드 규칙 처리 중 오류: LayerName={LayerName}, RuleId={RuleId}",
+                    layer.GetName(), rule.RuleId);
+                return errors;
+            }
         }
     }
 }

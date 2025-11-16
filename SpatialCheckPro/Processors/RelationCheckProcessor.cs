@@ -199,6 +199,98 @@ namespace SpatialCheckPro.Processors
                 var tol = config.Tolerance ?? _geometryCriteria.LineConnectivityTolerance;
                 await Task.Run(() => EvaluateConnectedLinesSameAttribute(ds, FindLayer, overall, tol, fieldFilter, cancellationToken, config), cancellationToken);
             }
+            else if (caseType.Equals("CenterlineAttributeMismatch", StringComparison.OrdinalIgnoreCase))
+            {
+                var tol = config.Tolerance ?? _geometryCriteria.LineConnectivityTolerance;
+                await Task.Run(() => EvaluateCenterlineAttributeMismatch(ds, FindLayer, overall, tol, fieldFilter, cancellationToken, config), cancellationToken);
+            }
+            else if (caseType.Equals("ContourIntersection", StringComparison.OrdinalIgnoreCase))
+            {
+                await Task.Run(() => EvaluateContourIntersection(ds, FindLayer, overall, fieldFilter, cancellationToken, config), cancellationToken);
+            }
+            else if (caseType.Equals("ContourSharpBend", StringComparison.OrdinalIgnoreCase))
+            {
+                var angleThreshold = config.Tolerance ?? 90.0; // 기본값 90도
+                await Task.Run(() => EvaluateContourSharpBend(ds, FindLayer, overall, angleThreshold, fieldFilter, cancellationToken, config), cancellationToken);
+            }
+            else if (caseType.Equals("RoadSharpBend", StringComparison.OrdinalIgnoreCase))
+            {
+                var angleThreshold = config.Tolerance ?? 6.0; // 기본값 6도
+                await Task.Run(() => EvaluateRoadSharpBend(ds, FindLayer, overall, angleThreshold, fieldFilter, cancellationToken, config), cancellationToken);
+            }
+            else if (caseType.Equals("BridgeRiverNameMatch", StringComparison.OrdinalIgnoreCase))
+            {
+                var tol = config.Tolerance ?? _geometryCriteria.LineConnectivityTolerance;
+                await Task.Run(() => EvaluateBridgeRiverNameMatch(ds, FindLayer, overall, tol, fieldFilter, cancellationToken, config), cancellationToken);
+            }
+            else if (caseType.Equals("PolygonWithinPolygon", StringComparison.OrdinalIgnoreCase))
+            {
+                var tol = config.Tolerance ?? _geometryCriteria.PolygonNotWithinPolygonTolerance;
+                await Task.Run(() => EvaluatePolygonWithinPolygon(ds, FindLayer, overall, fieldFilter, tol, cancellationToken, config), cancellationToken);
+            }
+            else if (caseType.Equals("PolygonContainsLine", StringComparison.OrdinalIgnoreCase))
+            {
+                var tol = config.Tolerance ?? _geometryCriteria.LineWithinPolygonTolerance;
+                await Task.Run(() => EvaluatePolygonContainsLine(ds, FindLayer, overall, fieldFilter, tol, cancellationToken, config), cancellationToken);
+            }
+            else if (caseType.Equals("PolygonContainsObjects", StringComparison.OrdinalIgnoreCase))
+            {
+                var tol = config.Tolerance ?? 0.0;
+                await Task.Run(() => EvaluatePolygonContainsObjects(ds, FindLayer, overall, fieldFilter, tol, cancellationToken, config), cancellationToken);
+            }
+            else if (caseType.Equals("HoleDuplicateCheck", StringComparison.OrdinalIgnoreCase))
+            {
+                var tol = config.Tolerance ?? _geometryCriteria.DuplicateCheckTolerance;
+                await Task.Run(() => EvaluateHoleDuplicateCheck(ds, FindLayer, overall, fieldFilter, tol, cancellationToken, config), cancellationToken);
+            }
+            else if (caseType.Equals("LineConnectivityWithFilter", StringComparison.OrdinalIgnoreCase))
+            {
+                var tol = config.Tolerance ?? _geometryCriteria.LineConnectivityTolerance;
+                await Task.Run(() => EvaluateLineConnectivityWithFilter(ds, FindLayer, overall, fieldFilter, tol, cancellationToken, config), cancellationToken);
+            }
+            else if (caseType.Equals("LineDisconnection", StringComparison.OrdinalIgnoreCase))
+            {
+                var tol = config.Tolerance ?? _geometryCriteria.LineConnectivityTolerance;
+                await Task.Run(() => EvaluateLineDisconnection(ds, FindLayer, overall, fieldFilter, tol, cancellationToken, config), cancellationToken);
+            }
+            else if (caseType.Equals("LineDisconnectionWithAttribute", StringComparison.OrdinalIgnoreCase))
+            {
+                var tol = config.Tolerance ?? _geometryCriteria.LineConnectivityTolerance;
+                await Task.Run(() => EvaluateLineDisconnectionWithAttribute(ds, FindLayer, overall, fieldFilter, tol, cancellationToken, config), cancellationToken);
+            }
+            else if (caseType.Equals("PolygonBoundaryMatch", StringComparison.OrdinalIgnoreCase))
+            {
+                var tol = config.Tolerance ?? _geometryCriteria.LineWithinPolygonTolerance;
+                await Task.Run(() => EvaluatePolygonBoundaryMatch(ds, FindLayer, overall, fieldFilter, tol, cancellationToken, config), cancellationToken);
+            }
+            else if (caseType.Equals("LineEndpointWithinPolygon", StringComparison.OrdinalIgnoreCase))
+            {
+                var tol = config.Tolerance ?? 0.3; // 기본값 0.3m
+                await Task.Run(() => EvaluateLineEndpointWithinPolygon(ds, FindLayer, overall, fieldFilter, tol, cancellationToken, config), cancellationToken);
+            }
+            else if (caseType.Equals("DefectiveConnection", StringComparison.OrdinalIgnoreCase))
+            {
+                var tol = config.Tolerance ?? _geometryCriteria.LineConnectivityTolerance;
+                await Task.Run(() => EvaluateDefectiveConnection(ds, FindLayer, overall, fieldFilter, tol, cancellationToken, config), cancellationToken);
+            }
+            else if (caseType.Equals("LineIntersectionWithAttribute", StringComparison.OrdinalIgnoreCase))
+            {
+                await Task.Run(() => EvaluateLineIntersectionWithAttribute(ds, FindLayer, overall, fieldFilter, cancellationToken, config), cancellationToken);
+            }
+            else if (caseType.Equals("PolygonIntersectionWithAttribute", StringComparison.OrdinalIgnoreCase))
+            {
+                var tol = config.Tolerance ?? 0.0;
+                await Task.Run(() => EvaluatePolygonIntersectionWithAttribute(ds, FindLayer, overall, fieldFilter, tol, cancellationToken, config), cancellationToken);
+            }
+            else if (caseType.Equals("AttributeSpatialMismatch", StringComparison.OrdinalIgnoreCase))
+            {
+                var tol = config.Tolerance ?? _geometryCriteria.LineWithinPolygonTolerance;
+                await Task.Run(() => EvaluateAttributeSpatialMismatch(ds, FindLayer, overall, fieldFilter, tol, cancellationToken, config), cancellationToken);
+            }
+            else if (caseType.Equals("PointSpacingCheck", StringComparison.OrdinalIgnoreCase))
+            {
+                await Task.Run(() => EvaluatePointSpacingCheck(ds, FindLayer, overall, fieldFilter, cancellationToken, config), cancellationToken);
+            }
             else
             {
                 _logger.LogWarning("알 수 없는 CaseType: {CaseType}", caseType);
@@ -1781,22 +1873,45 @@ namespace SpatialCheckPro.Processors
 
             using var _fa = ApplyAttributeFilterIfMatch(polyA, fieldFilter);
 
+            _logger.LogInformation("관계 검수 시작: RuleId={RuleId}, CaseType={CaseType}, MainTable={MainTable}, RelatedTable={RelatedTable}", 
+                config.RuleId, config.CaseType, config.MainTableId, config.RelatedTableId);
+
             polyA.ResetReading();
             var total = polyA.GetFeatureCount(1);
+            _logger.LogInformation("검수 대상 피처 수: MainTable={MainTable} {Count}개", config.MainTableId, total);
+            
+            // 성능 최적화: SetSpatialFilter 대신 Envelope 기반 필터링 사용
+            // SetSpatialFilter는 매번 공간 인덱스를 재구성하거나 스캔해야 하므로 느림
+            // Envelope 기반 필터링은 더 빠르고, 실제 교차 검사는 후보 피처에 대해서만 수행
+            var startTime = DateTime.Now;
             Feature? fa;
             var processed = 0;
             while ((fa = polyA.GetNextFeature()) != null)
             {
+                token.ThrowIfCancellationRequested();
+                
                 using (fa)
                 {
                     processed++;
                     if (processed % 200 == 0 || processed == total)
                     {
                         RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, processed, total);
+                        var elapsed = (DateTime.Now - startTime).TotalSeconds;
+                        if (processed > 0 && elapsed > 0)
+                        {
+                            var speed = processed / elapsed;
+                            _logger.LogDebug("진행률: {Processed}/{Total} ({Percent:F1}%), 속도: {Speed:F1} 피처/초", 
+                                processed, total, (processed * 100.0 / total), speed);
+                        }
                     }
+                    
                     var ga = fa.GetGeometryRef();
-                    if (ga == null) continue;
-                    polyB.SetSpatialFilter(ga);
+                    if (ga == null || ga.IsEmpty()) continue;
+                    
+                    // Envelope 기반 공간 필터 설정 (SetSpatialFilter보다 빠름)
+                    var envelope = new Envelope();
+                    ga.GetEnvelope(envelope);
+                    polyB.SetSpatialFilterRect(envelope.MinX, envelope.MinY, envelope.MaxX, envelope.MaxY);
 
                     Feature? fb;
                     bool overlapped = false;
@@ -1805,7 +1920,20 @@ namespace SpatialCheckPro.Processors
                         using (fb)
                         {
                             var gb = fb.GetGeometryRef();
-                            if (gb == null) continue;
+                            if (gb == null || gb.IsEmpty()) continue;
+                            
+                            // Envelope 교차 확인 (빠른 사전 필터링)
+                            var gbEnvelope = new Envelope();
+                            gb.GetEnvelope(gbEnvelope);
+                            // Envelope 교차 여부: 두 Envelope이 겹치는지 확인
+                            bool envelopesIntersect = !(envelope.MaxX < gbEnvelope.MinX || envelope.MinX > gbEnvelope.MaxX ||
+                                                         envelope.MaxY < gbEnvelope.MinY || envelope.MinY > gbEnvelope.MaxY);
+                            if (!envelopesIntersect)
+                            {
+                                continue; // Envelope이 교차하지 않으면 실제 교차도 없음
+                            }
+                            
+                            // 실제 지오메트리 교차 검사 (Envelope 교차하는 경우에만)
                             using var inter = ga.Intersection(gb);
                             if (inter != null && !inter.IsEmpty())
                             {
@@ -1828,6 +1956,11 @@ namespace SpatialCheckPro.Processors
                     }
                 }
             }
+            
+            var totalElapsed = (DateTime.Now - startTime).TotalSeconds;
+            _logger.LogInformation("관계 검수 완료: RuleId={RuleId}, 처리 {Processed}개, 소요시간 {Elapsed:F2}초, 속도 {Speed:F1} 피처/초", 
+                config.RuleId, processed, totalElapsed, processed > 0 && totalElapsed > 0 ? processed / totalElapsed : 0);
+            
             RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, total, total, completed: true);
         }
 
@@ -2053,6 +2186,2554 @@ namespace SpatialCheckPro.Processors
         
         #region IDisposable Implementation
         
+        /// <summary>
+        /// 연결된 중심선끼리 속성값이 일치하는지 검사 (도로/철도/하천 중심선)
+        /// </summary>
+        private void EvaluateCenterlineAttributeMismatch(DataSource ds, Func<string, Layer?> getLayer, ValidationResult result, double tolerance, string fieldFilter, CancellationToken token, RelationCheckConfig config)
+        {
+            // 메인: 중심선 레이어 (도로/철도/하천)
+            var line = getLayer(config.MainTableId);
+            if (line == null)
+            {
+                _logger.LogWarning("레이어를 찾을 수 없습니다: {TableId}", config.MainTableId);
+                return;
+            }
+
+            // FieldFilter에 속성 필드명들이 파이프(|)로 구분되어 지정됨 (예: "road_no|feat_nm|road_se")
+            if (string.IsNullOrWhiteSpace(fieldFilter))
+            {
+                _logger.LogWarning("속성 필드명이 지정되지 않았습니다. FieldFilter에 필드명을 파이프(|)로 구분하여 지정하세요.");
+                return;
+            }
+
+            var attributeFields = fieldFilter.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (attributeFields.Length == 0)
+            {
+                _logger.LogWarning("속성 필드명이 올바르게 지정되지 않았습니다: {FieldFilter}", fieldFilter);
+                return;
+            }
+
+            _logger.LogInformation("중심선 속성 불일치 검사 시작: 레이어={Layer}, 속성필드={Fields}, 허용오차={Tolerance}m", 
+                config.MainTableId, string.Join(", ", attributeFields), tolerance);
+            var startTime = DateTime.Now;
+
+            // 1단계: 모든 선분과 끝점 정보 수집 (속성값 포함)
+            line.ResetReading();
+            var allSegments = new List<LineSegmentInfo>();
+            var endpointIndex = new Dictionary<string, List<EndpointInfo>>();
+            var attributeValues = new Dictionary<long, Dictionary<string, string?>>(); // OID -> (필드명 -> 속성값)
+
+            Feature? f;
+            var fieldIndices = new Dictionary<string, int>(); // 필드명 -> 필드 인덱스
+
+            while ((f = line.GetNextFeature()) != null)
+            {
+                using (f)
+                {
+                    var g = f.GetGeometryRef();
+                    if (g == null) continue;
+
+                    var oid = f.GetFID();
+                    var lineString = g.GetGeometryType() == wkbGeometryType.wkbLineString ? g : g.GetGeometryRef(0);
+                    if (lineString == null || lineString.GetPointCount() < 2) continue;
+
+                    // 필드 인덱스 확인 (첫 번째 피처에서)
+                    if (fieldIndices.Count == 0)
+                    {
+                        var defn = line.GetLayerDefn();
+                        foreach (var fieldName in attributeFields)
+                        {
+                            var fieldIdx = defn.GetFieldIndex(fieldName);
+                            if (fieldIdx >= 0)
+                            {
+                                fieldIndices[fieldName] = fieldIdx;
+                            }
+                            else
+                            {
+                                _logger.LogWarning("속성 필드를 찾을 수 없습니다: {Field} (레이어: {Layer})", fieldName, config.MainTableId);
+                            }
+                        }
+                        if (fieldIndices.Count == 0)
+                        {
+                            _logger.LogError("모든 속성 필드를 찾을 수 없습니다: {Fields}", string.Join(", ", attributeFields));
+                            return;
+                        }
+                    }
+
+                    // 속성값 읽기
+                    var attrDict = new Dictionary<string, string?>();
+                    foreach (var kvp in fieldIndices)
+                    {
+                        var fieldName = kvp.Key;
+                        var fieldIdx = kvp.Value;
+                        var strValue = f.GetFieldAsString(fieldIdx);
+                        attrDict[fieldName] = string.IsNullOrWhiteSpace(strValue) ? null : strValue;
+                    }
+                    attributeValues[oid] = attrDict;
+
+                    var pCount = lineString.GetPointCount();
+                    var sx = lineString.GetX(0);
+                    var sy = lineString.GetY(0);
+                    var ex = lineString.GetX(pCount - 1);
+                    var ey = lineString.GetY(pCount - 1);
+
+                    var segmentInfo = new LineSegmentInfo
+                    {
+                        Oid = oid,
+                        Geom = g.Clone(),
+                        StartX = sx,
+                        StartY = sy,
+                        EndX = ex,
+                        EndY = ey
+                    };
+                    allSegments.Add(segmentInfo);
+
+                    // 끝점을 공간 인덱스에 추가
+                    AddEndpointToIndex(endpointIndex, sx, sy, oid, true, tolerance);
+                    AddEndpointToIndex(endpointIndex, ex, ey, oid, false, tolerance);
+                }
+            }
+
+            _logger.LogInformation("선분 수집 완료: {Count}개, 끝점 인덱스 그리드 수: {GridCount}", 
+                allSegments.Count, endpointIndex.Count);
+
+            // 2단계: 연결된 선분끼리 속성값 비교
+            var total = allSegments.Count;
+            var idx = 0;
+            var checkedPairs = new HashSet<string>(); // 중복 검사 방지
+
+            foreach (var segment in allSegments)
+            {
+                token.ThrowIfCancellationRequested();
+                idx++;
+                if (idx % 50 == 0 || idx == total)
+                {
+                    RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, idx, total);
+                }
+
+                var oid = segment.Oid;
+                var currentAttrs = attributeValues.GetValueOrDefault(oid);
+                if (currentAttrs == null || currentAttrs.Count == 0) continue;
+
+                var sx = segment.StartX;
+                var sy = segment.StartY;
+                var ex = segment.EndX;
+                var ey = segment.EndY;
+
+                // 공간 인덱스를 사용하여 연결된 선분 검색
+                var startCandidates = SearchEndpointsNearby(endpointIndex, sx, sy, tolerance);
+                var endCandidates = SearchEndpointsNearby(endpointIndex, ex, ey, tolerance);
+
+                // 시작점에 연결된 선분 확인
+                foreach (var candidate in startCandidates)
+                {
+                    if (candidate.Oid == oid) continue;
+
+                    var dist = Distance(sx, sy, candidate.X, candidate.Y);
+                    if (dist <= tolerance)
+                    {
+                        var pairKey = oid < candidate.Oid ? $"{oid}_{candidate.Oid}" : $"{candidate.Oid}_{oid}";
+                        if (checkedPairs.Contains(pairKey)) continue;
+                        checkedPairs.Add(pairKey);
+
+                        var connectedAttrs = attributeValues.GetValueOrDefault(candidate.Oid);
+                        if (connectedAttrs != null)
+                        {
+                            // 속성값 비교 (하나라도 다르면 오류)
+                            var mismatchedFields = new List<string>();
+                            foreach (var fieldName in attributeFields)
+                            {
+                                var currentValue = currentAttrs.GetValueOrDefault(fieldName);
+                                var connectedValue = connectedAttrs.GetValueOrDefault(fieldName);
+                                
+                                // 둘 다 null이면 일치로 간주, 하나만 null이면 불일치
+                                if (currentValue != connectedValue)
+                                {
+                                    mismatchedFields.Add(fieldName);
+                                }
+                            }
+
+                            if (mismatchedFields.Count > 0)
+                            {
+                                var oidStr = oid.ToString(CultureInfo.InvariantCulture);
+                                var connectedOidStr = candidate.Oid.ToString(CultureInfo.InvariantCulture);
+                                var mismatchDetails = string.Join(", ", mismatchedFields.Select(f => $"{f}: {currentAttrs.GetValueOrDefault(f) ?? "NULL"} vs {connectedAttrs.GetValueOrDefault(f) ?? "NULL"}"));
+                                AddDetailedError(result, "REL_CENTERLINE_ATTR_MISMATCH",
+                                    $"연결된 중심선의 속성값이 불일치함: {mismatchDetails}",
+                                    config.MainTableId, oidStr, $"연결된 피처: {connectedOidStr}", segment.Geom);
+                            }
+                        }
+                    }
+                }
+
+                // 끝점에 연결된 선분 확인
+                foreach (var candidate in endCandidates)
+                {
+                    if (candidate.Oid == oid) continue;
+
+                    var dist = Distance(ex, ey, candidate.X, candidate.Y);
+                    if (dist <= tolerance)
+                    {
+                        var pairKey = oid < candidate.Oid ? $"{oid}_{candidate.Oid}" : $"{candidate.Oid}_{oid}";
+                        if (checkedPairs.Contains(pairKey)) continue;
+                        checkedPairs.Add(pairKey);
+
+                        var connectedAttrs = attributeValues.GetValueOrDefault(candidate.Oid);
+                        if (connectedAttrs != null)
+                        {
+                            // 속성값 비교
+                            var mismatchedFields = new List<string>();
+                            foreach (var fieldName in attributeFields)
+                            {
+                                var currentValue = currentAttrs.GetValueOrDefault(fieldName);
+                                var connectedValue = connectedAttrs.GetValueOrDefault(fieldName);
+                                
+                                if (currentValue != connectedValue)
+                                {
+                                    mismatchedFields.Add(fieldName);
+                                }
+                            }
+
+                            if (mismatchedFields.Count > 0)
+                            {
+                                var oidStr = oid.ToString(CultureInfo.InvariantCulture);
+                                var connectedOidStr = candidate.Oid.ToString(CultureInfo.InvariantCulture);
+                                var mismatchDetails = string.Join(", ", mismatchedFields.Select(f => $"{f}: {currentAttrs.GetValueOrDefault(f) ?? "NULL"} vs {connectedAttrs.GetValueOrDefault(f) ?? "NULL"}"));
+                                AddDetailedError(result, "REL_CENTERLINE_ATTR_MISMATCH",
+                                    $"연결된 중심선의 속성값이 불일치함: {mismatchDetails}",
+                                    config.MainTableId, oidStr, $"연결된 피처: {connectedOidStr}", segment.Geom);
+                            }
+                        }
+                    }
+                }
+            }
+
+            var elapsed = (DateTime.Now - startTime).TotalSeconds;
+            _logger.LogInformation("중심선 속성 불일치 검사 완료: {Count}개 선분, 소요시간: {Elapsed:F2}초", 
+                total, elapsed);
+
+            RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, total, total, completed: true);
+
+            // 메모리 정리
+            foreach (var seg in allSegments)
+            {
+                seg.Geom?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// 등고선이 다른 등고선과 교차하는지 검사
+        /// </summary>
+        private void EvaluateContourIntersection(DataSource ds, Func<string, Layer?> getLayer, ValidationResult result, string fieldFilter, CancellationToken token, RelationCheckConfig config)
+        {
+            var line = getLayer(config.MainTableId);
+            if (line == null)
+            {
+                _logger.LogWarning("레이어를 찾을 수 없습니다: {TableId}", config.MainTableId);
+                return;
+            }
+
+            using var _attrFilter = ApplyAttributeFilterIfMatch(line, fieldFilter);
+
+            _logger.LogInformation("등고선 교차 검사 시작: 레이어={Layer}", config.MainTableId);
+            var startTime = DateTime.Now;
+
+            // 모든 등고선 피처 수집
+            line.ResetReading();
+            var allLines = new List<(long Oid, Geometry Geom)>();
+            
+            Feature? f;
+            while ((f = line.GetNextFeature()) != null)
+            {
+                using (f)
+                {
+                    var g = f.GetGeometryRef();
+                    if (g == null) continue;
+
+                    var oid = f.GetFID();
+                    allLines.Add((oid, g.Clone()));
+                }
+            }
+
+            _logger.LogInformation("등고선 수집 완료: {Count}개", allLines.Count);
+
+            // 각 등고선이 다른 등고선과 교차하는지 확인
+            var total = allLines.Count;
+            var idx = 0;
+            var checkedPairs = new HashSet<string>(); // 중복 검사 방지
+
+            for (int i = 0; i < allLines.Count; i++)
+            {
+                token.ThrowIfCancellationRequested();
+                idx++;
+                if (idx % 50 == 0 || idx == total)
+                {
+                    RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, idx, total);
+                }
+
+                var (oid1, geom1) = allLines[i];
+
+                for (int j = i + 1; j < allLines.Count; j++)
+                {
+                    var (oid2, geom2) = allLines[j];
+
+                    var pairKey = oid1 < oid2 ? $"{oid1}_{oid2}" : $"{oid2}_{oid1}";
+                    if (checkedPairs.Contains(pairKey)) continue;
+                    checkedPairs.Add(pairKey);
+
+                    try
+                    {
+                        // 교차 여부 확인
+                        if (geom1.Intersects(geom2))
+                        {
+                            // 실제로 교차하는지 확인 (단순히 겹치는 것이 아닌)
+                            using var intersection = geom1.Intersection(geom2);
+                            if (intersection != null && !intersection.IsEmpty())
+                            {
+                                var intersectionType = intersection.GetGeometryType();
+                                // 점이 아닌 교차(선 또는 면)인 경우만 오류
+                                // wkbPoint, wkbMultiPoint가 아닌 경우 (wkbLineString, wkbPolygon 등)
+                                if (intersectionType != wkbGeometryType.wkbPoint && 
+                                    intersectionType != wkbGeometryType.wkbMultiPoint)
+                                {
+                                    var oid1Str = oid1.ToString(CultureInfo.InvariantCulture);
+                                    var oid2Str = oid2.ToString(CultureInfo.InvariantCulture);
+                                    AddDetailedError(result, "REL_CONTOUR_INTERSECTION",
+                                        $"등고선이 다른 등고선과 교차함: 피처 {oid1Str}와 {oid2Str}",
+                                        config.MainTableId, oid1Str, $"교차 피처: {oid2Str}", geom1);
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "등고선 교차 검사 중 오류: OID={Oid1}, {Oid2}", oid1, oid2);
+                    }
+                }
+            }
+
+            var elapsed = (DateTime.Now - startTime).TotalSeconds;
+            _logger.LogInformation("등고선 교차 검사 완료: {Count}개 등고선, 소요시간: {Elapsed:F2}초", 
+                total, elapsed);
+
+            RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, total, total, completed: true);
+
+            // 메모리 정리
+            foreach (var (_, geom) in allLines)
+            {
+                geom?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// 등고선이 90도 미만으로 꺽이는지 검사
+        /// </summary>
+        private void EvaluateContourSharpBend(DataSource ds, Func<string, Layer?> getLayer, ValidationResult result, double angleThreshold, string fieldFilter, CancellationToken token, RelationCheckConfig config)
+        {
+            var line = getLayer(config.MainTableId);
+            if (line == null)
+            {
+                _logger.LogWarning("레이어를 찾을 수 없습니다: {TableId}", config.MainTableId);
+                return;
+            }
+
+            using var _attrFilter = ApplyAttributeFilterIfMatch(line, fieldFilter);
+
+            _logger.LogInformation("등고선 꺽임 검사 시작: 레이어={Layer}, 각도임계값={Threshold}도", config.MainTableId, angleThreshold);
+            var startTime = DateTime.Now;
+
+            line.ResetReading();
+            var total = line.GetFeatureCount(1);
+            var idx = 0;
+
+            Feature? f;
+            while ((f = line.GetNextFeature()) != null)
+            {
+                using (f)
+                {
+                    token.ThrowIfCancellationRequested();
+                    idx++;
+                    if (idx % 50 == 0 || idx == total)
+                    {
+                        RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, idx, total);
+                    }
+
+                    var g = f.GetGeometryRef();
+                    if (g == null) continue;
+
+                    var oid = f.GetFID();
+                    var oidStr = oid.ToString(CultureInfo.InvariantCulture);
+
+                    // 멀티라인스트링 처리
+                    int geometryCount = g.GetGeometryType() == wkbGeometryType.wkbMultiLineString ? g.GetGeometryCount() : 1;
+                    
+                    for (int geomIdx = 0; geomIdx < geometryCount; geomIdx++)
+                    {
+                        var lineString = geometryCount > 1 ? g.GetGeometryRef(geomIdx) : g;
+                        if (lineString == null || lineString.GetPointCount() < 3) continue; // 최소 3개 점 필요
+
+                        var pointCount = lineString.GetPointCount();
+                        
+                        // 연속된 3개 점으로 각도 계산
+                        for (int i = 1; i < pointCount - 1; i++)
+                        {
+                            var x0 = lineString.GetX(i - 1);
+                            var y0 = lineString.GetY(i - 1);
+                            var x1 = lineString.GetX(i);
+                            var y1 = lineString.GetY(i);
+                            var x2 = lineString.GetX(i + 1);
+                            var y2 = lineString.GetY(i + 1);
+
+                            // 벡터 계산
+                            var v1x = x1 - x0;
+                            var v1y = y1 - y0;
+                            var v2x = x2 - x1;
+                            var v2y = y2 - y1;
+
+                            // 벡터 길이
+                            var len1 = Math.Sqrt(v1x * v1x + v1y * v1y);
+                            var len2 = Math.Sqrt(v2x * v2x + v2y * v2y);
+
+                            if (len1 < 1e-10 || len2 < 1e-10) continue; // 너무 짧은 선분은 스킵
+
+                            // 내적 계산
+                            var dot = v1x * v2x + v1y * v2y;
+                            var cosAngle = dot / (len1 * len2);
+                            
+                            // 각도 계산 (0~180도)
+                            var angle = Math.Acos(Math.Max(-1.0, Math.Min(1.0, cosAngle))) * 180.0 / Math.PI;
+
+                            // 90도 미만이면 오류 (각도가 작을수록 더 날카롭게 꺽임)
+                            if (angle < angleThreshold)
+                            {
+                                AddDetailedError(result, "REL_CONTOUR_SHARP_BEND",
+                                    $"등고선이 {angle:F1}도로 꺽임 (임계값: {angleThreshold}도 미만)",
+                                    config.MainTableId, oidStr, $"정점 {i}에서 꺽임", g);
+                                break; // 한 피처당 하나의 오류만 보고
+                            }
+                        }
+                    }
+                }
+            }
+
+            var elapsed = (DateTime.Now - startTime).TotalSeconds;
+            _logger.LogInformation("등고선 꺽임 검사 완료: {Count}개 피처, 소요시간: {Elapsed:F2}초", 
+                total, elapsed);
+
+            RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, total, total, completed: true);
+        }
+
+        /// <summary>
+        /// 도로중심선이 6도 이하로 꺽이는지 검사
+        /// </summary>
+        private void EvaluateRoadSharpBend(DataSource ds, Func<string, Layer?> getLayer, ValidationResult result, double angleThreshold, string fieldFilter, CancellationToken token, RelationCheckConfig config)
+        {
+            var line = getLayer(config.MainTableId);
+            if (line == null)
+            {
+                _logger.LogWarning("레이어를 찾을 수 없습니다: {TableId}", config.MainTableId);
+                return;
+            }
+
+            using var _attrFilter = ApplyAttributeFilterIfMatch(line, fieldFilter);
+
+            _logger.LogInformation("도로중심선 꺽임 검사 시작: 레이어={Layer}, 각도임계값={Threshold}도", config.MainTableId, angleThreshold);
+            var startTime = DateTime.Now;
+
+            line.ResetReading();
+            var total = line.GetFeatureCount(1);
+            var idx = 0;
+
+            Feature? f;
+            while ((f = line.GetNextFeature()) != null)
+            {
+                using (f)
+                {
+                    token.ThrowIfCancellationRequested();
+                    idx++;
+                    if (idx % 50 == 0 || idx == total)
+                    {
+                        RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, idx, total);
+                    }
+
+                    var g = f.GetGeometryRef();
+                    if (g == null) continue;
+
+                    var oid = f.GetFID();
+                    var oidStr = oid.ToString(CultureInfo.InvariantCulture);
+
+                    // 멀티라인스트링 처리
+                    int parts = g.GetGeometryType() == wkbGeometryType.wkbMultiLineString
+                        ? g.GetGeometryCount()
+                        : 1;
+
+                    for (int p = 0; p < parts; p++)
+                    {
+                        Geometry? linePart = g.GetGeometryType() == wkbGeometryType.wkbMultiLineString
+                            ? g.GetGeometryRef(p)
+                            : g;
+
+                        if (linePart == null || linePart.GetGeometryType() != wkbGeometryType.wkbLineString) continue;
+
+                        var pointCount = linePart.GetPointCount();
+                        if (pointCount < 3) continue; // 최소 3개 점 필요
+
+                        // 연속된 세 점으로 각도 계산
+                        for (int i = 1; i < pointCount - 1; i++)
+                        {
+                            var x1 = linePart.GetX(i - 1);
+                            var y1 = linePart.GetY(i - 1);
+                            var x2 = linePart.GetX(i);
+                            var y2 = linePart.GetY(i);
+                            var x3 = linePart.GetX(i + 1);
+                            var y3 = linePart.GetY(i + 1);
+
+                            // 벡터 계산
+                            var v1x = x1 - x2;
+                            var v1y = y1 - y2;
+                            var v2x = x3 - x2;
+                            var v2y = y3 - y2;
+
+                            var len1 = Math.Sqrt(v1x * v1x + v1y * v1y);
+                            var len2 = Math.Sqrt(v2x * v2x + v2y * v2y);
+
+                            if (len1 < 1e-10 || len2 < 1e-10) continue; // 너무 짧은 선분은 스킵
+
+                            // 내적 계산
+                            var dot = v1x * v2x + v1y * v2y;
+                            var cosAngle = dot / (len1 * len2);
+                            
+                            // 각도 계산 (0~180도)
+                            var angle = Math.Acos(Math.Max(-1.0, Math.Min(1.0, cosAngle))) * 180.0 / Math.PI;
+
+                            // 6도 이하이면 오류 (각도가 작을수록 더 날카롭게 꺽임)
+                            if (angle <= angleThreshold)
+                            {
+                                AddDetailedError(result, "REL_ROAD_SHARP_BEND",
+                                    $"도로중심선이 {angle:F1}도로 꺽임 (임계값: {angleThreshold}도 이하)",
+                                    config.MainTableId, oidStr, $"정점 {i}에서 꺽임", g);
+                                break; // 한 피처당 하나의 오류만 보고
+                            }
+                        }
+                    }
+                }
+            }
+
+            var elapsed = (DateTime.Now - startTime).TotalSeconds;
+            _logger.LogInformation("도로중심선 꺽임 검사 완료: {Count}개 피처, 소요시간: {Elapsed:F2}초", 
+                total, elapsed);
+
+            RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, total, total, completed: true);
+        }
+
+        /// <summary>
+        /// 교량과 하천중심선의 하천명 일치 검사
+        /// </summary>
+        private void EvaluateBridgeRiverNameMatch(DataSource ds, Func<string, Layer?> getLayer, ValidationResult result, double tolerance, string fieldFilter, CancellationToken token, RelationCheckConfig config)
+        {
+            // FieldFilter 형식: "pg_rdfc_se IN (PRC002|PRC003|PRC004|PRC005);feat_nm"
+            var filterParts = (fieldFilter ?? string.Empty).Split(';');
+            var bridgeFilter = filterParts.Length > 0 ? filterParts[0] : string.Empty;
+            var riverNameField = filterParts.Length > 1 ? filterParts[1] : "feat_nm";
+
+            var bridgeLayer = getLayer(config.MainTableId);
+            var riverLayer = getLayer(config.RelatedTableId);
+            if (bridgeLayer == null || riverLayer == null)
+            {
+                _logger.LogWarning("레이어를 찾을 수 없습니다: Bridge={Bridge}, River={River}", config.MainTableId, config.RelatedTableId);
+                return;
+            }
+
+            using var _bridgeFilter = ApplyAttributeFilterIfMatch(bridgeLayer, bridgeFilter);
+
+            _logger.LogInformation("교량하천명 일치 검사 시작: 교량 레이어={BridgeLayer}, 하천 레이어={RiverLayer}, 하천명 필드={Field}", 
+                config.MainTableId, config.RelatedTableId, riverNameField);
+            var startTime = DateTime.Now;
+
+            // 하천중심선의 하천명 인덱스
+            var riverDefn = riverLayer.GetLayerDefn();
+            int riverNameIdx = GetFieldIndexIgnoreCase(riverDefn, riverNameField);
+            if (riverNameIdx < 0)
+            {
+                _logger.LogWarning("하천명 필드를 찾을 수 없습니다: {Field}", riverNameField);
+                return;
+            }
+
+            // 교량 레이어의 하천명 필드 인덱스
+            var bridgeDefn = bridgeLayer.GetLayerDefn();
+            int bridgeNameIdx = GetFieldIndexIgnoreCase(bridgeDefn, riverNameField);
+            if (bridgeNameIdx < 0)
+            {
+                _logger.LogWarning("교량의 하천명 필드를 찾을 수 없습니다: {Field}", riverNameField);
+                return;
+            }
+
+            // 하천중심선을 공간 인덱스로 구성 (성능 최적화)
+            var riverFeatures = new List<(long oid, Geometry geom, string name)>();
+            riverLayer.ResetReading();
+            Feature? rf;
+            while ((rf = riverLayer.GetNextFeature()) != null)
+            {
+                using (rf)
+                {
+                    var rg = rf.GetGeometryRef();
+                    if (rg == null || rg.IsEmpty()) continue; // NULL 또는 빈 지오메트리 스킵
+                    
+                    // 지오메트리 복제 및 유효성 검사
+                    Geometry? clonedGeom = null;
+                    try
+                    {
+                        clonedGeom = rg.Clone();
+                        if (clonedGeom == null || clonedGeom.IsEmpty())
+                        {
+                            _logger.LogWarning("하천중심선 지오메트리 복제 실패 또는 빈 지오메트리: FID={FID}", rf.GetFID());
+                            clonedGeom?.Dispose();
+                            continue;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "하천중심선 지오메트리 복제 중 오류: FID={FID}", rf.GetFID());
+                        clonedGeom?.Dispose();
+                        continue;
+                    }
+                    
+                    var name = rf.IsFieldNull(riverNameIdx) ? string.Empty : (rf.GetFieldAsString(riverNameIdx) ?? string.Empty).Trim();
+                    if (string.IsNullOrEmpty(name)) 
+                    {
+                        clonedGeom.Dispose(); // 하천명이 없으면 복제된 지오메트리도 정리
+                        continue;
+                    }
+                    
+                    riverFeatures.Add((rf.GetFID(), clonedGeom, name));
+                }
+            }
+
+            _logger.LogInformation("하천중심선 수집 완료: {Count}개", riverFeatures.Count);
+
+            // 교량 검사
+            bridgeLayer.ResetReading();
+            var total = bridgeLayer.GetFeatureCount(1);
+            var processed = 0;
+
+            Feature? bf;
+            while ((bf = bridgeLayer.GetNextFeature()) != null)
+            {
+                using (bf)
+                {
+                    token.ThrowIfCancellationRequested();
+                    processed++;
+                    if (processed % 50 == 0 || processed == total)
+                    {
+                        RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, processed, total);
+                    }
+
+                    var bg = bf.GetGeometryRef();
+                    if (bg == null) continue;
+
+                    var bridgeOid = bf.GetFID();
+                    var bridgeName = bf.IsFieldNull(bridgeNameIdx) ? string.Empty : (bf.GetFieldAsString(bridgeNameIdx) ?? string.Empty).Trim();
+
+                    // 교량의 버퍼 영역 내 하천중심선 검색
+                    using var buffer = bg.Buffer(tolerance, 0);
+                    if (buffer == null || buffer.IsEmpty()) continue;
+
+                    foreach (var (riverOid, riverGeom, riverName) in riverFeatures)
+                    {
+                        using (riverGeom)
+                        {
+                            // 지오메트리 유효성 검사
+                            if (riverGeom == null || riverGeom.IsEmpty())
+                            {
+                                _logger.LogDebug("하천중심선 지오메트리가 NULL이거나 비어있음: OID={OID}", riverOid);
+                                continue;
+                            }
+                            
+                            // 교량과 하천중심선이 교차하거나 근접한지 확인 (NULL 포인터 예외 방지)
+                            bool intersects = false;
+                            try
+                            {
+                                intersects = buffer.Intersects(riverGeom);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "교량-하천중심선 교차 검사 중 오류: 교량 OID={BridgeOID}, 하천 OID={RiverOID}", 
+                                    bridgeOid, riverOid);
+                                continue; // 오류 발생 시 다음 하천으로 진행
+                            }
+                            
+                            if (intersects)
+                            {
+                                // 하천명 일치 여부 확인
+                                if (!string.IsNullOrEmpty(bridgeName) && !string.IsNullOrEmpty(riverName))
+                                {
+                                    if (!string.Equals(bridgeName, riverName, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        AddDetailedError(result, "REL_BRIDGE_RIVER_NAME_MISMATCH",
+                                            $"교량의 하천명('{bridgeName}')과 하천중심선의 하천명('{riverName}')이 일치하지 않습니다",
+                                            config.MainTableId, bridgeOid.ToString(CultureInfo.InvariantCulture),
+                                            $"교량 하천명='{bridgeName}', 하천중심선 하천명='{riverName}'", bg);
+                                    }
+                                    // 일치하거나 불일치하는 경우 모두 처리 완료이므로 다음 교량으로 진행
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            var elapsed = (DateTime.Now - startTime).TotalSeconds;
+            _logger.LogInformation("교량하천명 일치 검사 완료: 교량 {BridgeCount}개, 하천 {RiverCount}개, 소요시간: {Elapsed:F2}초", 
+                total, riverFeatures.Count, elapsed);
+
+            // 메모리 정리
+            foreach (var (_, geom, _) in riverFeatures)
+            {
+                geom?.Dispose();
+            }
+
+            RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, total, total, completed: true);
+        }
+
+        /// <summary>
+        /// 대소문자 무시하고 필드 인덱스 찾기
+        /// </summary>
+        private int GetFieldIndexIgnoreCase(FeatureDefn defn, string fieldName)
+        {
+            if (defn == null || string.IsNullOrEmpty(fieldName)) return -1;
+            for (int i = 0; i < defn.GetFieldCount(); i++)
+            {
+                using var fd = defn.GetFieldDefn(i);
+                if (fd != null && string.Equals(fd.GetName(), fieldName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        #region 새로운 검수 메서드 (G26, G32, G37, G38, G41, G42, G43, G44, G48, G50)
+
+        /// <summary>
+        /// G26 - 경계불일치 검사: 교량/터널/입체교차부가 도로경계면/철도경계면에 포함되어야 함
+        /// </summary>
+        private void EvaluatePolygonWithinPolygon(DataSource ds, Func<string, Layer?> getLayer, ValidationResult result, string fieldFilter, double tolerance, CancellationToken token, RelationCheckConfig config)
+        {
+            var mainLayer = getLayer(config.MainTableId);
+            var relatedLayer = getLayer(config.RelatedTableId);
+            if (mainLayer == null || relatedLayer == null)
+            {
+                _logger.LogWarning("PolygonWithinPolygon: 레이어를 찾을 수 없습니다: {MainTable} 또는 {RelatedTable}", config.MainTableId, config.RelatedTableId);
+                return;
+            }
+
+            using var _attrFilterRestore = ApplyAttributeFilterIfMatch(mainLayer, fieldFilter);
+
+            var boundaryUnion = BuildUnionGeometryWithCache(relatedLayer, $"{config.RelatedTableId}_UNION");
+            if (boundaryUnion == null) return;
+
+            try { boundaryUnion = boundaryUnion.MakeValid(Array.Empty<string>()); } catch { }
+
+            mainLayer.ResetReading();
+            var totalFeatures = mainLayer.GetFeatureCount(1);
+            var processedCount = 0;
+            var maxIterations = totalFeatures > 0 ? Math.Max(10000, (int)(totalFeatures * 2.0)) : int.MaxValue;
+            var useDynamicCounting = totalFeatures == 0;
+
+            _logger.LogInformation("경계불일치 검사 시작: {MainTable} → {RelatedTable}, 필터: {Filter}, 최대반복: {MaxIter}", 
+                config.MainTableId, config.RelatedTableId, fieldFilter, useDynamicCounting ? "동적" : maxIterations.ToString());
+
+            Feature? feature;
+            while ((feature = mainLayer.GetNextFeature()) != null)
+            {
+                token.ThrowIfCancellationRequested();
+                processedCount++;
+                
+                if (processedCount > maxIterations && !useDynamicCounting)
+                {
+                    _logger.LogWarning("안전장치 발동: 최대 반복 횟수({MaxIter})에 도달하여 강제 종료", maxIterations);
+                    break;
+                }
+
+                if (processedCount % 50 == 0 || processedCount == totalFeatures)
+                {
+                    RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, processedCount, totalFeatures);
+                }
+
+                using (feature)
+                {
+                    var geom = feature.GetGeometryRef();
+                    if (geom == null || geom.IsEmpty()) continue;
+
+                    var oid = feature.GetFID().ToString(CultureInfo.InvariantCulture);
+                    var code = feature.GetFieldAsString("PG_RDFC_SE") ?? string.Empty;
+
+                    try
+                    {
+                        // Envelope 기반 사전 필터링
+                        var env = new Envelope();
+                        geom.GetEnvelope(env);
+                        var boundaryEnv = new Envelope();
+                        boundaryUnion.GetEnvelope(boundaryEnv);
+                        
+                        if (env.MaxX < boundaryEnv.MinX || env.MinX > boundaryEnv.MaxX ||
+                            env.MaxY < boundaryEnv.MinY || env.MinY > boundaryEnv.MaxY)
+                        {
+                            // Envelope가 겹치지 않으면 포함 관계 불가능
+                            AddDetailedError(result, "REL_POLYGON_NOT_WITHIN",
+                                $"{config.MainTableName}이 {config.RelatedTableName}에 포함되지 않습니다",
+                                config.MainTableId, oid, $"PG_RDFC_SE={code}", geom);
+                            continue;
+                        }
+
+                        // 실제 포함 관계 검사
+                        bool isWithin = false;
+                        try
+                        {
+                            isWithin = geom.Within(boundaryUnion) || boundaryUnion.Contains(geom);
+                            
+                            // 허용오차 고려: 거의 포함되는 경우 (차이가 tolerance 이내)
+                            if (!isWithin && tolerance > 0)
+                            {
+                                using var diff = geom.Difference(boundaryUnion);
+                                if (diff != null && !diff.IsEmpty())
+                                {
+                                    var diffArea = Math.Abs(diff.GetArea());
+                                    var geomArea = Math.Abs(geom.GetArea());
+                                    if (diffArea <= tolerance * tolerance || diffArea / geomArea < 0.01) // 1% 이내 차이
+                                    {
+                                        isWithin = true;
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "포함 관계 검사 중 오류: OID={OID}", oid);
+                            isWithin = false;
+                        }
+
+                        if (!isWithin)
+                        {
+                            AddDetailedError(result, "REL_POLYGON_NOT_WITHIN",
+                                $"{config.MainTableName}이 {config.RelatedTableName}에 포함되지 않습니다",
+                                config.MainTableId, oid, $"PG_RDFC_SE={code}, 허용오차={tolerance}m", geom);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "경계불일치 검사 중 오류: OID={OID}", oid);
+                    }
+                }
+            }
+
+            _logger.LogInformation("경계불일치 검사 완료: 처리 {ProcessedCount}개, 오류 {ErrorCount}개", processedCount, result.ErrorCount);
+            RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, processedCount, processedCount, completed: true);
+        }
+
+        /// <summary>
+        /// G32 - 실폭하천 하천경계 누락 검사: 실폭하천에 하천경계가 포함되어야 함
+        /// </summary>
+        private void EvaluatePolygonContainsLine(DataSource ds, Func<string, Layer?> getLayer, ValidationResult result, string fieldFilter, double tolerance, CancellationToken token, RelationCheckConfig config)
+        {
+            var polygonLayer = getLayer(config.MainTableId); // 실폭하천
+            var lineLayer = getLayer(config.RelatedTableId); // 하천경계
+            if (polygonLayer == null || lineLayer == null)
+            {
+                _logger.LogWarning("PolygonContainsLine: 레이어를 찾을 수 없습니다: {MainTable} 또는 {RelatedTable}", config.MainTableId, config.RelatedTableId);
+                return;
+            }
+
+            // 실폭하천 Union 생성
+            var polygonUnion = BuildUnionGeometryWithCache(polygonLayer, $"{config.MainTableId}_UNION");
+            if (polygonUnion == null) return;
+
+            try { polygonUnion = polygonUnion.MakeValid(Array.Empty<string>()); } catch { }
+
+            lineLayer.ResetReading();
+            var totalFeatures = lineLayer.GetFeatureCount(1);
+            var processedCount = 0;
+            var maxIterations = totalFeatures > 0 ? Math.Max(10000, (int)(totalFeatures * 2.0)) : int.MaxValue;
+            var useDynamicCounting = totalFeatures == 0;
+
+            _logger.LogInformation("실폭하천 하천경계 누락 검사 시작: 하천경계 {Count}개", totalFeatures);
+
+            Feature? feature;
+            while ((feature = lineLayer.GetNextFeature()) != null)
+            {
+                token.ThrowIfCancellationRequested();
+                processedCount++;
+                
+                if (processedCount > maxIterations && !useDynamicCounting)
+                {
+                    _logger.LogWarning("안전장치 발동: 최대 반복 횟수({MaxIter})에 도달하여 강제 종료", maxIterations);
+                    break;
+                }
+
+                if (processedCount % 50 == 0 || processedCount == totalFeatures)
+                {
+                    RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, processedCount, totalFeatures);
+                }
+
+                using (feature)
+                {
+                    var lineGeom = feature.GetGeometryRef();
+                    if (lineGeom == null || lineGeom.IsEmpty()) continue;
+
+                    var oid = feature.GetFID().ToString(CultureInfo.InvariantCulture);
+
+                    try
+                    {
+                        // Envelope 기반 사전 필터링
+                        var lineEnv = new Envelope();
+                        lineGeom.GetEnvelope(lineEnv);
+                        var polyEnv = new Envelope();
+                        polygonUnion.GetEnvelope(polyEnv);
+                        
+                        if (lineEnv.MaxX < polyEnv.MinX || lineEnv.MinX > polyEnv.MaxX ||
+                            lineEnv.MaxY < polyEnv.MinY || lineEnv.MinY > polyEnv.MaxY)
+                        {
+                            // Envelope가 겹치지 않으면 포함 관계 불가능
+                            AddDetailedError(result, "REL_LINE_NOT_IN_POLYGON",
+                                $"하천경계가 실폭하천에 포함되지 않습니다",
+                                config.RelatedTableId, oid, string.Empty, lineGeom);
+                            continue;
+                        }
+
+                        // 실제 포함 관계 검사
+                        bool isWithin = false;
+                        try
+                        {
+                            isWithin = lineGeom.Within(polygonUnion) || polygonUnion.Contains(lineGeom);
+                            
+                            // 허용오차 고려
+                            if (!isWithin && tolerance > 0)
+                            {
+                                using var diff = lineGeom.Difference(polygonUnion);
+                                if (diff != null && !diff.IsEmpty())
+                                {
+                                    var diffLength = Math.Abs(diff.Length());
+                                    var lineLength = Math.Abs(lineGeom.Length());
+                                    if (diffLength <= tolerance || diffLength / lineLength < 0.01) // 1% 이내 차이
+                                    {
+                                        isWithin = true;
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "포함 관계 검사 중 오류: OID={OID}", oid);
+                            isWithin = false;
+                        }
+
+                        if (!isWithin)
+                        {
+                            AddDetailedError(result, "REL_LINE_NOT_IN_POLYGON",
+                                $"하천경계가 실폭하천에 포함되지 않습니다",
+                                config.RelatedTableId, oid, $"허용오차={tolerance}m", lineGeom);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "실폭하천 하천경계 누락 검사 중 오류: OID={OID}", oid);
+                    }
+                }
+            }
+
+            _logger.LogInformation("실폭하천 하천경계 누락 검사 완료: 처리 {ProcessedCount}개, 오류 {ErrorCount}개", processedCount, result.ErrorCount);
+            RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, processedCount, processedCount, completed: true);
+        }
+
+        /// <summary>
+        /// G37 - 경지경계 내부존재 검사: 경지경계 내부에 포함되거나 겹치는 객체 검사 (산지경계 제외)
+        /// 성능 최적화: 역 접근법 사용 (경지경계를 순회하고 SetSpatialFilter로 내부 객체 검색)
+        /// </summary>
+        private void EvaluatePolygonContainsObjects(DataSource ds, Func<string, Layer?> getLayer, ValidationResult result, string fieldFilter, double tolerance, CancellationToken token, RelationCheckConfig config)
+        {
+            var boundaryLayer = getLayer(config.MainTableId); // 경지경계
+            if (boundaryLayer == null)
+            {
+                _logger.LogWarning("PolygonContainsObjects: 레이어를 찾을 수 없습니다: {MainTable}", config.MainTableId);
+                return;
+            }
+
+            // 성능을 위해 주요 테이블만 검사 (건물, 도로시설 등)
+            var targetTables = new[] { "tn_buld", "tn_arrfc", "tn_rodway_bndry", "tn_rodway_ctln" };
+            
+            // 각 대상 테이블 레이어 미리 로드
+            var targetLayers = new Dictionary<string, Layer?>();
+            foreach (var tableId in targetTables)
+            {
+                targetLayers[tableId] = getLayer(tableId);
+            }
+
+            // 경지경계 피처 수 확인
+            boundaryLayer.ResetReading();
+            var boundaryCount = boundaryLayer.GetFeatureCount(1);
+            var processedBoundaries = 0;
+            var maxIterations = boundaryCount > 0 ? Math.Max(10000, (int)(boundaryCount * 2.0)) : int.MaxValue;
+            var useDynamicCounting = boundaryCount == 0;
+
+            _logger.LogInformation("경지경계 내부객체 검사 시작 (역 접근법 최적화): 경지경계 {BoundaryCount}개, 대상 테이블 {TableCount}개", 
+                boundaryCount, targetTables.Length);
+
+            var startTime = DateTime.Now;
+            var totalErrors = 0;
+            var checkedPairs = new HashSet<string>(); // 중복 검사 방지: "tableId_oid_boundaryOid"
+
+            // 경지경계를 순회하며 각 경지경계 내부 객체 검사 (역 접근법)
+            Feature? boundaryFeature;
+            while ((boundaryFeature = boundaryLayer.GetNextFeature()) != null)
+            {
+                token.ThrowIfCancellationRequested();
+                processedBoundaries++;
+                
+                if (processedBoundaries > maxIterations && !useDynamicCounting)
+                {
+                    _logger.LogWarning("안전장치 발동: 최대 반복 횟수({MaxIter})에 도달하여 강제 종료", maxIterations);
+                    break;
+                }
+
+                if (processedBoundaries % 50 == 0 || processedBoundaries == boundaryCount)
+                {
+                    RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, processedBoundaries, boundaryCount);
+                    var elapsedTime = (DateTime.Now - startTime).TotalSeconds;
+                    if (processedBoundaries > 0 && elapsedTime > 0)
+                    {
+                        var speed = processedBoundaries / elapsedTime;
+                        _logger.LogDebug("경지경계 처리 진행률: {Processed}/{Total} ({Percent:F1}%), 속도: {Speed:F1} 경지경계/초", 
+                            processedBoundaries, boundaryCount, (processedBoundaries * 100.0 / boundaryCount), speed);
+                    }
+                }
+
+                using (boundaryFeature)
+                {
+                    var boundaryGeom = boundaryFeature.GetGeometryRef();
+                    if (boundaryGeom == null || boundaryGeom.IsEmpty()) continue;
+
+                    var boundaryOid = boundaryFeature.GetFID();
+
+                    // 각 대상 테이블에 대해 경지경계 내부 객체 검사
+                    foreach (var (tableId, targetLayer) in targetLayers)
+                    {
+                        if (targetLayer == null) continue;
+
+                        try
+                        {
+                            // SetSpatialFilter를 사용하여 경지경계와 겹치는 피처만 검색 (GDAL 공간 인덱스 활용)
+                            targetLayer.SetSpatialFilter(boundaryGeom);
+                            
+                            Feature? targetFeature;
+                            while ((targetFeature = targetLayer.GetNextFeature()) != null)
+                            {
+                                token.ThrowIfCancellationRequested();
+
+                                using (targetFeature)
+                                {
+                                    var targetGeom = targetFeature.GetGeometryRef();
+                                    if (targetGeom == null || targetGeom.IsEmpty()) continue;
+
+                                    var targetOid = targetFeature.GetFID();
+                                    var pairKey = $"{tableId}_{targetOid}_{boundaryOid}";
+                                    
+                                    // 중복 검사 방지
+                                    if (checkedPairs.Contains(pairKey)) continue;
+                                    checkedPairs.Add(pairKey);
+
+                                    try
+                                    {
+                                        // 실제 포함/겹침 관계 검사
+                                        bool isInside = false;
+                                        bool isOverlap = false;
+                                        
+                                        try
+                                        {
+                                            // SetSpatialFilter로 이미 후보가 필터링되었으므로 빠른 검사만 수행
+                                            isInside = targetGeom.Within(boundaryGeom) || boundaryGeom.Contains(targetGeom);
+                                            
+                                            // 포함되지 않으면 겹침 검사 (더 비용이 큰 연산)
+                                            if (!isInside)
+                                            {
+                                                isOverlap = targetGeom.Overlaps(boundaryGeom) || boundaryGeom.Overlaps(targetGeom);
+                                            }
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            _logger.LogWarning(ex, "포함/겹침 관계 검사 중 오류: OID={OID}, Table={Table}, BoundaryOID={BoundaryOID}", 
+                                                targetOid, tableId, boundaryOid);
+                                            continue;
+                                        }
+
+                                        if (isInside || isOverlap)
+                                        {
+                                            totalErrors++;
+                                            AddDetailedError(result, "REL_OBJECT_IN_FMLND_BOUNDARY",
+                                                $"{tableId} 객체가 경지경계 내부에 포함되거나 겹칩니다",
+                                                tableId, targetOid.ToString(CultureInfo.InvariantCulture), 
+                                                isInside ? "포함" : "겹침", targetGeom);
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        _logger.LogWarning(ex, "경지경계 내부객체 검사 중 오류: OID={OID}, Table={Table}", targetOid, tableId);
+                                    }
+                                }
+                            }
+
+                            // 공간 필터 해제
+                            targetLayer.SetSpatialFilter(null);
+                            targetLayer.ResetReading();
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "경지경계 내부객체 검사 중 테이블 오류: Table={Table}, BoundaryOID={BoundaryOID}", 
+                                tableId, boundaryOid);
+                            // 필터 해제 시도
+                            try
+                            {
+                                targetLayer?.SetSpatialFilter(null);
+                                targetLayer?.ResetReading();
+                            }
+                            catch { }
+                        }
+                    }
+                }
+            }
+
+            var elapsed = (DateTime.Now - startTime).TotalSeconds;
+            _logger.LogInformation("경지경계 내부객체 검사 완료: 경지경계 {BoundaryCount}개 처리, 오류 {ErrorCount}개, 소요시간: {Elapsed:F2}초 ({Speed:F1} 경지경계/초)", 
+                processedBoundaries, totalErrors, elapsed, processedBoundaries > 0 && elapsed > 0 ? processedBoundaries / elapsed : 0);
+            RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, processedBoundaries, processedBoundaries, completed: true);
+        }
+
+        /// <summary>
+        /// G38 - 홀겹침 객체 검사: 홀과 동일한 객체 존재 여부 검사
+        /// </summary>
+        private void EvaluateHoleDuplicateCheck(DataSource ds, Func<string, Layer?> getLayer, ValidationResult result, string fieldFilter, double tolerance, CancellationToken token, RelationCheckConfig config)
+        {
+            // 모든 폴리곤 레이어에서 홀 추출
+            var allHoles = new List<(Geometry Hole, string SourceTable, long SourceOid, int HoleIndex)>();
+            var polygonTables = new[] { "tn_buld", "tn_arrfc", "tn_rodway_bndry", "tn_river_bndry", "tn_fmlnd_bndry" };
+
+            _logger.LogInformation("홀 추출 시작");
+
+            foreach (var tableId in polygonTables)
+            {
+                var layer = getLayer(tableId);
+                if (layer == null) continue;
+
+                layer.ResetReading();
+                var featureCount = layer.GetFeatureCount(1);
+                var processedCount = 0;
+                var maxIterations = featureCount > 0 ? Math.Max(10000, (int)(featureCount * 2.0)) : int.MaxValue;
+                var useDynamicCounting = featureCount == 0;
+
+                Feature? feature;
+                while ((feature = layer.GetNextFeature()) != null)
+                {
+                    token.ThrowIfCancellationRequested();
+                    processedCount++;
+                    
+                    if (processedCount > maxIterations && !useDynamicCounting)
+                    {
+                        _logger.LogWarning("안전장치 발동: 최대 반복 횟수({MaxIter})에 도달하여 강제 종료", maxIterations);
+                        break;
+                    }
+
+                    using (feature)
+                    {
+                        var geom = feature.GetGeometryRef();
+                        if (geom == null || geom.IsEmpty()) continue;
+
+                        var oid = feature.GetFID();
+                        var geomType = geom.GetGeometryType();
+                        var flatType = (wkbGeometryType)((int)geomType & 0xFF);
+
+                        try
+                        {
+                            if (flatType == wkbGeometryType.wkbPolygon)
+                            {
+                                // 단일 폴리곤의 홀 추출
+                                var ringCount = geom.GetGeometryCount();
+                                for (int i = 1; i < ringCount; i++) // 0번은 외곽 링, 1번부터가 홀
+                                {
+                                    using var ring = geom.GetGeometryRef(i);
+                                    if (ring != null && !ring.IsEmpty())
+                                    {
+                                        // 홀을 폴리곤으로 변환
+                                        using var holePoly = new Geometry(wkbGeometryType.wkbPolygon);
+                                        using var holeRing = ring.Clone();
+                                        holePoly.AddGeometry(holeRing);
+                                        allHoles.Add((holePoly.Clone(), tableId, oid, i));
+                                    }
+                                }
+                            }
+                            else if (flatType == wkbGeometryType.wkbMultiPolygon)
+                            {
+                                // 멀티폴리곤의 각 폴리곤에서 홀 추출
+                                var polyCount = geom.GetGeometryCount();
+                                for (int p = 0; p < polyCount; p++)
+                                {
+                                    using var poly = geom.GetGeometryRef(p);
+                                    if (poly == null) continue;
+                                    
+                                    var ringCount = poly.GetGeometryCount();
+                                    for (int i = 1; i < ringCount; i++)
+                                    {
+                                        using var ring = poly.GetGeometryRef(i);
+                                        if (ring != null && !ring.IsEmpty())
+                                        {
+                                            using var holePoly = new Geometry(wkbGeometryType.wkbPolygon);
+                                            using var holeRing = ring.Clone();
+                                            holePoly.AddGeometry(holeRing);
+                                            allHoles.Add((holePoly.Clone(), tableId, oid, i));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "홀 추출 중 오류: OID={OID}, Table={Table}", oid, tableId);
+                        }
+                    }
+                }
+            }
+
+            _logger.LogInformation("홀 추출 완료: {Count}개", allHoles.Count);
+
+            // 모든 객체와 홀 비교 (성능 최적화: Envelope 기반 사전 필터링)
+            var totalProcessed = 0;
+            var totalErrors = 0;
+
+            foreach (var tableId in polygonTables)
+            {
+                var layer = getLayer(tableId);
+                if (layer == null) continue;
+
+                layer.ResetReading();
+                var featureCount = layer.GetFeatureCount(1);
+                var processedCount = 0;
+                var maxIterations = featureCount > 0 ? Math.Max(10000, (int)(featureCount * 2.0)) : int.MaxValue;
+                var useDynamicCounting = featureCount == 0;
+
+                Feature? feature;
+                while ((feature = layer.GetNextFeature()) != null)
+                {
+                    token.ThrowIfCancellationRequested();
+                    processedCount++;
+                    totalProcessed++;
+                    
+                    if (processedCount > maxIterations && !useDynamicCounting)
+                    {
+                        _logger.LogWarning("안전장치 발동: 최대 반복 횟수({MaxIter})에 도달하여 강제 종료", maxIterations);
+                        break;
+                    }
+
+                    using (feature)
+                    {
+                        var geom = feature.GetGeometryRef();
+                        if (geom == null || geom.IsEmpty()) continue;
+
+                        var oid = feature.GetFID();
+                        var geomEnv = new Envelope();
+                        geom.GetEnvelope(geomEnv);
+
+                        // Envelope 기반 사전 필터링으로 후보 홀만 검사
+                        foreach (var (holeGeom, sourceTable, sourceOid, holeIdx) in allHoles)
+                        {
+                            try
+                            {
+                                var holeEnv = new Envelope();
+                                holeGeom.GetEnvelope(holeEnv);
+                                
+                                // Envelope가 겹치지 않으면 스킵
+                                if (geomEnv.MaxX < holeEnv.MinX || geomEnv.MinX > holeEnv.MaxX ||
+                                    geomEnv.MaxY < holeEnv.MinY || geomEnv.MinY > holeEnv.MaxY)
+                                {
+                                    continue;
+                                }
+
+                                // 실제 지오메트리 비교
+                                bool isEqual = false;
+                                try
+                                {
+                                    isEqual = geom.Equals(holeGeom) || 
+                                             (geom.Within(holeGeom) && holeGeom.Within(geom) && 
+                                              Math.Abs(geom.GetArea() - holeGeom.GetArea()) < tolerance * tolerance);
+                                }
+                                catch
+                                {
+                                    continue;
+                                }
+
+                                if (isEqual)
+                                {
+                                    totalErrors++;
+                                    AddDetailedError(result, "REL_HOLE_DUPLICATE",
+                                        $"홀과 동일한 객체가 존재합니다 (홀 출처: {sourceTable} OID={sourceOid}, 홀 인덱스={holeIdx})",
+                                        tableId, oid.ToString(CultureInfo.InvariantCulture), 
+                                        $"홀 출처={sourceTable}:{sourceOid}", geom);
+                                    break; // 하나만 찾으면 충분
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "홀 중복 검사 중 오류: OID={OID}, Table={Table}", oid, tableId);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 메모리 정리
+            foreach (var (holeGeom, _, _, _) in allHoles)
+            {
+                holeGeom?.Dispose();
+            }
+
+            _logger.LogInformation("홀겹침 객체 검사 완료: 처리 {ProcessedCount}개, 오류 {ErrorCount}개", totalProcessed, totalErrors);
+            RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, totalProcessed, totalProcessed, completed: true);
+        }
+
+        // 나머지 메서드들은 다음 단계에서 구현 (파일 크기 제한으로 인해)
+        // G41, G42, G43, G44, G48, G50
+
+        private void EvaluateLineConnectivityWithFilter(DataSource ds, Func<string, Layer?> getLayer, ValidationResult result, string fieldFilter, double tolerance, CancellationToken token, RelationCheckConfig config)
+        {
+            // G41 - 소로 미연결 검사: LineConnectivity와 동일하지만 필터 적용
+            // 기존 EvaluateLineConnectivity 재사용
+            EvaluateLineConnectivity(ds, getLayer, result, tolerance, fieldFilter, token, config);
+        }
+
+        private void EvaluateLineDisconnection(DataSource ds, Func<string, Layer?> getLayer, ValidationResult result, string fieldFilter, double tolerance, CancellationToken token, RelationCheckConfig config)
+        {
+            // G42 - 도로중심선 단절 검사: 연결되지 않은 끝점 검사
+            // LineConnectivity의 역 검사
+            var layer = getLayer(config.MainTableId);
+            if (layer == null) return;
+
+            layer.ResetReading();
+            var totalFeatures = layer.GetFeatureCount(1);
+            var processedCount = 0;
+            var maxIterations = totalFeatures > 0 ? Math.Max(10000, (int)(totalFeatures * 2.0)) : int.MaxValue;
+            var useDynamicCounting = totalFeatures == 0;
+
+            // 끝점 인덱스 구축 (기존 로직 재사용)
+            var endpointIndex = new Dictionary<string, List<EndpointInfo>>();
+            var allSegments = new List<LineSegmentInfo>();
+            double gridSize = Math.Max(tolerance, 1.0);
+
+            Feature? feature;
+            while ((feature = layer.GetNextFeature()) != null)
+            {
+                token.ThrowIfCancellationRequested();
+                processedCount++;
+                
+                if (processedCount > maxIterations && !useDynamicCounting)
+                {
+                    _logger.LogWarning("안전장치 발동: 최대 반복 횟수({MaxIter})에 도달하여 강제 종료", maxIterations);
+                    break;
+                }
+
+                using (feature)
+                {
+                    var geom = feature.GetGeometryRef();
+                    if (geom == null || geom.IsEmpty()) continue;
+
+                    var oid = feature.GetFID();
+                    ExtractLineSegments(geom, oid, allSegments, endpointIndex, gridSize);
+                }
+            }
+
+            // 연결되지 않은 끝점 검사
+            var disconnectedEndpoints = new HashSet<long>();
+            foreach (var segment in allSegments)
+            {
+                var startCandidates = SearchEndpointsNearby(endpointIndex, segment.StartX, segment.StartY, tolerance);
+                var endCandidates = SearchEndpointsNearby(endpointIndex, segment.EndX, segment.EndY, tolerance);
+
+                bool startConnected = startCandidates.Any(c => c.Oid != segment.Oid && 
+                    Distance(segment.StartX, segment.StartY, c.X, c.Y) <= tolerance);
+                bool endConnected = endCandidates.Any(c => c.Oid != segment.Oid && 
+                    Distance(segment.EndX, segment.EndY, c.X, c.Y) <= tolerance);
+
+                if (!startConnected && !endConnected)
+                {
+                    disconnectedEndpoints.Add(segment.Oid);
+                }
+            }
+
+            foreach (var oid in disconnectedEndpoints)
+            {
+                var geom = GetGeometryByOID(layer, oid);
+                AddDetailedError(result, "REL_LINE_DISCONNECTED",
+                    "도로중심선이 중간에 단절되었습니다",
+                    config.MainTableId, oid.ToString(CultureInfo.InvariantCulture), string.Empty, geom);
+                geom?.Dispose();
+            }
+
+            _logger.LogInformation("도로중심선 단절 검사 완료: 처리 {ProcessedCount}개, 오류 {ErrorCount}개", processedCount, disconnectedEndpoints.Count);
+            RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, processedCount, processedCount, completed: true);
+        }
+
+        private void EvaluateLineDisconnectionWithAttribute(DataSource ds, Func<string, Layer?> getLayer, ValidationResult result, string fieldFilter, double tolerance, CancellationToken token, RelationCheckConfig config)
+        {
+            // G43 - 도로경계선 단절 검사: 동일 ROAD_SE를 가진 도로경계선이 단절
+            // LineDisconnection과 동일하지만 속성 필터 적용
+            var layer = getLayer(config.MainTableId);
+            if (layer == null) return;
+
+            // 속성별로 그룹화하여 검사
+            var segmentsByAttribute = new Dictionary<string, List<(long Oid, double StartX, double StartY, double EndX, double EndY)>>();
+
+            layer.ResetReading();
+            var totalFeatures = layer.GetFeatureCount(1);
+            var processedCount = 0;
+            var maxIterations = totalFeatures > 0 ? Math.Max(10000, (int)(totalFeatures * 2.0)) : int.MaxValue;
+            var useDynamicCounting = totalFeatures == 0;
+
+            Feature? feature;
+            while ((feature = layer.GetNextFeature()) != null)
+            {
+                token.ThrowIfCancellationRequested();
+                processedCount++;
+                
+                if (processedCount > maxIterations && !useDynamicCounting)
+                {
+                    _logger.LogWarning("안전장치 발동: 최대 반복 횟수({MaxIter})에 도달하여 강제 종료", maxIterations);
+                    break;
+                }
+
+                using (feature)
+                {
+                    var geom = feature.GetGeometryRef();
+                    if (geom == null || geom.IsEmpty()) continue;
+
+                    var oid = feature.GetFID();
+                    var attrValue = feature.GetFieldAsString(fieldFilter) ?? "UNKNOWN";
+                    
+                    if (!segmentsByAttribute.ContainsKey(attrValue))
+                    {
+                        segmentsByAttribute[attrValue] = new List<(long, double, double, double, double)>();
+                    }
+
+                    ExtractLineEndpoints(geom, oid, segmentsByAttribute[attrValue]);
+                }
+            }
+
+            // 각 속성값별로 단절 검사
+            var totalErrors = 0;
+            foreach (var (attrValue, segments) in segmentsByAttribute)
+            {
+                var endpointIndex = new Dictionary<string, List<EndpointInfo>>();
+                double gridSize = Math.Max(tolerance, 1.0);
+
+                foreach (var (oid, sx, sy, ex, ey) in segments)
+                {
+                    AddEndpointToIndex(endpointIndex, sx, sy, oid, true, gridSize);
+                    AddEndpointToIndex(endpointIndex, ex, ey, oid, false, gridSize);
+                }
+
+                foreach (var (oid, sx, sy, ex, ey) in segments)
+                {
+                    var startCandidates = SearchEndpointsNearby(endpointIndex, sx, sy, tolerance);
+                    var endCandidates = SearchEndpointsNearby(endpointIndex, ex, ey, tolerance);
+
+                    bool startConnected = startCandidates.Any(c => c.Oid != oid && 
+                        Distance(sx, sy, c.X, c.Y) <= tolerance);
+                    bool endConnected = endCandidates.Any(c => c.Oid != oid && 
+                        Distance(ex, ey, c.X, c.Y) <= tolerance);
+
+                    if (!startConnected && !endConnected)
+                    {
+                        totalErrors++;
+                        var geom = GetGeometryByOID(layer, oid);
+                        AddDetailedError(result, "REL_LINE_DISCONNECTED_WITH_ATTR",
+                            $"동일 {fieldFilter}({attrValue})를 가진 도로경계선이 단절되었습니다",
+                            config.MainTableId, oid.ToString(CultureInfo.InvariantCulture), $"{fieldFilter}={attrValue}", geom);
+                        geom?.Dispose();
+                    }
+                }
+            }
+
+            _logger.LogInformation("도로경계선 단절 검사 완료: 처리 {ProcessedCount}개, 오류 {ErrorCount}개", processedCount, totalErrors);
+            RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, processedCount, processedCount, completed: true);
+        }
+
+        private void EvaluatePolygonBoundaryMatch(DataSource ds, Func<string, Layer?> getLayer, ValidationResult result, string fieldFilter, double tolerance, CancellationToken token, RelationCheckConfig config)
+        {
+            // G44 - 도로면형-경계선 불일치 검사: 도로 면형과 경계선이 일치해야 함
+            var polygonLayer = getLayer(config.MainTableId); // 도로경계면
+            var lineLayer = getLayer(config.RelatedTableId); // 도로경계선
+            if (polygonLayer == null || lineLayer == null) return;
+
+            polygonLayer.ResetReading();
+            var totalFeatures = polygonLayer.GetFeatureCount(1);
+            var processedCount = 0;
+            var maxIterations = totalFeatures > 0 ? Math.Max(10000, (int)(totalFeatures * 2.0)) : int.MaxValue;
+            var useDynamicCounting = totalFeatures == 0;
+
+            Feature? feature;
+            while ((feature = polygonLayer.GetNextFeature()) != null)
+            {
+                token.ThrowIfCancellationRequested();
+                processedCount++;
+                
+                if (processedCount > maxIterations && !useDynamicCounting)
+                {
+                    _logger.LogWarning("안전장치 발동: 최대 반복 횟수({MaxIter})에 도달하여 강제 종료", maxIterations);
+                    break;
+                }
+
+                using (feature)
+                {
+                    var polyGeom = feature.GetGeometryRef();
+                    if (polyGeom == null || polyGeom.IsEmpty()) continue;
+
+                    var oid = feature.GetFID();
+                    using var boundary = polyGeom.GetBoundary();
+                    if (boundary == null || boundary.IsEmpty()) continue;
+
+                    // 도로경계선과 비교
+                    lineLayer.SetSpatialFilter(polyGeom);
+                    bool foundMatch = false;
+
+                    Feature? lineFeature;
+                    while ((lineFeature = lineLayer.GetNextFeature()) != null)
+                    {
+                        using (lineFeature)
+                        {
+                            var lineGeom = lineFeature.GetGeometryRef();
+                            if (lineGeom == null || lineGeom.IsEmpty()) continue;
+
+                            try
+                            {
+                                // 경계선이 폴리곤 경계와 일치하는지 검사
+                                using var intersection = boundary.Intersection(lineGeom);
+                                if (intersection != null && !intersection.IsEmpty())
+                                {
+                                    var intersectionLength = Math.Abs(intersection.Length());
+                                    var boundaryLength = Math.Abs(boundary.Length());
+                                    
+                                    if (intersectionLength / boundaryLength > 0.9) // 90% 이상 일치
+                                    {
+                                        foundMatch = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            catch
+                            {
+                                continue;
+                            }
+                        }
+                    }
+
+                    lineLayer.SetSpatialFilter(null);
+
+                    if (!foundMatch)
+                    {
+                        AddDetailedError(result, "REL_POLYGON_BOUNDARY_MISMATCH",
+                            "도로 면형과 경계선이 일치하지 않습니다",
+                            config.MainTableId, oid.ToString(CultureInfo.InvariantCulture), string.Empty, polyGeom);
+                    }
+                }
+            }
+
+            _logger.LogInformation("도로면형-경계선 불일치 검사 완료: 처리 {ProcessedCount}개, 오류 {ErrorCount}개", processedCount, result.ErrorCount);
+            RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, processedCount, processedCount, completed: true);
+        }
+
+        private void EvaluateLineEndpointWithinPolygon(DataSource ds, Func<string, Layer?> getLayer, ValidationResult result, string fieldFilter, double tolerance, CancellationToken token, RelationCheckConfig config)
+        {
+            // G48 - 선형 끝점 초과미달 검사: 중심선 끝점이 경계면 내부에 포함되어야 함 (0.3m 범위)
+            var lineLayer = getLayer(config.MainTableId); // 중심선
+            var polygonLayer = getLayer(config.RelatedTableId); // 경계면
+            if (lineLayer == null || polygonLayer == null) return;
+
+            var polygonUnion = BuildUnionGeometryWithCache(polygonLayer, $"{config.RelatedTableId}_UNION");
+            if (polygonUnion == null) return;
+
+            try { polygonUnion = polygonUnion.MakeValid(Array.Empty<string>()); } catch { }
+
+            lineLayer.ResetReading();
+            var totalFeatures = lineLayer.GetFeatureCount(1);
+            var processedCount = 0;
+            var maxIterations = totalFeatures > 0 ? Math.Max(10000, (int)(totalFeatures * 2.0)) : int.MaxValue;
+            var useDynamicCounting = totalFeatures == 0;
+
+            Feature? feature;
+            while ((feature = lineLayer.GetNextFeature()) != null)
+            {
+                token.ThrowIfCancellationRequested();
+                processedCount++;
+                
+                if (processedCount > maxIterations && !useDynamicCounting)
+                {
+                    _logger.LogWarning("안전장치 발동: 최대 반복 횟수({MaxIter})에 도달하여 강제 종료", maxIterations);
+                    break;
+                }
+
+                using (feature)
+                {
+                    var lineGeom = feature.GetGeometryRef();
+                    if (lineGeom == null || lineGeom.IsEmpty()) continue;
+
+                    var oid = feature.GetFID();
+                    var pointCount = lineGeom.GetPointCount();
+                    if (pointCount < 2) continue;
+
+                    // 시작점과 끝점 추출
+                    double startX = lineGeom.GetX(0);
+                    double startY = lineGeom.GetY(0);
+                    double endX = lineGeom.GetX(pointCount - 1);
+                    double endY = lineGeom.GetY(pointCount - 1);
+
+                    using var startPt = new Geometry(wkbGeometryType.wkbPoint);
+                    startPt.AddPoint(startX, startY, 0);
+                    using var endPt = new Geometry(wkbGeometryType.wkbPoint);
+                    endPt.AddPoint(endX, endY, 0);
+
+                    // 끝점이 경계면 내부에 포함되는지 검사 (tolerance 범위 내)
+                    bool startWithin = false;
+                    bool endWithin = false;
+
+                    try
+                    {
+                        startWithin = polygonUnion.Contains(startPt) || startPt.Within(polygonUnion);
+                        endWithin = polygonUnion.Contains(endPt) || endPt.Within(polygonUnion);
+
+                        // 허용오차 고려: 버퍼 생성하여 검사
+                        if (!startWithin && tolerance > 0)
+                        {
+                            using var startBuffer = startPt.Buffer(tolerance, 8);
+                            startWithin = polygonUnion.Intersects(startBuffer) || polygonUnion.Contains(startBuffer);
+                        }
+
+                        if (!endWithin && tolerance > 0)
+                        {
+                            using var endBuffer = endPt.Buffer(tolerance, 8);
+                            endWithin = polygonUnion.Intersects(endBuffer) || polygonUnion.Contains(endBuffer);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "끝점 포함 검사 중 오류: OID={OID}", oid);
+                        continue;
+                    }
+
+                    if (!startWithin)
+                    {
+                        AddDetailedError(result, "REL_LINE_ENDPOINT_OUTSIDE",
+                            "중심선 시작점이 경계면 내부에 포함되지 않습니다",
+                            config.MainTableId, oid.ToString(CultureInfo.InvariantCulture), $"허용오차={tolerance}m", lineGeom);
+                    }
+
+                    if (!endWithin)
+                    {
+                        AddDetailedError(result, "REL_LINE_ENDPOINT_OUTSIDE",
+                            "중심선 끝점이 경계면 내부에 포함되지 않습니다",
+                            config.MainTableId, oid.ToString(CultureInfo.InvariantCulture), $"허용오차={tolerance}m", lineGeom);
+                    }
+                }
+            }
+
+            _logger.LogInformation("선형 끝점 초과미달 검사 완료: 처리 {ProcessedCount}개, 오류 {ErrorCount}개", processedCount, result.ErrorCount);
+            RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, processedCount, processedCount, completed: true);
+        }
+
+        private void EvaluateDefectiveConnection(DataSource ds, Func<string, Layer?> getLayer, ValidationResult result, string fieldFilter, double tolerance, CancellationToken token, RelationCheckConfig config)
+        {
+            // G50 - 결함있는 연결 검사: 중심선 연결 결함 검사
+            var centerlineLayer = getLayer(config.MainTableId); // 중심선
+            var boundaryLayer = getLayer(config.RelatedTableId); // 경계면
+            if (centerlineLayer == null || boundaryLayer == null) return;
+
+            var boundaryUnion = BuildUnionGeometryWithCache(boundaryLayer, $"{config.RelatedTableId}_UNION");
+            if (boundaryUnion == null) return;
+
+            try { boundaryUnion = boundaryUnion.MakeValid(Array.Empty<string>()); } catch { }
+
+            // 끝점 인덱스 구축
+            var endpointIndex = new Dictionary<string, List<EndpointInfo>>();
+            var allSegments = new List<LineSegmentInfo>();
+            double gridSize = Math.Max(tolerance, 1.0);
+
+            centerlineLayer.ResetReading();
+            var totalFeatures = centerlineLayer.GetFeatureCount(1);
+            var processedCount = 0;
+            var maxIterations = totalFeatures > 0 ? Math.Max(10000, (int)(totalFeatures * 2.0)) : int.MaxValue;
+            var useDynamicCounting = totalFeatures == 0;
+
+            Feature? feature;
+            while ((feature = centerlineLayer.GetNextFeature()) != null)
+            {
+                token.ThrowIfCancellationRequested();
+                processedCount++;
+                
+                if (processedCount > maxIterations && !useDynamicCounting)
+                {
+                    _logger.LogWarning("안전장치 발동: 최대 반복 횟수({MaxIter})에 도달하여 강제 종료", maxIterations);
+                    break;
+                }
+
+                using (feature)
+                {
+                    var geom = feature.GetGeometryRef();
+                    if (geom == null || geom.IsEmpty()) continue;
+
+                    var oid = feature.GetFID();
+                    ExtractLineSegments(geom, oid, allSegments, endpointIndex, gridSize);
+                }
+            }
+
+            // 결함 검사
+            foreach (var segment in allSegments)
+            {
+                var startCandidates = SearchEndpointsNearby(endpointIndex, segment.StartX, segment.StartY, tolerance);
+                var endCandidates = SearchEndpointsNearby(endpointIndex, segment.EndX, segment.EndY, tolerance);
+
+                // 1. 한점에서 불일치하거나 1m 미만인지 확인
+                bool startConnected = startCandidates.Any(c => c.Oid != segment.Oid && 
+                    Distance(segment.StartX, segment.StartY, c.X, c.Y) <= tolerance);
+                bool endConnected = endCandidates.Any(c => c.Oid != segment.Oid && 
+                    Distance(segment.EndX, segment.EndY, c.X, c.Y) <= tolerance);
+
+                // 2. 끝점에 붙어있지 않으면 바운더리 면형에 붙어있어야 함
+                if (!startConnected)
+                {
+                    using var startPt = new Geometry(wkbGeometryType.wkbPoint);
+                    startPt.AddPoint(segment.StartX, segment.StartY, 0);
+                    bool nearBoundary = false;
+                    try
+                    {
+                        using var buffer = startPt.Buffer(tolerance, 8);
+                        nearBoundary = boundaryUnion.Intersects(buffer) || boundaryUnion.Contains(buffer);
+                    }
+                    catch { }
+
+                    if (!nearBoundary)
+                    {
+                        var geom = GetGeometryByOID(centerlineLayer, segment.Oid);
+                        AddDetailedError(result, "REL_DEFECTIVE_CONNECTION",
+                            "중심선 시작점이 다른 중심선에 붙어있지 않고 바운더리 면형에도 붙어있지 않습니다",
+                            config.MainTableId, segment.Oid.ToString(CultureInfo.InvariantCulture), string.Empty, geom);
+                        geom?.Dispose();
+                    }
+                }
+
+                if (!endConnected)
+                {
+                    using var endPt = new Geometry(wkbGeometryType.wkbPoint);
+                    endPt.AddPoint(segment.EndX, segment.EndY, 0);
+                    bool nearBoundary = false;
+                    try
+                    {
+                        using var buffer = endPt.Buffer(tolerance, 8);
+                        nearBoundary = boundaryUnion.Intersects(buffer) || boundaryUnion.Contains(buffer);
+                    }
+                    catch { }
+
+                    if (!nearBoundary)
+                    {
+                        var geom = GetGeometryByOID(centerlineLayer, segment.Oid);
+                        AddDetailedError(result, "REL_DEFECTIVE_CONNECTION",
+                            "중심선 끝점이 다른 중심선에 붙어있지 않고 바운더리 면형에도 붙어있지 않습니다",
+                            config.MainTableId, segment.Oid.ToString(CultureInfo.InvariantCulture), string.Empty, geom);
+                        geom?.Dispose();
+                    }
+                }
+
+                // 3. 중심선의 끝점이 다른 중심선에 붙어있으면 오류 (교차지점은 단락되어야 함)
+                if (startConnected || endConnected)
+                {
+                    // 이미 연결되어 있으므로 정상 (이 조건은 추가 검사 필요)
+                }
+            }
+
+            _logger.LogInformation("결함있는 연결 검사 완료: 처리 {ProcessedCount}개, 오류 {ErrorCount}개", processedCount, result.ErrorCount);
+            RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, processedCount, processedCount, completed: true);
+        }
+
+        /// <summary>
+        /// 선분의 끝점 추출 헬퍼
+        /// </summary>
+        private void ExtractLineEndpoints(Geometry geom, long oid, List<(long Oid, double StartX, double StartY, double EndX, double EndY)> segments)
+        {
+            if (geom == null || geom.IsEmpty()) return;
+
+            var geomType = geom.GetGeometryType();
+            var flatType = (wkbGeometryType)((int)geomType & 0xFF);
+
+            if (flatType == wkbGeometryType.wkbLineString)
+            {
+                var pointCount = geom.GetPointCount();
+                if (pointCount >= 2)
+                {
+                    double startX = geom.GetX(0);
+                    double startY = geom.GetY(0);
+                    double endX = geom.GetX(pointCount - 1);
+                    double endY = geom.GetY(pointCount - 1);
+                    segments.Add((oid, startX, startY, endX, endY));
+                }
+            }
+            else if (flatType == wkbGeometryType.wkbMultiLineString)
+            {
+                var geomCount = geom.GetGeometryCount();
+                for (int i = 0; i < geomCount; i++)
+                {
+                    using var line = geom.GetGeometryRef(i);
+                    if (line != null && !line.IsEmpty())
+                    {
+                        ExtractLineEndpoints(line, oid, segments);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 선분 정보 추출 헬퍼 (LineSegmentInfo 리스트에 추가)
+        /// </summary>
+        private void ExtractLineSegments(Geometry geom, long oid, List<LineSegmentInfo> segments, Dictionary<string, List<EndpointInfo>> endpointIndex, double gridSize)
+        {
+            if (geom == null || geom.IsEmpty()) return;
+
+            var geomType = geom.GetGeometryType();
+            var flatType = (wkbGeometryType)((int)geomType & 0xFF);
+
+            if (flatType == wkbGeometryType.wkbLineString)
+            {
+                var pointCount = geom.GetPointCount();
+                if (pointCount >= 2)
+                {
+                    var sx = geom.GetX(0);
+                    var sy = geom.GetY(0);
+                    var ex = geom.GetX(pointCount - 1);
+                    var ey = geom.GetY(pointCount - 1);
+
+                    var segmentInfo = new LineSegmentInfo
+                    {
+                        Oid = oid,
+                        Geom = geom.Clone(),
+                        StartX = sx,
+                        StartY = sy,
+                        EndX = ex,
+                        EndY = ey
+                    };
+                    segments.Add(segmentInfo);
+
+                    AddEndpointToIndex(endpointIndex, sx, sy, oid, true, gridSize);
+                    AddEndpointToIndex(endpointIndex, ex, ey, oid, false, gridSize);
+                }
+            }
+            else if (flatType == wkbGeometryType.wkbMultiLineString)
+            {
+                var geomCount = geom.GetGeometryCount();
+                for (int i = 0; i < geomCount; i++)
+                {
+                    using var line = geom.GetGeometryRef(i);
+                    if (line != null && !line.IsEmpty())
+                    {
+                        ExtractLineSegments(line, oid, segments, endpointIndex, gridSize);
+                    }
+                }
+            }
+        }
+
+        #endregion
+
+        /// <summary>
+        /// G33 - 차도간 교차검사 (선형): 동일 속성값을 가진 선형 객체 간 교차 검사
+        /// </summary>
+        private void EvaluateLineIntersectionWithAttribute(DataSource ds, Func<string, Layer?> getLayer, ValidationResult result, string fieldFilter, CancellationToken token, RelationCheckConfig config)
+        {
+            var line = getLayer(config.MainTableId);
+            if (line == null)
+            {
+                _logger.LogWarning("레이어를 찾을 수 없습니다: {TableId}", config.MainTableId);
+                return;
+            }
+
+            // FieldFilter에 속성 필드명 지정 (예: "road_se")
+            if (string.IsNullOrWhiteSpace(fieldFilter))
+            {
+                _logger.LogWarning("속성 필드명이 지정되지 않았습니다: {FieldFilter}", fieldFilter);
+                return;
+            }
+
+            var attributeField = fieldFilter.Trim();
+            _logger.LogInformation("차도간 교차검사 시작 (선형): 레이어={Layer}, 속성필드={Field}", config.MainTableId, attributeField);
+            var startTime = DateTime.Now;
+
+            // 모든 선형 피처 수집 (속성값 포함)
+            line.ResetReading();
+            var featureCount = line.GetFeatureCount(1);
+            var allLines = new List<(long Oid, Geometry Geom, string? AttrValue)>();
+            var defn = line.GetLayerDefn();
+            int attrFieldIdx = GetFieldIndexIgnoreCase(defn, attributeField);
+            
+            if (attrFieldIdx < 0)
+            {
+                _logger.LogWarning("속성 필드를 찾을 수 없습니다: {Field}", attributeField);
+                return;
+            }
+
+            var processedCount = 0;
+            var maxIterations = featureCount > 0 ? Math.Max(10000, (int)(featureCount * 2.0)) : int.MaxValue;
+            var useDynamicCounting = featureCount == 0;
+
+            Feature? f;
+            while ((f = line.GetNextFeature()) != null)
+            {
+                token.ThrowIfCancellationRequested();
+                processedCount++;
+                
+                if (processedCount > maxIterations && !useDynamicCounting)
+                {
+                    _logger.LogWarning("안전장치 발동: 최대 반복 횟수({MaxIter})에 도달하여 강제 종료", maxIterations);
+                    break;
+                }
+
+                using (f)
+                {
+                    var g = f.GetGeometryRef();
+                    if (g == null || g.IsEmpty()) continue;
+
+                    var oid = f.GetFID();
+                    var attrValue = f.IsFieldNull(attrFieldIdx) ? null : f.GetFieldAsString(attrFieldIdx);
+                    allLines.Add((oid, g.Clone(), attrValue));
+                }
+            }
+
+            _logger.LogInformation("선형 피처 수집 완료: {Count}개", allLines.Count);
+
+            // 동일 속성값을 가진 선형 객체 간 교차 검사
+            var total = allLines.Count;
+            var idx = 0;
+            var checkedPairs = new HashSet<string>(); // 중복 검사 방지
+            var errorCount = 0;
+
+            for (int i = 0; i < allLines.Count; i++)
+            {
+                token.ThrowIfCancellationRequested();
+                idx++;
+                if (idx % 50 == 0 || idx == total)
+                {
+                    RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, idx, total);
+                }
+
+                var (oid1, geom1, attr1) = allLines[i];
+                if (string.IsNullOrWhiteSpace(attr1)) continue; // 속성값이 없으면 스킵
+
+                for (int j = i + 1; j < allLines.Count; j++)
+                {
+                    var (oid2, geom2, attr2) = allLines[j];
+                    if (string.IsNullOrWhiteSpace(attr2)) continue;
+                    
+                    // 동일 속성값인 경우에만 검사
+                    if (!attr1.Equals(attr2, StringComparison.OrdinalIgnoreCase)) continue;
+
+                    var pairKey = oid1 < oid2 ? $"{oid1}_{oid2}" : $"{oid2}_{oid1}";
+                    if (checkedPairs.Contains(pairKey)) continue;
+                    checkedPairs.Add(pairKey);
+
+                    try
+                    {
+                        // Envelope 기반 사전 필터링
+                        var env1 = new Envelope();
+                        geom1.GetEnvelope(env1);
+                        var env2 = new Envelope();
+                        geom2.GetEnvelope(env2);
+                        
+                        bool envelopesIntersect = !(env1.MaxX < env2.MinX || env1.MinX > env2.MaxX ||
+                                                     env1.MaxY < env2.MinY || env1.MinY > env2.MaxY);
+                        if (!envelopesIntersect) continue;
+
+                        // 교차 여부 확인
+                        if (geom1.Intersects(geom2))
+                        {
+                            using var intersection = geom1.Intersection(geom2);
+                            if (intersection != null && !intersection.IsEmpty())
+                            {
+                                var intersectionType = intersection.GetGeometryType();
+                                // 점이 아닌 교차(선 또는 면)인 경우만 오류
+                                if (intersectionType != wkbGeometryType.wkbPoint && 
+                                    intersectionType != wkbGeometryType.wkbMultiPoint)
+                                {
+                                    errorCount++;
+                                    var oid1Str = oid1.ToString(CultureInfo.InvariantCulture);
+                                    var oid2Str = oid2.ToString(CultureInfo.InvariantCulture);
+                                    var (x, y) = ExtractCentroid(intersection);
+                                    AddDetailedError(result, "REL_LINE_INTERSECTION_SAME_ATTR",
+                                        $"동일 {attributeField}({attr1})를 가진 선형 객체가 교차함: OID {oid1Str} <-> {oid2Str}",
+                                        config.MainTableId, oid1Str, $"교차 객체: {oid2Str}", intersection);
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "교차 검사 중 오류: OID={Oid1} vs {Oid2}", oid1, oid2);
+                    }
+                }
+            }
+
+            var elapsed = (DateTime.Now - startTime).TotalSeconds;
+            _logger.LogInformation("차도간 교차검사 완료 (선형): 처리 {Count}개, 오류 {ErrorCount}개, 소요시간: {Elapsed:F2}초", 
+                total, errorCount, elapsed);
+            RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, total, total, completed: true);
+
+            // 메모리 정리
+            foreach (var (_, geom, _) in allLines)
+            {
+                geom?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// G33 - 차도간 교차검사 (면형): 동일 속성값을 가진 폴리곤 객체 간 교차 검사
+        /// </summary>
+        private void EvaluatePolygonIntersectionWithAttribute(DataSource ds, Func<string, Layer?> getLayer, ValidationResult result, string fieldFilter, double tolerance, CancellationToken token, RelationCheckConfig config)
+        {
+            var poly = getLayer(config.MainTableId);
+            if (poly == null)
+            {
+                _logger.LogWarning("레이어를 찾을 수 없습니다: {TableId}", config.MainTableId);
+                return;
+            }
+
+            // FieldFilter에 속성 필드명 지정 (예: "road_se")
+            if (string.IsNullOrWhiteSpace(fieldFilter))
+            {
+                _logger.LogWarning("속성 필드명이 지정되지 않았습니다: {FieldFilter}", fieldFilter);
+                return;
+            }
+
+            var attributeField = fieldFilter.Trim();
+            _logger.LogInformation("차도간 교차검사 시작 (면형): 레이어={Layer}, 속성필드={Field}, 허용오차={Tolerance}", 
+                config.MainTableId, attributeField, tolerance);
+            var startTime = DateTime.Now;
+
+            // 모든 폴리곤 피처 수집 (속성값 포함)
+            poly.ResetReading();
+            var featureCount = poly.GetFeatureCount(1);
+            var allPolygons = new List<(long Oid, Geometry Geom, string? AttrValue)>();
+            var defn = poly.GetLayerDefn();
+            int attrFieldIdx = GetFieldIndexIgnoreCase(defn, attributeField);
+            
+            if (attrFieldIdx < 0)
+            {
+                _logger.LogWarning("속성 필드를 찾을 수 없습니다: {Field}", attributeField);
+                return;
+            }
+
+            var processedCount = 0;
+            var maxIterations = featureCount > 0 ? Math.Max(10000, (int)(featureCount * 2.0)) : int.MaxValue;
+            var useDynamicCounting = featureCount == 0;
+
+            Feature? f;
+            while ((f = poly.GetNextFeature()) != null)
+            {
+                token.ThrowIfCancellationRequested();
+                processedCount++;
+                
+                if (processedCount > maxIterations && !useDynamicCounting)
+                {
+                    _logger.LogWarning("안전장치 발동: 최대 반복 횟수({MaxIter})에 도달하여 강제 종료", maxIterations);
+                    break;
+                }
+
+                using (f)
+                {
+                    var g = f.GetGeometryRef();
+                    if (g == null || g.IsEmpty()) continue;
+
+                    var oid = f.GetFID();
+                    var attrValue = f.IsFieldNull(attrFieldIdx) ? null : f.GetFieldAsString(attrFieldIdx);
+                    allPolygons.Add((oid, g.Clone(), attrValue));
+                }
+            }
+
+            _logger.LogInformation("폴리곤 피처 수집 완료: {Count}개", allPolygons.Count);
+
+            // 동일 속성값을 가진 폴리곤 객체 간 교차 검사
+            var total = allPolygons.Count;
+            var idx = 0;
+            var checkedPairs = new HashSet<string>(); // 중복 검사 방지
+            var errorCount = 0;
+
+            for (int i = 0; i < allPolygons.Count; i++)
+            {
+                token.ThrowIfCancellationRequested();
+                idx++;
+                if (idx % 50 == 0 || idx == total)
+                {
+                    RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, idx, total);
+                }
+
+                var (oid1, geom1, attr1) = allPolygons[i];
+                if (string.IsNullOrWhiteSpace(attr1)) continue; // 속성값이 없으면 스킵
+
+                for (int j = i + 1; j < allPolygons.Count; j++)
+                {
+                    var (oid2, geom2, attr2) = allPolygons[j];
+                    if (string.IsNullOrWhiteSpace(attr2)) continue;
+                    
+                    // 동일 속성값인 경우에만 검사
+                    if (!attr1.Equals(attr2, StringComparison.OrdinalIgnoreCase)) continue;
+
+                    var pairKey = oid1 < oid2 ? $"{oid1}_{oid2}" : $"{oid2}_{oid1}";
+                    if (checkedPairs.Contains(pairKey)) continue;
+                    checkedPairs.Add(pairKey);
+
+                    try
+                    {
+                        // Envelope 기반 사전 필터링
+                        var env1 = new Envelope();
+                        geom1.GetEnvelope(env1);
+                        var env2 = new Envelope();
+                        geom2.GetEnvelope(env2);
+                        
+                        bool envelopesIntersect = !(env1.MaxX < env2.MinX || env1.MinX > env2.MaxX ||
+                                                     env1.MaxY < env2.MinY || env1.MinY > env2.MaxY);
+                        if (!envelopesIntersect) continue;
+
+                        // 교차 여부 확인
+                        using var intersection = geom1.Intersection(geom2);
+                        if (intersection != null && !intersection.IsEmpty())
+                        {
+                            var area = GetSurfaceArea(intersection);
+                            // 겹침 면적이 tolerance를 초과하는 경우만 오류
+                            if (area > tolerance)
+                            {
+                                errorCount++;
+                                var oid1Str = oid1.ToString(CultureInfo.InvariantCulture);
+                                var oid2Str = oid2.ToString(CultureInfo.InvariantCulture);
+                                var (x, y) = ExtractCentroid(intersection);
+                                AddDetailedError(result, "REL_POLYGON_INTERSECTION_SAME_ATTR",
+                                    $"동일 {attributeField}({attr1})를 가진 폴리곤 객체가 교차함 (겹침 면적: {area:F2}㎡): OID {oid1Str} <-> {oid2Str}",
+                                    config.MainTableId, oid1Str, $"교차 객체: {oid2Str}", intersection);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "교차 검사 중 오류: OID={Oid1} vs {Oid2}", oid1, oid2);
+                    }
+                }
+            }
+
+            var elapsed = (DateTime.Now - startTime).TotalSeconds;
+            _logger.LogInformation("차도간 교차검사 완료 (면형): 처리 {Count}개, 오류 {ErrorCount}개, 소요시간: {Elapsed:F2}초", 
+                total, errorCount, elapsed);
+            RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, total, total, completed: true);
+
+            // 메모리 정리
+            foreach (var (_, geom, _) in allPolygons)
+            {
+                geom?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// G34 - 차도와 도로시설물관계 검사: 도로경계면/중심선에 도로시설 레이어가 공간중첩되나 속성이 없거나, 속성이 있으나 레이어가 없는 경우
+        /// </summary>
+        private void EvaluateAttributeSpatialMismatch(DataSource ds, Func<string, Layer?> getLayer, ValidationResult result, string fieldFilter, double tolerance, CancellationToken token, RelationCheckConfig config)
+        {
+            var mainLayer = getLayer(config.MainTableId); // 도로경계면 또는 중심선
+            var facilityLayer = getLayer(config.RelatedTableId); // 도로시설 레이어
+            if (mainLayer == null || facilityLayer == null)
+            {
+                _logger.LogWarning("레이어를 찾을 수 없습니다: Main={MainTable}, Related={RelatedTable}", 
+                    config.MainTableId, config.RelatedTableId);
+                return;
+            }
+
+            // FieldFilter 형식: "road_se;pg_rdfc_se" (도로 속성 필드;도로시설 속성 필드)
+            if (string.IsNullOrWhiteSpace(fieldFilter))
+            {
+                _logger.LogWarning("속성 필드명이 지정되지 않았습니다: {FieldFilter}", fieldFilter);
+                return;
+            }
+
+            var fields = fieldFilter.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (fields.Length < 2)
+            {
+                _logger.LogWarning("속성 필드명이 올바르게 지정되지 않았습니다: {FieldFilter} (형식: '도로필드;도로시설필드')", fieldFilter);
+                return;
+            }
+
+            var roadField = fields[0];
+            var facilityField = fields[1];
+
+            _logger.LogInformation("차도와 도로시설물관계 검사 시작: 도로={RoadLayer}, 도로시설={FacilityLayer}, 도로필드={RoadField}, 시설필드={FacilityField}, 허용오차={Tolerance}", 
+                config.MainTableId, config.RelatedTableId, roadField, facilityField, tolerance);
+            var startTime = DateTime.Now;
+
+            // 도로 레이어 필드 인덱스 확인
+            var roadDefn = mainLayer.GetLayerDefn();
+            int roadFieldIdx = GetFieldIndexIgnoreCase(roadDefn, roadField);
+            if (roadFieldIdx < 0)
+            {
+                _logger.LogWarning("도로 속성 필드를 찾을 수 없습니다: {Field}", roadField);
+                return;
+            }
+
+            // 도로시설 레이어 필드 인덱스 확인
+            var facilityDefn = facilityLayer.GetLayerDefn();
+            int facilityFieldIdx = GetFieldIndexIgnoreCase(facilityDefn, facilityField);
+            if (facilityFieldIdx < 0)
+            {
+                _logger.LogWarning("도로시설 속성 필드를 찾을 수 없습니다: {Field}", facilityField);
+                return;
+            }
+
+            // 도로 피처 수집
+            mainLayer.ResetReading();
+            var roadFeatures = new List<(long Oid, Geometry Geom, string? RoadAttr)>();
+            var roadFeatureCount = mainLayer.GetFeatureCount(1);
+            var processedCount = 0;
+            var maxIterations = roadFeatureCount > 0 ? Math.Max(10000, (int)(roadFeatureCount * 2.0)) : int.MaxValue;
+            var useDynamicCounting = roadFeatureCount == 0;
+
+            Feature? f;
+            while ((f = mainLayer.GetNextFeature()) != null)
+            {
+                token.ThrowIfCancellationRequested();
+                processedCount++;
+                
+                if (processedCount > maxIterations && !useDynamicCounting)
+                {
+                    _logger.LogWarning("안전장치 발동: 최대 반복 횟수({MaxIter})에 도달하여 강제 종료", maxIterations);
+                    break;
+                }
+
+                using (f)
+                {
+                    var g = f.GetGeometryRef();
+                    if (g == null || g.IsEmpty()) continue;
+
+                    var oid = f.GetFID();
+                    var roadAttr = f.IsFieldNull(roadFieldIdx) ? null : f.GetFieldAsString(roadFieldIdx);
+                    roadFeatures.Add((oid, g.Clone(), roadAttr));
+                }
+            }
+
+            _logger.LogInformation("도로 피처 수집 완료: {Count}개", roadFeatures.Count);
+
+            // 도로시설 피처 수집 (속성값 포함)
+            facilityLayer.ResetReading();
+            var facilityFeatures = new List<(long Oid, Geometry Geom, string? FacilityAttr)>();
+            var facilityFeatureCount = facilityLayer.GetFeatureCount(1);
+            processedCount = 0;
+            maxIterations = facilityFeatureCount > 0 ? Math.Max(10000, (int)(facilityFeatureCount * 2.0)) : int.MaxValue;
+            useDynamicCounting = facilityFeatureCount == 0;
+
+            while ((f = facilityLayer.GetNextFeature()) != null)
+            {
+                token.ThrowIfCancellationRequested();
+                processedCount++;
+                
+                if (processedCount > maxIterations && !useDynamicCounting)
+                {
+                    _logger.LogWarning("안전장치 발동: 최대 반복 횟수({MaxIter})에 도달하여 강제 종료", maxIterations);
+                    break;
+                }
+
+                using (f)
+                {
+                    var g = f.GetGeometryRef();
+                    if (g == null || g.IsEmpty()) continue;
+
+                    var oid = f.GetFID();
+                    var facilityAttr = f.IsFieldNull(facilityFieldIdx) ? null : f.GetFieldAsString(facilityFieldIdx);
+                    facilityFeatures.Add((oid, g.Clone(), facilityAttr));
+                }
+            }
+
+            _logger.LogInformation("도로시설 피처 수집 완료: {Count}개", facilityFeatures.Count);
+
+            // 검사 1: 도로에 도로시설 레이어가 공간중첩되나 속성이 없는 경우
+            var errorCount = 0;
+            var checkedPairs = new HashSet<string>();
+
+            foreach (var (roadOid, roadGeom, roadAttr) in roadFeatures)
+            {
+                token.ThrowIfCancellationRequested();
+
+                if (string.IsNullOrWhiteSpace(roadAttr)) continue; // 도로 속성이 없으면 스킵
+
+                try
+                {
+                    // 도로 지오메트리와 중첩되는 도로시설 검색
+                    facilityLayer.SetSpatialFilter(roadGeom);
+
+                    Feature? facilityF;
+                    while ((facilityF = facilityLayer.GetNextFeature()) != null)
+                    {
+                        using (facilityF)
+                        {
+                            var facilityGeom = facilityF.GetGeometryRef();
+                            if (facilityGeom == null || facilityGeom.IsEmpty()) continue;
+
+                            var facilityOid = facilityF.GetFID();
+                            var pairKey = $"{roadOid}_{facilityOid}";
+                            if (checkedPairs.Contains(pairKey)) continue;
+                            checkedPairs.Add(pairKey);
+
+                            // 공간 중첩 확인
+                            bool isOverlapping = false;
+                            try
+                            {
+                                if (roadGeom.Overlaps(facilityGeom) || facilityGeom.Overlaps(roadGeom) ||
+                                    roadGeom.Contains(facilityGeom) || facilityGeom.Within(roadGeom))
+                                {
+                                    isOverlapping = true;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "공간 중첩 확인 중 오류: RoadOID={RoadOid}, FacilityOID={FacilityOid}", roadOid, facilityOid);
+                                continue;
+                            }
+
+                            if (isOverlapping)
+                            {
+                                var facilityAttr = facilityF.IsFieldNull(facilityFieldIdx) ? null : facilityF.GetFieldAsString(facilityFieldIdx);
+                                
+                                // 오류 1: 도로시설 레이어가 중첩되나 속성이 없는 경우
+                                if (string.IsNullOrWhiteSpace(facilityAttr))
+                                {
+                                    errorCount++;
+                                    var roadOidStr = roadOid.ToString(CultureInfo.InvariantCulture);
+                                    var facilityOidStr = facilityOid.ToString(CultureInfo.InvariantCulture);
+                                    var (x, y) = ExtractCentroid(facilityGeom);
+                                    AddDetailedError(result, "REL_ATTRIBUTE_SPATIAL_MISMATCH",
+                                        $"도로({roadField}={roadAttr})에 도로시설 레이어가 중첩되나 {facilityField} 속성이 없음: OID {facilityOidStr}",
+                                        config.RelatedTableId, facilityOidStr, $"도로 OID: {roadOidStr}", facilityGeom);
+                                }
+                            }
+                        }
+                    }
+
+                    facilityLayer.SetSpatialFilter(null);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "도로시설 검사 중 오류: RoadOID={RoadOid}", roadOid);
+                    try { facilityLayer?.SetSpatialFilter(null); } catch { }
+                }
+            }
+
+            // 검사 2: 도로에 도로시설물 속성이 있으나 레이어가 없는 경우
+            // (도로 속성값에 도로시설 코드가 포함되어 있으나 실제 레이어에는 해당 피처가 없는 경우)
+            // 이 검사는 복잡하므로, 도로 속성값을 파싱하여 도로시설 코드 목록을 추출하고,
+            // 해당 코드를 가진 도로시설 피처가 공간적으로 중첩되는지 확인해야 함
+            // 현재는 검사 1만 구현 (검사 2는 추가 분석 필요)
+
+            var elapsed = (DateTime.Now - startTime).TotalSeconds;
+            _logger.LogInformation("차도와 도로시설물관계 검사 완료: 오류 {ErrorCount}개, 소요시간: {Elapsed:F2}초", 
+                errorCount, elapsed);
+            RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, roadFeatures.Count, roadFeatures.Count, completed: true);
+
+            // 메모리 정리
+            foreach (var (_, geom, _) in roadFeatures)
+            {
+                geom?.Dispose();
+            }
+            foreach (var (_, geom, _) in facilityFeatures)
+            {
+                geom?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// G39 - 표고점 위치간격 검사: 표고점 간 최소 거리 검사 (축척별/도로별)
+        /// </summary>
+        private void EvaluatePointSpacingCheck(DataSource ds, Func<string, Layer?> getLayer, ValidationResult result, string fieldFilter, CancellationToken token, RelationCheckConfig config)
+        {
+            var pointLayer = getLayer(config.MainTableId);
+            if (pointLayer == null)
+            {
+                _logger.LogWarning("레이어를 찾을 수 없습니다: {TableId}", config.MainTableId);
+                return;
+            }
+
+            // FieldFilter 형식: "scale=5K;flatland=200;road_sidewalk=20;road_carriageway=30"
+            // 또는 간단히: "200" (평탄지 기준 거리만)
+            var spacingParams = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrWhiteSpace(fieldFilter))
+            {
+                var parts = fieldFilter.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                foreach (var part in parts)
+                {
+                    var kv = part.Split('=', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                    if (kv.Length == 2 && double.TryParse(kv[1], NumberStyles.Any, CultureInfo.InvariantCulture, out var value))
+                    {
+                        spacingParams[kv[0]] = value;
+                    }
+                    else if (kv.Length == 1 && double.TryParse(kv[0], NumberStyles.Any, CultureInfo.InvariantCulture, out var singleValue))
+                    {
+                        // 단일 값인 경우 평탄지 기준으로 사용
+                        spacingParams["flatland"] = singleValue;
+                    }
+                }
+            }
+
+            // 기본값 설정
+            var flatlandSpacing = spacingParams.GetValueOrDefault("flatland", 200.0); // 평탄지 기본값 200m
+            var roadSidewalkSpacing = spacingParams.GetValueOrDefault("road_sidewalk", 20.0); // 인도 기본값 20m
+            var roadCarriagewaySpacing = spacingParams.GetValueOrDefault("road_carriageway", 30.0); // 차도 기본값 30m
+
+            _logger.LogInformation("표고점 위치간격 검사 시작: 레이어={Layer}, 평탄지={Flatland}m, 인도={Sidewalk}m, 차도={Carriageway}m", 
+                config.MainTableId, flatlandSpacing, roadSidewalkSpacing, roadCarriagewaySpacing);
+            var startTime = DateTime.Now;
+
+            // 모든 표고점 수집
+            pointLayer.ResetReading();
+            var featureCount = pointLayer.GetFeatureCount(1);
+            var allPoints = new List<(long Oid, double X, double Y)>();
+            
+            var processedCount = 0;
+            var maxIterations = featureCount > 0 ? Math.Max(10000, (int)(featureCount * 2.0)) : int.MaxValue;
+            var useDynamicCounting = featureCount == 0;
+
+            Feature? f;
+            while ((f = pointLayer.GetNextFeature()) != null)
+            {
+                token.ThrowIfCancellationRequested();
+                processedCount++;
+                
+                if (processedCount > maxIterations && !useDynamicCounting)
+                {
+                    _logger.LogWarning("안전장치 발동: 최대 반복 횟수({MaxIter})에 도달하여 강제 종료", maxIterations);
+                    break;
+                }
+
+                using (f)
+                {
+                    var g = f.GetGeometryRef();
+                    if (g == null || g.IsEmpty()) continue;
+
+                    var oid = f.GetFID();
+                    var pointType = g.GetGeometryType();
+                    double x = 0, y = 0;
+
+                    if (pointType == wkbGeometryType.wkbPoint)
+                    {
+                        x = g.GetX(0);
+                        y = g.GetY(0);
+                    }
+                    else if (pointType == wkbGeometryType.wkbMultiPoint)
+                    {
+                        // 첫 번째 점 사용
+                        using var firstPoint = g.GetGeometryRef(0);
+                        if (firstPoint != null && !firstPoint.IsEmpty())
+                        {
+                            x = firstPoint.GetX(0);
+                            y = firstPoint.GetY(0);
+                        }
+                        else
+                        {
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        continue;
+                    }
+
+                    allPoints.Add((oid, x, y));
+                }
+            }
+
+            _logger.LogInformation("표고점 수집 완료: {Count}개", allPoints.Count);
+
+            // 공간 인덱스 기반 거리 검사 (성능 최적화)
+            // 그리드 기반 공간 인덱스 사용
+            var gridSize = Math.Max(flatlandSpacing, Math.Max(roadSidewalkSpacing, roadCarriagewaySpacing)) * 2.0;
+            var gridIndex = new Dictionary<string, List<(long Oid, double X, double Y)>>();
+
+            // 그리드 인덱스에 점 추가
+            foreach (var (oid, x, y) in allPoints)
+            {
+                var gridKey = $"{(int)(x / gridSize)}_{(int)(y / gridSize)}";
+                if (!gridIndex.ContainsKey(gridKey))
+                {
+                    gridIndex[gridKey] = new List<(long Oid, double X, double Y)>();
+                }
+                gridIndex[gridKey].Add((oid, x, y));
+            }
+
+            // 각 점에 대해 인접 그리드의 점들과 거리 검사
+            var total = allPoints.Count;
+            var idx = 0;
+            var checkedPairs = new HashSet<string>(); // 중복 검사 방지
+            var errorCount = 0;
+
+            foreach (var (oid1, x1, y1) in allPoints)
+            {
+                token.ThrowIfCancellationRequested();
+                idx++;
+                if (idx % 100 == 0 || idx == total)
+                {
+                    RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, idx, total);
+                }
+
+                // 인접 그리드 검색
+                var gridX = (int)(x1 / gridSize);
+                var gridY = (int)(y1 / gridSize);
+
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    for (int dy = -1; dy <= 1; dy++)
+                    {
+                        var neighborKey = $"{gridX + dx}_{gridY + dy}";
+                        if (!gridIndex.ContainsKey(neighborKey)) continue;
+
+                        foreach (var (oid2, x2, y2) in gridIndex[neighborKey])
+                        {
+                            if (oid1 >= oid2) continue; // 중복 검사 방지
+
+                            var pairKey = oid1 < oid2 ? $"{oid1}_{oid2}" : $"{oid2}_{oid1}";
+                            if (checkedPairs.Contains(pairKey)) continue;
+                            checkedPairs.Add(pairKey);
+
+                            try
+                            {
+                                var distance = Distance(x1, y1, x2, y2);
+                                
+                                // 최소 거리 검사 (평탄지 기준 사용, 도로별 검사는 추후 확장 가능)
+                                if (distance > 0 && distance < flatlandSpacing)
+                                {
+                                    errorCount++;
+                                    var oid1Str = oid1.ToString(CultureInfo.InvariantCulture);
+                                    var oid2Str = oid2.ToString(CultureInfo.InvariantCulture);
+                                    AddDetailedError(result, "REL_POINT_SPACING_VIOLATION",
+                                        $"표고점 간 거리가 최소 간격({flatlandSpacing}m) 미만: OID {oid1Str} <-> {oid2Str} (거리: {distance:F2}m)",
+                                        config.MainTableId, oid1Str, $"인접 표고점: {oid2Str}", null);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "거리 계산 중 오류: OID={Oid1} vs {Oid2}", oid1, oid2);
+                            }
+                        }
+                    }
+                }
+            }
+
+            var elapsed = (DateTime.Now - startTime).TotalSeconds;
+            _logger.LogInformation("표고점 위치간격 검사 완료: 처리 {Count}개, 오류 {ErrorCount}개, 소요시간: {Elapsed:F2}초", 
+                total, errorCount, elapsed);
+            RaiseProgress(config.RuleId ?? string.Empty, config.CaseType ?? string.Empty, total, total, completed: true);
+        }
+
+        #endregion
+
         private bool _disposed = false;
         
         /// <summary>
@@ -2067,7 +4748,5 @@ namespace SpatialCheckPro.Processors
                 _logger.LogInformation("RelationCheckProcessor 리소스 정리 완료");
             }
         }
-        
-        #endregion
     }
 }

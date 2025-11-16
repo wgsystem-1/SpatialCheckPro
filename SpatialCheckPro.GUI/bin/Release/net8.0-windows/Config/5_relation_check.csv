@@ -18,3 +18,33 @@
 경지경계_도로경계선_침범,Y,PolygonNotIntersectLine,tn_fmlnd_bndry,경지경계,tn_rodway_bndryln,도로경계선,,,경지경계는 도로경계선과 교차하면 안됨
 경지경계_철도경계면_침범,Y,PolygonNotOverlap,tn_fmlnd_bndry,경지경계,tn_rlroad_bndry,철도경계면,,0,경지경계는 철도경계면을 침범하면 안됨
 경지경계_하천중심선_침범,Y,PolygonNotIntersectLine,tn_fmlnd_bndry,경지경계,tn_river_ctln,하천중심선,,,경지경계는 하천중심선과 교차하면 안됨
+건물_하천경계_침범,Y,PolygonNotOverlap,tn_buld,건물,tn_river_bndry,하천경계,,0,건물은 하천경계를 침범하면 안됨
+건물_호소_침범,Y,PolygonNotOverlap,tn_buld,건물,tn_lkmh,호소,,0,건물은 호소를 침범하면 안됨
+건물_실폭하천_침범,Y,PolygonNotOverlap,tn_buld,건물,tn_river_bt,실폭하천,,0,건물은 실폭하천을 침범하면 안됨
+면형도로시설_호소_침범,Y,PolygonNotOverlap,tn_arrfc,면형도로시설,tn_lkmh,호소,,0,면형도로시설은 호소를 침범하면 안됨
+면형도로시설_실폭하천_침범,Y,PolygonNotOverlap,tn_arrfc,면형도로시설,tn_river_bt,실폭하천,,0,면형도로시설은 실폭하천을 침범하면 안됨
+등고선_연결높이일치,Y,ConnectedLinesSameAttribute,tn_ctrln,등고선,tn_ctrln,등고선,ctrln_hgt,1,연결된 등고선끼리 높이값이 같아야 함
+도로중심선_속성불일치,Y,CenterlineAttributeMismatch,tn_rodway_ctln,도로중심선,tn_rodway_ctln,도로중심선,road_no|feat_nm|road_se,1,연결된 도로중심선끼리 도로번호/명칭/구분이 일치해야 함
+철도중심선_속성불일치,Y,CenterlineAttributeMismatch,tn_rlroad_ctln,철도중심선,tn_rlroad_ctln,철도중심선,feat_nm|rlrwtyp_se,1,연결된 철도중심선끼리 선로명칭/선로유형이 일치해야 함
+하천중심선_속성불일치,Y,CenterlineAttributeMismatch,tn_river_ctln,하천중심선,tn_river_ctln,하천중심선,rvr_no|feat_nm|rvr_se,1,연결된 하천중심선끼리 하천번호/명칭/구분이 일치해야 함
+등고선_교차검사,Y,ContourIntersection,tn_ctrln,등고선,tn_ctrln,등고선,,,다른 등고선과 교차 발생 검사
+등고선_꺽임검사,Y,ContourSharpBend,tn_ctrln,등고선,tn_ctrln,등고선,,90,등고선이 90도 미만으로 꺽임 검사
+도로중심선_꺽임검사,Y,RoadSharpBend,tn_rodway_ctln,도로중심선,tn_rodway_ctln,도로중심선,,6,도로중심선이 6도 이하로 꺽임 검사
+교량하천명_일치검사,Y,BridgeRiverNameMatch,tn_arrfc,면형도로시설,tn_river_ctln,하천중심선,pg_rdfc_se IN (PRC002|PRC003|PRC004|PRC005);feat_nm,1,교량과 하천중심선의 하천명이 일치해야 함
+도로시설_경계불일치_확장,Y,PolygonWithinPolygon,tn_arrfc,면형도로시설,tn_rodway_bndry,도로경계면,pg_rdfc_se IN (PRC002|PRC003|PRC004|PRC005|PRC009|PRC010|PRC011|PRC034|PRC035|PRC036|PRC037|PRC046),0.001,교량/터널/입체교차부가 도로경계면에 포함되어야 함
+도로시설_철도경계불일치,Y,PolygonWithinPolygon,tn_arrfc,면형도로시설,tn_rlroad_bndry,철도경계면,pg_rdfc_se IN (PRC002|PRC003|PRC004|PRC005|PRC009|PRC010|PRC011|PRC034|PRC035|PRC036|PRC037|PRC046),0.001,교량/터널/입체교차부가 철도경계면에 포함되어야 함
+실폭하천_하천경계누락,Y,PolygonContainsLine,tn_river_bt,실폭하천,tn_river_bndry,하천경계,,0.1,실폭하천에 하천경계가 포함되어야 함
+경지경계_내부객체검사,Y,PolygonContainsObjects,tn_fmlnd_bndry,경지경계,*,모든객체,,0,경지경계 내부에 포함되거나 겹치는 객체 검사
+홀겹침_객체검사,Y,HoleDuplicateCheck,*,모든폴리곤,*,모든객체,,0.001,홀과 동일한 객체 존재 여부 검사
+소로_미연결검사,Y,LineConnectivityWithFilter,tn_rodway_ctln,도로중심선,tn_rodway_ctln,도로중심선,road_se=RDS014,1,소로가 도로중심선과 연결되어야 함
+도로중심선_단절검사,Y,LineDisconnection,tn_rodway_ctln,도로중심선,tn_rodway_ctln,도로중심선,,1,도로중심선이 중간에 단절된 경우 검사
+도로경계선_단절검사,Y,LineDisconnectionWithAttribute,tn_rodway_bndryln,도로경계선,tn_rodway_bndryln,도로경계선,road_se,1,동일 ROAD_SE를 가진 도로경계선이 단절 검사
+도로면형_경계선불일치,Y,PolygonBoundaryMatch,tn_rodway_bndry,도로경계면,tn_rodway_bndryln,도로경계선,,0.1,도로 면형과 경계선이 일치해야 함
+선형끝점_초과미달검사,Y,LineEndpointWithinPolygon,tn_rodway_ctln,도로중심선,tn_rodway_bndry,도로경계면,,0.3,중심선 끝점이 경계면 내부에 포함되어야 함
+선형끝점_초과미달검사_철도,Y,LineEndpointWithinPolygon,tn_rlroad_ctln,철도중심선,tn_rlroad_bndry,철도경계면,,0.3,철도중심선 끝점이 철도경계면 내부에 포함되어야 함
+선형끝점_초과미달검사_하천,Y,LineEndpointWithinPolygon,tn_river_ctln,하천중심선,tn_river_bndry,하천경계,,0.3,하천중심선 끝점이 하천경계 내부에 포함되어야 함
+결함있는_연결검사,Y,DefectiveConnection,tn_rodway_ctln,도로중심선,tn_rodway_bndry,도로경계면,,1,중심선 연결 결함 검사
+차도간_교차검사_중심선,Y,LineIntersectionWithAttribute,tn_rodway_ctln,도로중심선,tn_rodway_ctln,도로중심선,road_se,0,동일 도로구분을 가진 도로중심선 간 교차 검사
+차도간_교차검사_경계면,Y,PolygonIntersectionWithAttribute,tn_rodway_bndry,도로경계면,tn_rodway_bndry,도로경계면,road_se,0,동일 도로구분을 가진 도로경계면 간 교차 검사
+차도_도로시설물관계검사,Y,AttributeSpatialMismatch,tn_rodway_bndry,도로경계면,tn_arrfc,면형도로시설,road_se;pg_rdfc_se,0.1,도로경계면에 도로시설 레이어가 중첩되나 속성이 없거나, 속성이 있으나 레이어가 없는 경우 검사
+표고점_위치간격검사,Y,PointSpacingCheck,tn_alpt,표고점,tn_alpt,표고점,scale=5K;flatland=200;road_sidewalk=20;road_carriageway=30,0,표고점 간 최소 거리 검사 (축척별/도로별)

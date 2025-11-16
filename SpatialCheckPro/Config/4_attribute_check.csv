@@ -1,8 +1,9 @@
 ﻿RuleId,Enabled,TableId,TableName,FieldName,CheckType,Parameters,Severity,Note
 ATTR_CODE_BULD,Y,tn_buld,건물,bldg_se,CodeList,건물구분V6,MAJOR,건물 용도 코드리스트 (codelist.csv 참조)
 ATTR_NOTZERO_FLOOR,Y,tn_buld,건물,bldg_nofl,NotZero,,MAJOR,층수 0 금지
-ATTR_PNU_17LEN,Y,tn_buld,건물,pnu,Regex,^[0-9]{17}$,MAJOR,PNU 17자리
+ATTR_PNU_19LEN,Y,tn_buld,건물,pnu,Regex,^[0-9]{19}$,MAJOR,PNU 19자리
 ATTR_ALPT_LT2000,Y,tn_alpt,표고점,alpt_hgt,Range,0.0000001..1999.9999,MAJOR,표고점높이 0 금지 및 2000 미만
+ATTR_ALPT_ZERO_EXPLICIT,Y,tn_alpt,표고점,alpt_hgt,NumericEquals,0.00,MAJOR,표고점높이가 정확히 0.00인 경우 오류
 CTRLN_HGT_LT2000,Y,tn_ctrln,등고선,ctrln_hgt,Range,0.0000001..1999.9999,MAJOR,등고선높이 2000 미만
 CTRLN_HGT_MUL5,Y,tn_ctrln,등고선,ctrln_hgt,MultipleOf,5,MAJOR,등고선높이 5의 배수
 CTRLN_HGT_MUL25_CODE,Y,tn_ctrln,등고선,ctrln_hgt,IfCodeThenMultipleOf,ctrln_se;CTS001|CTS101;CTRLN_HGT;25,MAJOR,CTS001/CTS101이면 25의 배수여야 함
@@ -13,11 +14,18 @@ ATTR_BLDHGT_MAX_GT_FAC,Y,tn_buld,건물,blfcht_hgt,buld_height_max_vs_facility,,
 CTRLN_ROAD_BT_RDS014_EQ15,Y,tn_rodway_ctln,도로중심선,road_bt,IfCodeThenNumericEquals,road_se;RDS014;ROAD_BT;1.5,MAJOR,도로구분 RDS014이면 도로폭 1.5 고정
 CTRLN_ROAD_BT_RDS010_RANGE,Y,tn_rodway_ctln,도로중심선,road_bt,IfCodeThenBetweenExclusive,road_se;RDS010;ROAD_BT;1.5..3.0,MAJOR,도로구분 RDS010이면 1.5초과 3.0미만
 CTRLN_ROADSE_NAME_NO_NOTNULL,Y,tn_rodway_ctln,도로중심선,road_se,IfCodeThenNotNullAll,road_se;RDS001|RDS002|RDS003;FEAT_NM|ROAD_NO,MAJOR,특정 도로구분이면 명칭/번호 필수
+CTRLN_ROAD_LANE_MIN,Y,tn_rodway_ctln,도로중심선,lane_cnt,Range,1..999,MAJOR,차로수는 1차선 이상이어야 함
+CTRLN_ROAD_LANE_RDS010_EQ1,Y,tn_rodway_ctln,도로중심선,lane_cnt,IfCodeThenNumericEquals,road_se;RDS010;LANE_CNT;1,MAJOR,면리간도로(RDS010)는 차로수 1차선이어야 함
+CTRLN_ROAD_LANE_RDS014_EQ1,Y,tn_rodway_ctln,도로중심선,lane_cnt,IfCodeThenNumericEquals,road_se;RDS014;LANE_CNT;1,MAJOR,소로(RDS014)는 차로수 1차선이어야 함
+CTRLN_ROAD_BT_MAJOR_GE30,Y,tn_rodway_ctln,도로중심선,road_bt,IfCodeThenGreaterThanOrEqual,road_se;RDS001|RDS002|RDS003|RDS004|RDS005|RDS006|RDS007|RDS008|RDS009|RDS015;ROAD_BT;3.0,MAJOR,고속국도/일반국도/지방도/특별시도/광역시도/시도/군도/구도/주요도로/실폭차도는 도로폭 3.0m 이상이어야 함
+BULD_HEIGHT_NEW_NOTNULL,Y,tn_buld,건물,bldlwt_hgt,IfCodeThenNotNullAll,objfltn_se;OBF001;BLDLWT_HGT|BLDBSC_HGT,MAJOR,신규건물(OBF001)은 최저높이와 기본높이가 필수
+BULD_HEIGHT_LOWEST_GT_BASE,Y,tn_buld,건물,bldlwt_hgt,buld_height_lowest_vs_base,,MAJOR,신규건물 중 최저높이가 기본높이보다 큰 경우 오류
 BULD_FEAT_NM_NULL,Y,tn_buld,건물,feat_nm,IfCodeThenNull,bldg_se;BDG001;FEAT_NM,MAJOR,건물용도 BDG001인 경우 지형지물명칭은 NULL이어야 함
 BULD_batc_nm_NULL,Y,tn_buld,건물,batc_nm,IfCodeThenNull,bldg_se;BDG001;batc_nm,MAJOR,건물용도 BDG001인 경우 건물부명칭은 NULL이어야 함
 RIVER_CTLN_FEAT_NM_NOTNULL,Y,tn_river_ctln,하천중심선,feat_nm,IfCodeThenNotNullAll,rvr_se;RVR001|RVR002;FEAT_NM,MAJOR,하천구분이 국가하천(RVR001) 또는 지방하천(RVR002)인 경우 지형지물명칭 필수
 RIVER_CTLN_RVR_NO_NOTNULL,Y,tn_river_ctln,하천중심선,feat_nm,IfCodeThenNotNullAll,rvr_se;RVR001|RVR002;rvr_no,MAJOR,하천구분이 국가하천(RVR001) 또는 지방하천(RVR002)인 경우 하천번호호 필수
 ALL_TABLE_OBJECTID_NOTNULL,Y,*,모든테이블,objectid,NotNull,,MAJOR,모든 테이블의 OBJECTID는 필수값이어야 함
+NFID_FORMAT,Y,*,모든테이블,nf_id,Regex,^[A-Z0-9]{17}$,MAJOR,NFID는 17자리 영숫자여야 함
 객체변동구분_Code,Y,*,객체변동구분,objfltn_se,CodeList,객체변동구분V6,MAJOR,객체변동구분V6_코드리스트 점검
 건물구분_Code,Y,tn_buld,건물구분,bldg_se,CodeList,건물구분V6,MAJOR,건물구분V6_코드리스트 점검
 건물기호구분_Code,Y,tn_buld,건물기호구분,bdgsymb_se,CodeList,건물기호구분V6,MAJOR,건물기호구분V6_코드리스트 점검
@@ -93,3 +101,17 @@ ALL_TABLE_OBJECTID_NOTNULL,Y,*,모든테이블,objectid,NotNull,,MAJOR,모든 �
 해안선구분_Code,Y,tn_shorline,해안선구분,shrln_se,CodeList,해안선구분V6,MAJOR,해안선구분V6_코드리스트 점검
 해안선출처_Code,Y,tn_shorline,해안선출처,shrln_src,CodeList,해안선출처V6,MAJOR,해안선출처V6_코드리스트 점검
 해안선형태_Code,Y,tn_shorline,해안선형태,shrln_shp,CodeList,해안선형태V6,MAJOR,해안선형태V6_코드리스트 점검
+ADMD_CTPRVN_STDG_CD_FORMAT,Y,tn_ctprvn_bndry,시도구역경계,stdg_cd,Regex,^[0-9]{10}$,MAJOR,시도구역경계 법정동코드는 10자리 숫자여야 함
+ADMD_CTPRVN_FEAT_NM_NOTNULL,Y,tn_ctprvn_bndry,시도구역경계,feat_nm,NotNull,,MAJOR,시도구역경계 지형지물명칭은 필수값
+ADMD_SGG_STDG_CD_FORMAT,Y,tn_signgu_bndry,시군구구역경계,stdg_cd,Regex,^[0-9]{10}$,MAJOR,시군구구역경계 법정동코드는 10자리 숫자여야 함
+ADMD_SGG_FEAT_NM_NOTNULL,Y,tn_signgu_bndry,시군구구역경계,feat_nm,NotNull,,MAJOR,시군구구역경계 지형지물명칭은 필수값
+ADMD_EMD_STDG_CD_FORMAT,Y,tn_emd_bndry,읍면동구역경계,stdg_cd,Regex,^[0-9]{10}$,MAJOR,읍면동구역경계 법정동코드는 10자리 숫자여야 함
+ADMD_EMD_FEAT_NM_NOTNULL,Y,tn_emd_bndry,읍면동구역경계,feat_nm,NotNull,,MAJOR,읍면동구역경계 지형지물명칭은 필수값
+CTRLN_HGT_25M_VALLEY,Y,tn_ctrln,등고선,ctrln_se,IfMultipleOfThenCodeIn,ctrln_hgt;25;CTRLN_SE;CTS001|CTS101,MAJOR,25m 배수인 경우 계곡선(CTS001/CTS101)이어야 함
+CTRLN_HGT_NOT25M_MAIN,Y,tn_ctrln,등고선,ctrln_se,IfNotMultipleOfThenCodeIn,ctrln_hgt;25;CTRLN_SE;CTS002|CTS102,MAJOR,25m 배수가 아닌 경우 주곡선(CTS002/CTS102)이어야 함
+CTRLN_SE_NO_INTERMEDIATE,Y,tn_ctrln,등고선,ctrln_se,IfCodeThenNotIn,ctrln_se;CTS003|CTS004|CTS103|CTS104,MAJOR,간곡선(CTS003/CTS103)/조곡선(CTS004/CTS104)은 사용하지 않음
+METADATA_OBJFLTN_NOTNULL,Y,*,모든테이블,objfltn_se,NotNull,,MAJOR,객체변동일시는 필수값
+METADATA_MDSVYMT_NOTNULL,Y,*,모든테이블,mdsvymt_se,NotNull,,MAJOR,수정측량방법은 필수값
+METADATA_FBCBZET_NOTNULL,Y,*,모든테이블,fbcbzet_nm,NotNull,,MAJOR,제작업체명은 필수값
+LNPGR_RETN_WALL_TOP_HGT_GT0,Y,tn_lnpgr,선형지형,ln_tpf_hgt,IfCodeThenGreaterThanOrEqual,ln_tpf_se;LTF005;LN_TPF_HGT;0.0000001,MAJOR,옹벽상단(LTF005)의 높이는 0보다 커야 함
+LNPGR_STONE_WALL_TOP_HGT_GT0,Y,tn_lnpgr,선형지형,ln_tpf_hgt,IfCodeThenGreaterThanOrEqual,ln_tpf_se;LTF007;LN_TPF_HGT;0.0000001,MAJOR,석축상단(LTF007)의 높이는 0보다 커야 함

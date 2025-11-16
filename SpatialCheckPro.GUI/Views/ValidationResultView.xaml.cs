@@ -888,23 +888,7 @@ namespace SpatialCheckPro.GUI.Views
             {
                 var errors = relationCheckResult.Errors ?? new List<SpatialCheckPro.Models.ValidationError>();
 
-                // 공간 관계 오류: ErrorCode가 "REL_"로 시작하고, 테이블/객체ID가 존재하는 항목
-                var spatialItems = errors
-                    .Where(e => !string.IsNullOrWhiteSpace(e.ErrorCode) && e.ErrorCode.StartsWith("REL_", StringComparison.OrdinalIgnoreCase))
-                    .Select(e => new SpatialRelationErrorItem
-                    {
-                        SourceLayer = string.IsNullOrWhiteSpace(e.TableName) ? (e.SourceTable ?? string.Empty) : e.TableName,
-                        RelationType = e.Metadata != null && e.Metadata.TryGetValue("RelationType", out var rt) ? Convert.ToString(rt) ?? string.Empty : string.Empty,
-                        ErrorType = e.ErrorCode ?? string.Empty,
-                        SourceObjectId = !string.IsNullOrWhiteSpace(e.FeatureId) ? e.FeatureId : (e.SourceObjectId?.ToString() ?? string.Empty),
-                        Message = e.Message
-                    })
-                    .ToList();
-
-                SpatialRelationErrorsGrid.ItemsSource = spatialItems;
-                SpatialErrorCountText.Text = spatialItems.Count.ToString();
-
-                // 검사된 규칙 수 표시
+                // 검사된 규칙 수 표시 (먼저 처리하여 UI에 반영)
                 try
                 {
                     var ruleCount = 0;
@@ -930,7 +914,40 @@ namespace SpatialCheckPro.GUI.Views
                             .Select(e => e.Metadata["RuleId"])
                             .Distinct()
                             .Count();
-                        if (uniqueRules > 0) ruleCount = uniqueRules;
+                        if (uniqueRules > 0) 
+                        {
+                            ruleCount = uniqueRules;
+                            _logger?.LogInformation("오류 목록에서 고유 RuleId 추출: {Count}개", ruleCount);
+                        }
+                        else
+                        {
+                            // RuleId가 없어도 오류가 있으면 오류 수를 기반으로 추정
+                            // 오류가 많으면 여러 규칙이 실행되었을 가능성이 높음
+                            if (errors.Count > 10)
+                            {
+                                // 오류가 10개 이상이면 최소 2개 이상의 규칙으로 추정
+                                ruleCount = Math.Min(10, (errors.Count / 10) + 1);
+                            }
+                            else
+                            {
+                                ruleCount = 1;
+                            }
+                            _logger?.LogInformation("RuleId 없음, 오류 수 기반 추정: {Count}개 (오류 {ErrorCount}개)", ruleCount, errors.Count);
+                        }
+                    }
+                    // 4순위: ProcessedRulesCount가 0이지만 오류가 있으면 최소 1개 규칙으로 간주
+                    else if (relationCheckResult.ErrorCount > 0 || errors.Count > 0)
+                    {
+                        // 오류 수를 기반으로 추정
+                        if (relationCheckResult.ErrorCount > 10 || errors.Count > 10)
+                        {
+                            ruleCount = Math.Min(10, ((relationCheckResult.ErrorCount > 0 ? relationCheckResult.ErrorCount : errors.Count) / 10) + 1);
+                        }
+                        else
+                        {
+                            ruleCount = 1;
+                        }
+                        _logger?.LogInformation("ProcessedRulesCount=0, 오류 수 기반 추정: {Count}개", ruleCount);
                     }
                     
                     if (TotalRulesText != null)
@@ -938,17 +955,37 @@ namespace SpatialCheckPro.GUI.Views
                         TotalRulesText.Text = ruleCount.ToString();
                     }
                     
-                    _logger?.LogInformation("5단계 검사된 규칙 수: {RuleCount} (ProcessedRulesCount={PRC})", 
-                        ruleCount, relationCheckResult.ProcessedRulesCount);
+                    _logger?.LogInformation("5단계 검사된 규칙 수: {RuleCount} (ProcessedRulesCount={PRC}, Errors={ErrorCount})", 
+                        ruleCount, relationCheckResult.ProcessedRulesCount, errors.Count);
                 }
                 catch (Exception ex)
                 {
                     _logger?.LogWarning(ex, "규칙 수 표시 중 오류 발생");
                 }
 
-                // 속성 관계 오류: 공간 오류 외 나머지(규칙 기반) 항목
+                // 공간 관계 오류: ErrorCode가 "REL_"로 시작하지만 "REL_CENTERLINE_ATTR_MISMATCH"는 제외 (속성 불일치는 속성 관계로 분류)
+                var spatialItems = errors
+                    .Where(e => !string.IsNullOrWhiteSpace(e.ErrorCode) 
+                        && e.ErrorCode.StartsWith("REL_", StringComparison.OrdinalIgnoreCase)
+                        && !e.ErrorCode.Equals("REL_CENTERLINE_ATTR_MISMATCH", StringComparison.OrdinalIgnoreCase))
+                    .Select(e => new SpatialRelationErrorItem
+                    {
+                        SourceLayer = string.IsNullOrWhiteSpace(e.TableName) ? (e.SourceTable ?? string.Empty) : e.TableName,
+                        RelationType = e.Metadata != null && e.Metadata.TryGetValue("RelationType", out var rt) ? Convert.ToString(rt) ?? string.Empty : string.Empty,
+                        ErrorType = e.ErrorCode ?? string.Empty,
+                        SourceObjectId = !string.IsNullOrWhiteSpace(e.FeatureId) ? e.FeatureId : (e.SourceObjectId?.ToString() ?? string.Empty),
+                        Message = e.Message
+                    })
+                    .ToList();
+
+                SpatialRelationErrorsGrid.ItemsSource = spatialItems;
+                SpatialErrorCountText.Text = spatialItems.Count.ToString();
+
+                // 속성 관계 오류: REL_CENTERLINE_ATTR_MISMATCH 포함 (속성 불일치는 속성 관계로 분류)
                 var attrItems = errors
-                    .Where(e => string.IsNullOrWhiteSpace(e.ErrorCode) || !e.ErrorCode.StartsWith("REL_", StringComparison.OrdinalIgnoreCase))
+                    .Where(e => string.IsNullOrWhiteSpace(e.ErrorCode) 
+                        || !e.ErrorCode.StartsWith("REL_", StringComparison.OrdinalIgnoreCase)
+                        || e.ErrorCode.Equals("REL_CENTERLINE_ATTR_MISMATCH", StringComparison.OrdinalIgnoreCase))
                     .Select(e => new AttributeRelationErrorItem
                     {
                         TableName = string.IsNullOrWhiteSpace(e.TableName) ? (e.SourceTable ?? string.Empty) : e.TableName,

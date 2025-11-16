@@ -149,14 +149,18 @@ namespace SpatialCheckPro.GUI.Views
             var maxError = _validationResult.ErrorCount;
             const double barMaxWidth = 200.0; // 고정 최대 너비
             
+            // 데이터 레벨에서 이미 재분류되었으므로 직접 사용
+            var attributeErrorCount = _validationResult.AttributeRelationCheckResult?.ErrorCount ?? 0;
+            var relationErrorCount = _validationResult.RelationCheckResult?.ErrorCount ?? 0;
+            
             var stageErrors = new List<dynamic>
             {
                 new { StageNumber = 0, StageName = "FileGDB", ErrorCount = 0, MaxErrorCount = maxError, ErrorColor = GetErrorColor(0), BarWidth = 0.0 },
                 new { StageNumber = 1, StageName = "테이블", ErrorCount = _validationResult.TableCheckResult?.ErrorCount ?? 0, MaxErrorCount = maxError, ErrorColor = GetErrorColor(_validationResult.TableCheckResult?.ErrorCount ?? 0), BarWidth = CalculateBarWidth(_validationResult.TableCheckResult?.ErrorCount ?? 0, maxError, barMaxWidth) },
                 new { StageNumber = 2, StageName = "스키마", ErrorCount = _validationResult.SchemaCheckResult?.ErrorCount ?? 0, MaxErrorCount = maxError, ErrorColor = GetErrorColor(_validationResult.SchemaCheckResult?.ErrorCount ?? 0), BarWidth = CalculateBarWidth(_validationResult.SchemaCheckResult?.ErrorCount ?? 0, maxError, barMaxWidth) },
                 new { StageNumber = 3, StageName = "지오메트리", ErrorCount = _validationResult.GeometryCheckResult?.ErrorCount ?? 0, MaxErrorCount = maxError, ErrorColor = GetErrorColor(_validationResult.GeometryCheckResult?.ErrorCount ?? 0), BarWidth = CalculateBarWidth(_validationResult.GeometryCheckResult?.ErrorCount ?? 0, maxError, barMaxWidth) },
-                new { StageNumber = 4, StageName = "속성관계", ErrorCount = _validationResult.AttributeRelationCheckResult?.ErrorCount ?? 0, MaxErrorCount = maxError, ErrorColor = GetErrorColor(_validationResult.AttributeRelationCheckResult?.ErrorCount ?? 0), BarWidth = CalculateBarWidth(_validationResult.AttributeRelationCheckResult?.ErrorCount ?? 0, maxError, barMaxWidth) },
-                new { StageNumber = 5, StageName = "공간관계", ErrorCount = _validationResult.RelationCheckResult?.ErrorCount ?? 0, MaxErrorCount = maxError, ErrorColor = GetErrorColor(_validationResult.RelationCheckResult?.ErrorCount ?? 0), BarWidth = CalculateBarWidth(_validationResult.RelationCheckResult?.ErrorCount ?? 0, maxError, barMaxWidth) }
+                new { StageNumber = 4, StageName = "속성관계", ErrorCount = attributeErrorCount, MaxErrorCount = maxError, ErrorColor = GetErrorColor(attributeErrorCount), BarWidth = CalculateBarWidth(attributeErrorCount, maxError, barMaxWidth) },
+                new { StageNumber = 5, StageName = "공간관계", ErrorCount = relationErrorCount, MaxErrorCount = maxError, ErrorColor = GetErrorColor(relationErrorCount), BarWidth = CalculateBarWidth(relationErrorCount, maxError, barMaxWidth) }
             };
 
             StageErrorsList.ItemsSource = stageErrors;
@@ -414,7 +418,7 @@ namespace SpatialCheckPro.GUI.Views
 
             var recommendations = new List<string>();
 
-            // 가장 많은 오류가 있는 단계 찾기
+            // 가장 많은 오류가 있는 단계 찾기 (데이터 레벨에서 이미 재분류됨)
             var stageErrors = new[]
             {
                 ("테이블", _validationResult.TableCheckResult?.ErrorCount ?? 0),

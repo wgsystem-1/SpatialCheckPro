@@ -272,7 +272,15 @@ namespace SpatialCheckPro.Processors
             var startTime = DateTime.Now;
             
             // 총 피처 수 미리 캐시 (매번 호출 방지)
+            // GetFeatureCount(1)은 정확한 개수를 반환하지만, 필터 적용 시 0을 반환할 수 있음
+            // 따라서 0일 때는 동적 카운팅으로 대체
             var totalFeatureCount = layer.GetFeatureCount(1);
+            var useDynamicCounting = totalFeatureCount == 0;
+            
+            if (useDynamicCounting)
+            {
+                _logger.LogWarning("GetFeatureCount가 0을 반환했습니다. 동적 카운팅 모드로 전환합니다. (필터 적용 또는 인덱스 문제 가능성)");
+            }
 
             // 오류 추가 헬퍼 (스트리밍 모드와 메모리 모드 모두 지원)
             Action<ValidationError> _AddErrorToResult = (error) =>
@@ -311,11 +319,38 @@ namespace SpatialCheckPro.Processors
                     Feature? feature;
                     int processedCount = 0;
                     int skippedByFilter = 0;
-                    int maxIterations = (int)(totalFeatureCount * 1.5); // 안전장치: 예상의 1.5배까지만
+                    
+                    // 안전장치: maxIterations 계산
+                    // totalFeatureCount가 0이면 동적 카운팅 모드로 전환 (무제한에 가까운 값 사용)
+                    // totalFeatureCount가 있으면 예상의 2배까지 허용 (필터/중복 고려)
+                    // 최소값 보장: 최소 10000개는 처리 가능하도록
+                    int maxIterations;
+                    if (useDynamicCounting)
+                    {
+                        // 동적 카운팅 모드: 매우 큰 값 사용 (실제 무한 루프는 FID 중복 체크로 방지)
+                        maxIterations = int.MaxValue;
+                        _logger.LogInformation("동적 카운팅 모드: maxIterations=무제한 (FID 중복 체크로 무한 루프 방지)");
+                    }
+                    else
+                    {
+                        // 정상 모드: 예상의 2배까지 허용 (필터/중복 고려)
+                        maxIterations = Math.Max(10000, (int)(totalFeatureCount * 2.0));
+                        _logger.LogInformation("정상 모드: totalFeatureCount={Count}, maxIterations={Max} (예상의 2배)", 
+                            totalFeatureCount, maxIterations);
+                    }
+                    
                     var processedFids = new HashSet<long>(); // C. FID 중복 방지
 
-                    while ((feature = layer.GetNextFeature()) != null && processedCount < maxIterations)
+                    while ((feature = layer.GetNextFeature()) != null)
                     {
+                        // 안전장치: processedCount가 maxIterations를 초과하면 경고 후 종료
+                        if (processedCount >= maxIterations)
+                        {
+                            _logger.LogError("안전장치 발동: 최대 반복 횟수({MaxIterations})에 도달하여 강제 종료. 무한 루프 가능성 있음. (처리: {Processed}, 스킵: {Skipped}, 고유 FID: {Unique})", 
+                                maxIterations, processedCount, skippedByFilter, processedFids.Count);
+                            break;
+                        }
+                        
                         using (feature)
                         {
                             cancellationToken.ThrowIfCancellationRequested();
@@ -680,12 +715,28 @@ namespace SpatialCheckPro.Processors
                             }
                         }
                     }
-                    // 루프 종료 후 최종 카운트 로그
-                    var totalIterations = processedCount + skippedByFilter + (processedFids.Count - processedCount);
                     
-                    if (totalIterations >= maxIterations)
+                    // 루프 종료 후 최종 카운트 및 검증
+                    var totalIterations = processedCount + skippedByFilter;
+                    var uniqueFidCount = processedFids.Count;
+                    
+                    // 동적 카운팅 모드에서는 실제 처리된 개수를 totalFeatureCount로 업데이트
+                    if (useDynamicCounting && processedCount > 0)
                     {
-                        _logger.LogError("안전장치 발동: 최대 반복 횟수({MaxIterations})에 도달하여 강제 종료. 무한 루프 가능성 있음.", maxIterations);
+                        totalFeatureCount = processedCount + skippedByFilter;
+                        _logger.LogInformation("동적 카운팅 완료: 실제 피처 수 {Count}개 확인", totalFeatureCount);
+                    }
+                    
+                    // 안전장치 발동 여부 확인 (루프 내부에서 이미 처리했지만 최종 확인)
+                    if (processedCount >= maxIterations && !useDynamicCounting)
+                    {
+                        _logger.LogError("안전장치 발동: 최대 반복 횟수({MaxIterations})에 도달하여 강제 종료. 무한 루프 가능성 있음. (처리: {Processed}, 스킵: {Skipped}, 고유 FID: {Unique})", 
+                            maxIterations, processedCount, skippedByFilter, uniqueFidCount);
+                    }
+                    else if (processedCount > 0)
+                    {
+                        _logger.LogInformation("지오메트리 검수 완료: 검수 {Processed}개, 제외 {Skipped}개, 고유 FID {Unique}개 (예상: {Expected}, maxIterations: {Max})", 
+                            processedCount, skippedByFilter, uniqueFidCount, totalFeatureCount, maxIterations);
                     }
                     
                     if (skippedByFilter > 0)
@@ -693,20 +744,26 @@ namespace SpatialCheckPro.Processors
                         _logger.LogInformation("수동 필터로 제외된 피처: {Count}개 (OBJFLTN_SE 기준)", skippedByFilter);
                     }
                     
-                    if (processedFids.Count != processedCount + skippedByFilter)
+                    // FID 중복 검증
+                    if (uniqueFidCount != totalIterations)
                     {
-                        _logger.LogWarning("FID 중복 발견: 고유 FID {Unique}개, 처리+스킵 {Total}개", 
-                            processedFids.Count, processedCount + skippedByFilter);
+                        _logger.LogWarning("FID 중복 발견: 고유 FID {Unique}개, 처리+스킵 {Total}개 (차이: {Diff}개)", 
+                            uniqueFidCount, totalIterations, Math.Abs(uniqueFidCount - totalIterations));
                     }
                     
-                    if (processedCount > totalFeatureCount)
+                    // 예상 피처 수 초과 검증 (정상 모드에서만)
+                    if (!useDynamicCounting && processedCount > totalFeatureCount)
                     {
                         _logger.LogWarning("예상 피처 수({Expected})를 초과하여 {Actual}개 처리됨. 필터 미작동 또는 중복 반환 의심.", 
                             totalFeatureCount, processedCount);
                     }
                     
-                    _logger.LogInformation("단일 순회 완료: 검수 {Processed}개, 제외 {Skipped}개, 고유 FID {Unique}개 (예상: {Expected})", 
-                        processedCount, skippedByFilter, processedFids.Count, totalFeatureCount);
+                    // 처리된 피처가 없고 예상 피처 수가 0이 아닌 경우 경고
+                    if (processedCount == 0 && totalFeatureCount > 0 && !useDynamicCounting)
+                    {
+                        _logger.LogWarning("예상 피처 수({Expected})가 있으나 처리된 피처가 0개입니다. 필터가 모든 피처를 제외했거나 레이어 접근 문제 가능성.", 
+                            totalFeatureCount);
+                    }
                 }
                 catch (Exception ex)
                 {

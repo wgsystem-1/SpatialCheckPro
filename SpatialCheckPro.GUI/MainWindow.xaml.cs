@@ -883,14 +883,14 @@ namespace SpatialCheckPro.GUI
                 progressView.ResetStartTime();
                 var startTime = DateTime.Now;
                 
-                // 소요시간 업데이트 타이머 (1초 간격)
-                var progressTimer = new DispatcherTimer(DispatcherPriority.Render);
-                progressTimer.Interval = TimeSpan.FromSeconds(1); // 1초 간격으로 변경
+                // 소요시간 업데이트 타이머 (1초 간격) - 스무스한 업데이트를 위해 Normal 우선순위 사용
+                var progressTimer = new DispatcherTimer(DispatcherPriority.Normal);
+                progressTimer.Interval = TimeSpan.FromSeconds(1); // 1초 간격
                 progressTimer.Tick += (s, e) => 
                 {
                     var elapsed = DateTime.Now - startTime;
-                    // Invoke로 동기 호출하여 즉시 반영
-                    Dispatcher.Invoke(() => progressView.UpdateElapsedTime(elapsed), DispatcherPriority.Render);
+                    // BeginInvoke로 비동기 호출하여 UI 스레드 블로킹 방지 및 스무스한 업데이트 보장
+                    Dispatcher.BeginInvoke(new Action(() => progressView.UpdateElapsedTime(elapsed)), DispatcherPriority.Normal);
                 };
                 progressTimer.Start();
 

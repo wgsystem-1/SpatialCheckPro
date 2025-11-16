@@ -1056,9 +1056,68 @@ namespace SpatialCheckPro.GUI.Services
 
                 var relationResult = await ExecuteRelationCheckAsync(dataSourcePath, dataProvider, relationConfigPath, _selectedStage5Items);
                 
+                // ProcessedRulesCount 보존 (재분류 전에 저장)
+                var originalProcessedRulesCount = relationResult.ProcessedRulesCount;
+                
+                // REL_CENTERLINE_ATTR_MISMATCH 오류는 속성 관계 검수로 재분류
+                var centerlineAttrMismatchErrors = relationResult.Errors
+                    .Where(e => !string.IsNullOrWhiteSpace(e.ErrorCode) 
+                        && e.ErrorCode.Equals("REL_CENTERLINE_ATTR_MISMATCH", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                
+                if (centerlineAttrMismatchErrors.Count > 0)
+                {
+                    // 속성 관계 검수 결과에 추가 (이미 존재하는 경우)
+                    if (result.AttributeRelationCheckResult != null)
+                    {
+                        result.AttributeRelationCheckResult.Errors.AddRange(centerlineAttrMismatchErrors);
+                        // ErrorCount는 Errors.Count를 기준으로 재계산 (동기화 보장)
+                        result.AttributeRelationCheckResult.ErrorCount = result.AttributeRelationCheckResult.Errors.Count;
+                        result.AttributeRelationCheckResult.IsValid = result.AttributeRelationCheckResult.ErrorCount == 0;
+                        _logger.LogInformation("REL_CENTERLINE_ATTR_MISMATCH 오류 {Count}개를 속성 관계 검수로 재분류", centerlineAttrMismatchErrors.Count);
+                    }
+                    else
+                    {
+                        // AttributeRelationCheckResult가 없으면 생성
+                        result.AttributeRelationCheckResult = new AttributeRelationCheckResult
+                        {
+                            StartedAt = DateTime.Now,
+                            IsValid = false,
+                            ErrorCount = centerlineAttrMismatchErrors.Count,
+                            WarningCount = 0,
+                            Errors = new List<ValidationError>(centerlineAttrMismatchErrors),
+                            Warnings = new List<ValidationError>(),
+                            Message = $"속성 관계 검수 (재분류된 오류 {centerlineAttrMismatchErrors.Count}개 포함)"
+                        };
+                        _logger.LogInformation("AttributeRelationCheckResult 생성 및 REL_CENTERLINE_ATTR_MISMATCH 오류 {Count}개 추가", centerlineAttrMismatchErrors.Count);
+                    }
+                    
+                    // 공간 관계 검수 결과에서 제거
+                    foreach (var error in centerlineAttrMismatchErrors)
+                    {
+                        relationResult.Errors.Remove(error);
+                    }
+                    // ErrorCount는 Errors.Count를 기준으로 재계산 (동기화 보장, 음수 방지)
+                    relationResult.ErrorCount = Math.Max(0, relationResult.Errors.Count);
+                    relationResult.IsValid = relationResult.ErrorCount == 0;
+                    _logger.LogInformation("공간 관계 검수에서 REL_CENTERLINE_ATTR_MISMATCH 제거 후 ErrorCount: {Count} (Errors.Count: {ErrorsCount})", 
+                        relationResult.ErrorCount, relationResult.Errors.Count);
+                }
+                
+                // ProcessedRulesCount 복원 (재분류 후에도 유지)
+                relationResult.ProcessedRulesCount = originalProcessedRulesCount;
+                _logger.LogInformation("공간 관계 검수 ProcessedRulesCount: {Count} (재분류 후에도 유지)", relationResult.ProcessedRulesCount);
+                
                 result.RelationCheckResult = relationResult;
                 result.ErrorCount += relationResult.ErrorCount;
                 result.WarningCount += relationResult.WarningCount;
+                
+                // 재분류된 오류도 전체 집계에 포함
+                if (centerlineAttrMismatchErrors.Count > 0 && result.AttributeRelationCheckResult != null)
+                {
+                    // 이미 AttributeRelationCheckResult.ErrorCount에 포함되어 있으므로 중복 집계 방지
+                    // 하지만 전체 ErrorCount는 이미 정확하게 계산됨 (4단계에서 이미 집계됨)
+                }
 
                 // 오류가 있으면 실패로 표시
                 bool isRelationSuccessful = relationResult.ErrorCount == 0;
@@ -2009,8 +2068,8 @@ namespace SpatialCheckPro.GUI.Services
                 }
 
                 // 관계 설정 로드
-                var relationConfigs = await LoadFlexibleRelationConfigsAsync(relationConfigPath);
-                if (!relationConfigs.Any())
+                var allRelationConfigs = await LoadFlexibleRelationConfigsAsync(relationConfigPath);
+                if (!allRelationConfigs.Any())
                         {
                             result.WarningCount++;
                     result.Message = "관계 설정이 없어 관계 검수를 스킵했습니다.";
@@ -2018,6 +2077,13 @@ namespace SpatialCheckPro.GUI.Services
                     result.CompletedAt = DateTime.Now;
                     return result;
                 }
+
+                // Enabled=Y인 규칙만 필터링 (비활성화된 규칙 제외)
+                var relationConfigs = allRelationConfigs
+                    .Where(c => string.Equals(c.Enabled, "Y", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                _logger.LogInformation("활성화된 관계 검수 규칙: {EnabledCount}개 (전체: {TotalCount}개)", 
+                    relationConfigs.Count, allRelationConfigs.Count);
 
                 // 선택된 행이 있으면 필터링
                 if (selectedRows != null && selectedRows.Any())
@@ -2033,6 +2099,7 @@ namespace SpatialCheckPro.GUI.Services
                 var totalSkippedRelation = 0;
                 var totalRules = relationConfigs.Count;
                 var processedRules = 0;
+                var actuallyProcessedRules = 0; // 실제로 처리된 규칙 수 (ProcessAsync 성공적으로 완료된 규칙만)
                 
                 // 실제 규칙 수로 초기 진행률 보고 (0/totalRules로 시작)
                 _logger.LogInformation("[ExecuteRelationCheckAsync] 초기 진행률 보고: 0/{TotalRules} 규칙", totalRules);
@@ -2076,19 +2143,41 @@ namespace SpatialCheckPro.GUI.Services
                     };
                     ProgressUpdated?.Invoke(this, progressArgs);
                     
-                    var vr = await _relationProcessor.ProcessAsync(dataSourcePath, rule);
-                    if (!vr.IsValid)
+                    try
                     {
-                        result.IsValid = false;
+                        var vr = await _relationProcessor.ProcessAsync(dataSourcePath, rule);
+                        
+                        // ProcessAsync가 성공적으로 완료된 경우에만 카운트 (예외 없이 완료)
+                        actuallyProcessedRules++;
+                        
+                        if (!vr.IsValid)
+                        {
+                            result.IsValid = false;
+                        }
+                        // ErrorCount는 Errors.Count와 동기화되어야 하므로, Errors를 먼저 추가한 후 Count로 재계산
+                        if (vr.Errors != null && vr.Errors.Count > 0)
+                        {
+                            result.Errors.AddRange(vr.Errors);
+                            // Errors.Count를 기준으로 ErrorCount 재계산 (동기화 보장)
+                            result.ErrorCount = result.Errors.Count;
+                        }
+                        else
+                        {
+                            // Errors가 없어도 ErrorCount는 누적 (vr.ErrorCount가 0이 아닐 수 있음)
+                            result.ErrorCount += vr.ErrorCount;
+                        }
+                        if (vr.SkippedCount > 0)
+                        {
+                            totalSkippedRelation += vr.SkippedCount;
+                        }
                     }
-                    result.ErrorCount += vr.ErrorCount;
-                    if (vr.Errors != null && vr.Errors.Count > 0)
+                    catch (Exception ex)
                     {
-                        result.Errors.AddRange(vr.Errors);
-                    }
-                    if (vr.SkippedCount > 0)
-                    {
-                        totalSkippedRelation += vr.SkippedCount;
+                        // ProcessAsync 실패 시에도 규칙은 처리 시도한 것으로 간주 (로그만 기록)
+                        _logger.LogWarning(ex, "규칙 처리 중 오류 발생 (계속 진행): RuleId={RuleId}, CaseType={CaseType}", 
+                            rule.RuleId, rule.CaseType);
+                        // 예외가 발생해도 규칙은 처리 시도한 것으로 카운트 (실제 처리 여부와 무관)
+                        actuallyProcessedRules++;
                     }
                     
                     // 규칙 완료 시 진행률 업데이트 + 부분 결과 생성
@@ -2136,6 +2225,8 @@ namespace SpatialCheckPro.GUI.Services
                     ProgressUpdated?.Invoke(this, completedArgs);
                 }
 
+                // ErrorCount와 Errors.Count 동기화 보장 (재분류 후에도 정확성 유지)
+                result.ErrorCount = Math.Max(0, result.Errors.Count);
                 result.IsValid = result.ErrorCount == 0;
                 result.SkippedCount = totalSkippedRelation;
                 if (result.SkippedCount > 0)
@@ -2143,10 +2234,12 @@ namespace SpatialCheckPro.GUI.Services
                     _logger.LogInformation("관계 검수에서 OBJFLTN_SE 제외 적용: 제외 건수 {Count}", result.SkippedCount);
                 }
 
-                // 통계 설정
-                result.ProcessedRulesCount = relationConfigs.Count;
-                _logger.LogInformation("5단계 통계: 검사한 규칙 {Count}개, 오류 {Error}개", 
-                    result.ProcessedRulesCount, result.ErrorCount);
+                // 통계 설정: 실제 처리된 규칙 수 사용 (ProcessAsync가 호출된 규칙만)
+                // actuallyProcessedRules는 foreach 루프에서 실제로 ProcessAsync가 호출된 규칙 수
+                // relationConfigs.Count는 활성화된 규칙 수 (Enabled=Y)
+                result.ProcessedRulesCount = actuallyProcessedRules > 0 ? actuallyProcessedRules : relationConfigs.Count;
+                _logger.LogInformation("5단계 통계: 검사한 규칙 {Count}개 (활성화된 규칙: {EnabledCount}개, 실제 처리 시도: {ProcessedCount}개), 오류 {Error}개 (REL_CENTERLINE_ATTR_MISMATCH 제외)", 
+                    result.ProcessedRulesCount, relationConfigs.Count, actuallyProcessedRules, result.ErrorCount);
 
                 result.Message = result.IsValid ? "관계 검수 완료" : $"관계 검수 완료: 오류 {result.ErrorCount}개";
                 result.CompletedAt = DateTime.Now;

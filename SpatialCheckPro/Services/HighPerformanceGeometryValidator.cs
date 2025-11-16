@@ -191,6 +191,15 @@ namespace SpatialCheckPro.Services
 
                 foreach (var overlap in overlaps)
                 {
+                    // 겹침 면적이 tolerance를 초과하는 경우에만 오류로 기록
+                    // tolerance 이하인 경우는 허용 오차 범위 내이므로 스킵
+                    if (overlap.OverlapArea <= tolerance)
+                    {
+                        _logger.LogDebug("겹침 면적이 허용 오차 이하: OBJECTID={ObjectId}, 면적={Area:F6}㎡, 허용오차={Tolerance}㎡", 
+                            overlap.ObjectId, overlap.OverlapArea, tolerance);
+                        continue;
+                    }
+
                     // 교차 영역 중심점 및 WKT 추출 (교차 지오메트리가 있으면 우선 사용)
                     double centerX = 0, centerY = 0;
                     string? intersectionWkt = null;
@@ -231,8 +240,8 @@ namespace SpatialCheckPro.Services
                         ObjectId = overlap.ObjectId.ToString(),
                         ErrorType = "겹침 지오메트리",
                         ErrorValue = $"겹침 영역: {overlap.OverlapArea:F2}㎡",
-                        ThresholdValue = $"{tolerance}m",
-                        DetailMessage = $"OBJECTID {overlap.ObjectId}: 겹침 영역 {overlap.OverlapArea:F2}㎡ 검출",
+                        ThresholdValue = $"{tolerance}㎡",
+                        DetailMessage = $"OBJECTID {overlap.ObjectId}: 겹침 영역 {overlap.OverlapArea:F2}㎡ 검출 (허용오차: {tolerance}㎡ 초과)",
                         X = centerX,
                         Y = centerY,
                         GeometryWkt = intersectionWkt
@@ -240,8 +249,10 @@ namespace SpatialCheckPro.Services
                 }
 
                 var elapsed = (DateTime.Now - startTime).TotalSeconds;
-                _logger.LogInformation("고성능 겹침 검수 완료: {OverlapCount}개 겹침, 소요시간: {Elapsed:F2}초", 
-                    overlaps.Count, elapsed);
+                var errorCount = errorDetails.Count;
+                var skippedCount = overlaps.Count - errorCount;
+                _logger.LogInformation("고성능 겹침 검수 완료: 전체 겹침 {TotalCount}개 중 오류 {ErrorCount}개 (허용오차 이하 {SkippedCount}개 제외), 소요시간: {Elapsed:F2}초", 
+                    overlaps.Count, errorCount, skippedCount, elapsed);
 
                 return errorDetails.ToList();
             }

@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +12,7 @@ using SpatialCheckPro.GUI.Views;
 using SpatialCheckPro.GUI.ViewModels;
 using SpatialCheckPro.Processors;
 using SpatialCheckPro.Models.Config;
+using System.Runtime.Versioning;
 
 namespace SpatialCheckPro.GUI.Services
 {
@@ -22,6 +25,7 @@ namespace SpatialCheckPro.GUI.Services
         /// 모든 서비스를 올바른 순서로 등록합니다
         /// </summary>
         /// <param name="services">서비스 컬렉션</param>
+        [SupportedOSPlatform("windows7.0")]
         public static void ConfigureServices(IServiceCollection services)
         {
             // 1단계: 기본 설정 및 로깅
@@ -76,8 +80,75 @@ namespace SpatialCheckPro.GUI.Services
                 return factory.CreateDefaultPerformanceSettings();
             });
             
-            // 지오메트리 검수 기준 등록 (기본값 사용으로 간소화)
-            services.AddSingleton<SpatialCheckPro.Models.GeometryCriteria>(SpatialCheckPro.Models.GeometryCriteria.CreateDefault());
+            // 지오메트리 검수 기준 등록 (geometry_criteria.csv 파일에서 로드)
+            services.AddSingleton<SpatialCheckPro.Models.GeometryCriteria>(serviceProvider =>
+            {
+                try
+                {
+                    // Config 디렉토리 경로 결정
+                    var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                    var configDirectory = Path.Combine(baseDirectory, "Config");
+                    
+                    // 여러 경로 시도 (개발 환경 및 배포 환경 대응)
+                    var possiblePaths = new[]
+                    {
+                        Path.Combine(baseDirectory, "Config"),
+                        Path.Combine(baseDirectory, "..", "..", "..", "SpatialCheckPro", "Config"),
+                        Path.Combine(baseDirectory, "..", "..", "..", "Config")
+                    };
+
+                    string? csvFilePath = null;
+                    foreach (var path in possiblePaths)
+                    {
+                        var fullPath = Path.GetFullPath(path);
+                        var testFile = Path.Combine(fullPath, "geometry_criteria.csv");
+                        if (File.Exists(testFile))
+                        {
+                            csvFilePath = testFile;
+                            break;
+                        }
+                    }
+
+                    // 기본 경로 사용
+                    if (csvFilePath == null)
+                    {
+                        csvFilePath = Path.Combine(configDirectory, "geometry_criteria.csv");
+                    }
+
+                    // CSV 파일에서 로드 시도 (동기 버전 사용 - UI 스레드 데드락 방지)
+                    if (File.Exists(csvFilePath))
+                    {
+                        try
+                        {
+                            // 동기 방식으로 로드 (DI 등록 시점에는 async 사용 불가, 데드락 방지)
+                            var criteria = SpatialCheckPro.Models.GeometryCriteria.LoadFromCsv(csvFilePath);
+                            
+                            // 로그 기록 (정적 클래스이므로 System.Diagnostics 사용)
+                            System.Diagnostics.Debug.WriteLine($"[DependencyInjectionConfigurator] geometry_criteria.csv 파일에서 지오메트리 검수 기준 로드 완료: {csvFilePath}");
+                            
+                            return criteria;
+                        }
+                        catch (Exception ex)
+                        {
+                            // 로드 실패 시 기본값 사용 및 경고 로그
+                            System.Diagnostics.Debug.WriteLine($"[DependencyInjectionConfigurator] geometry_criteria.csv 파일 로드 실패, 기본값 사용: {csvFilePath}, 오류: {ex.Message}");
+                            return SpatialCheckPro.Models.GeometryCriteria.CreateDefault();
+                        }
+                    }
+                    else
+                    {
+                        // 파일이 없으면 기본값 사용 및 정보 로그
+                        System.Diagnostics.Debug.WriteLine($"[DependencyInjectionConfigurator] geometry_criteria.csv 파일이 없어 기본값 사용: {csvFilePath}");
+                        return SpatialCheckPro.Models.GeometryCriteria.CreateDefault();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // 예외 발생 시 기본값 사용
+                    System.Diagnostics.Debug.WriteLine($"[DependencyInjectionConfigurator] 지오메트리 검수 기준 초기화 중 오류 발생, 기본값 사용: {ex.Message}");
+                    return SpatialCheckPro.Models.GeometryCriteria.CreateDefault();
+                }
+            });
         }
 
         /// <summary>
@@ -230,6 +301,7 @@ namespace SpatialCheckPro.GUI.Services
         /// <summary>
         /// GUI 관련 서비스들 등록
         /// </summary>
+        [SupportedOSPlatform("windows7.0")]
         private static void ConfigureGUIServices(IServiceCollection services)
         {
             // 알림 집계 서비스

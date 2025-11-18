@@ -6,26 +6,30 @@
              mc:Ignorable="d"
              d:DesignHeight="800" d:DesignWidth="1200"
              Background="#F9FAFB">
-    
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        
+
         <!-- 메인 컨텐츠 -->
-        <StackPanel Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,66,0,0">
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,97,0,0">
             <!-- 로고 및 타이틀 -->
             <StackPanel HorizontalAlignment="Center" Margin="0,0,0,40">
-                <TextBlock Text="🗺️" FontSize="80" HorizontalAlignment="Center" Margin="0,0,0,20"/>
-                
+                <!-- 애플리케이션 로고 (중앙에 큰 아이콘으로 표시) -->
+                <Image Source="{StaticResource AppLogo}" 
+                       Width="120" Height="120" 
+                       HorizontalAlignment="Center" 
+                       Margin="0,0,0,20"/>
+
                 <TextBlock Text="국가기본도 FileGDB 검수 프로그램" 
                           FontSize="36" 
                           FontWeight="Bold" 
                           Foreground="#1F2937" 
                           HorizontalAlignment="Center"
                           FontFamily="HYGothic-Extra"/>
-                
+
                 <TextBlock Text="SpatialCheckPro Ver 1.0" 
                           FontSize="18" 
                           Foreground="#3B82F6" 
@@ -33,7 +37,7 @@
                           FontWeight="SemiBold"
                           Margin="0,12,0,0"/>
             </StackPanel>
-            
+
             <!-- 설명 텍스트 -->
             <Border Background="White" 
                    CornerRadius="12" 
@@ -43,7 +47,7 @@
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="20" ShadowDepth="0" Opacity="0.1"/>
                 </Border.Effect>
-                
+
                 <StackPanel>
                     <TextBlock TextWrapping="Wrap" 
                               FontSize="14" 
@@ -63,7 +67,7 @@
                     </Border>
                 </StackPanel>
             </Border>
-            
+
             <!-- 빠른 시작 버튼 -->
             <Button x:Name="QuickStartButton" 
                    Click="QuickStartButton_Click"
@@ -110,20 +114,20 @@
                         </Setter>
                     </Style>
                 </Button.Style>
-                
+
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="📂" FontSize="24" Margin="0,0,12,0"/>
                     <TextBlock Text="폴더 선택하여 검수 시작" FontSize="18" FontWeight="SemiBold"/>
                 </StackPanel>
             </Button>
-            
+
             <!-- 도움말 -->
             <TextBlock Text="💡 왼쪽 메뉴에서 언제든지 다른 기능에 접근할 수 있습니다" 
                       FontSize="13" 
                       Foreground="#6B7280"
                       HorizontalAlignment="Center"/>
         </StackPanel>
-        
+
         <!-- 하단 정보 -->
         <Border Grid.Row="1" 
                Background="White" 
@@ -135,7 +139,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                
+
                 <!-- 최근 검수 정보 -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
                     <TextBlock Text="📊 최근 검수:" 
@@ -149,7 +153,7 @@
                               Foreground="#374151"
                               VerticalAlignment="Center"/>
                 </StackPanel>
-                
+
                 <!-- 시스템 정보 -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <TextBlock Text="ISO 19157 데이터 품질 표준 준수" 

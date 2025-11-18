@@ -13,8 +13,8 @@ using System.Windows.Media.Imaging;
 using System.Windows.Controls;
 using System.Windows.Shapes;
 using SpatialCheckPro.GUI.Models;
-
 using SpatialCheckPro.GUI.Extensions;
+using SpatialCheckPro.Services;
 
 namespace SpatialCheckPro.GUI.Services
 {
@@ -183,17 +183,17 @@ namespace SpatialCheckPro.GUI.Services
                         var projLibPath = System.IO.Path.Combine(appDir, "gdal", "share");
                         if (System.IO.Directory.Exists(projLibPath))
                         {
+                            var resolvedProjPath = ProjEnvironmentManager.ConfigureFromSharePath(projLibPath, _logger);
+
                             // 시스템 PATH에서 PostgreSQL 경로 제거
                             var currentPath = Environment.GetEnvironmentVariable("PATH") ?? "";
                             var paths = currentPath.Split(';', StringSplitOptions.RemoveEmptyEntries);
-                            var filteredPaths = paths.Where(p => !p.Contains("PostgreSQL") && !p.Contains("postgis")).ToArray();
+                            var filteredPaths = paths.Where(p => !p.Contains("PostgreSQL", StringComparison.OrdinalIgnoreCase) && !p.Contains("postgis", StringComparison.OrdinalIgnoreCase)).ToArray();
                             Environment.SetEnvironmentVariable("PATH", string.Join(";", filteredPaths));
                             
-                            Environment.SetEnvironmentVariable("PROJ_LIB", projLibPath);
-                            Environment.SetEnvironmentVariable("PROJ_DATA", projLibPath);
-                            Environment.SetEnvironmentVariable("PROJ_SEARCH_PATH", projLibPath);
-                            Environment.SetEnvironmentVariable("PROJ_NETWORK", "OFF");
                             Environment.SetEnvironmentVariable("PROJ_DEBUG", "0");
+                            Environment.SetEnvironmentVariable("PROJ_USER_WRITABLE_DIRECTORY", resolvedProjPath);
+                            Environment.SetEnvironmentVariable("PROJ_CACHE_DIR", resolvedProjPath);
                         }
 
                         // File Geodatabase 열기 (GDAL 3.6+ OpenFileGDB는 읽기/쓰기 지원)

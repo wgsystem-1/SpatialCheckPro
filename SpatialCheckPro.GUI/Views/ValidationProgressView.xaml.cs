@@ -6,12 +6,14 @@ using System.Windows.Threading;
 using SpatialCheckPro.GUI.Constants;
 using SpatialCheckPro.GUI.ViewModels;
 using SpatialCheckPro.GUI.Converters;
+using System.Runtime.Versioning;
 
 namespace SpatialCheckPro.GUI.Views
 {
     /// <summary>
     /// 검수 진행 화면
     /// </summary>
+    [SupportedOSPlatform("windows7.0")]
     public partial class ValidationProgressView : UserControl
     {
         public event EventHandler? ValidationStopRequested;

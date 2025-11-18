@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using OSGeo.OGR;
+using System.Runtime.Versioning;
 
 namespace SpatialCheckPro.GUI.Services
 {
@@ -15,6 +16,7 @@ namespace SpatialCheckPro.GUI.Services
     /// 메모리 및 리소스 관리를 위한 서비스
     /// Requirements: 6.4 - 메모리 사용량 모니터링 및 최적화
     /// </summary>
+    [SupportedOSPlatform("windows7.0")]
     public class ResourceManagementService : IDisposable
     {
         private readonly ILogger<ResourceManagementService> _logger;

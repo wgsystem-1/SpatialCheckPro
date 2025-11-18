@@ -450,6 +450,7 @@ namespace SpatialCheckPro.Services
 
         /// <summary>
         /// 레이어의 피처 수와 지오메트리 타입을 반환합니다
+        /// 최적화: Task.Run 제거하여 스레드 풀 오버헤드 제거
         /// </summary>
         public async Task<(wkbGeometryType GeometryType, long FeatureCount)> GetLayerInfoAsync(string gdbPath, string layerName)
         {
@@ -463,43 +464,42 @@ namespace SpatialCheckPro.Services
                     return (wkbGeometryType.wkbUnknown, 0);
                 }
 
-                return await Task.Run<(wkbGeometryType, long)>(() =>
+                // Task.Run 제거: 동기 작업을 비동기로 래핑하는 오버헤드 제거
+                // 동기 작업을 직접 수행하고 Task.FromResult로 래핑
+                var layer = FindLayerCaseInsensitive(dataSource, layerName);
+                if (layer == null)
                 {
-                    var layer = FindLayerCaseInsensitive(dataSource, layerName);
-                    if (layer == null)
-                    {
-                        _logger.LogWarning("레이어를 찾을 수 없습니다: {Layer}", layerName);
-                        return (wkbGeometryType.wkbUnknown, 0);
-                    }
+                    _logger.LogWarning("레이어를 찾을 수 없습니다: {Layer}", layerName);
+                    return await Task.FromResult((wkbGeometryType.wkbUnknown, 0L));
+                }
 
-                    try
-                    {
-                        // 피처 수: OGR 내부 인덱스 기반으로 빠르게 조회
-                        long count = layer.GetFeatureCount(1);
+                try
+                {
+                    // 피처 수: OGR 내부 인덱스 기반으로 빠르게 조회
+                    long count = layer.GetFeatureCount(1);
 
-                        // 지오메트리 타입은 정의(레이어 정의)에서 확보, 불명확하면 첫 피처 확인
-                        var defn = layer.GetLayerDefn();
-                        var gtype = defn != null ? defn.GetGeomType() : wkbGeometryType.wkbUnknown;
-                        if (gtype == wkbGeometryType.wkbUnknown && count > 0)
+                    // 지오메트리 타입은 정의(레이어 정의)에서 확보, 불명확하면 첫 피처 확인
+                    var defn = layer.GetLayerDefn();
+                    var gtype = defn != null ? defn.GetGeomType() : wkbGeometryType.wkbUnknown;
+                    if (gtype == wkbGeometryType.wkbUnknown && count > 0)
+                    {
+                        layer.ResetReading();
+                        using var f = layer.GetNextFeature();
+                        if (f != null)
                         {
-                            layer.ResetReading();
-                            using var f = layer.GetNextFeature();
-                            if (f != null)
+                            var g = f.GetGeometryRef();
+                            if (g != null)
                             {
-                                var g = f.GetGeometryRef();
-                                if (g != null)
-                                {
-                                    gtype = g.GetGeometryType();
-                                }
+                                gtype = g.GetGeometryType();
                             }
                         }
-                        return (gtype, count);
                     }
-                    finally
-                    {
-                        layer.Dispose();
-                    }
-                });
+                    return await Task.FromResult((gtype, count));
+                }
+                finally
+                {
+                    layer.Dispose();
+                }
             }
             catch (Exception ex)
             {

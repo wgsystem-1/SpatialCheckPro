@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Text;
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,12 +15,14 @@ using SpatialCheckPro.GUI.Views;
 using SpatialCheckPro.GUI.ViewModels;
 using SpatialCheckPro.Processors;
 using Microsoft.Extensions.Options;
+using System.Runtime.Versioning;
 
 namespace SpatialCheckPro.GUI
 {
     /// <summary>
     /// App.xaml에 대한 상호 작용 논리
     /// </summary>
+    [SupportedOSPlatform("windows7.0")]
     public partial class App : Application
     {
         [DllImport("kernel32.dll", SetLastError = true)]
@@ -32,6 +35,29 @@ namespace SpatialCheckPro.GUI
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            // Windows UTF-8 Beta 설정 대응: 시스템 인코딩 설정
+            try
+            {
+                // 기본 인코딩을 명시적으로 설정 (Windows UTF-8 Beta 설정과의 호환성)
+                System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+                
+                // 콘솔 코드 페이지 설정 (한글 경로 지원)
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // Windows에서만 작동하는 코드 페이지 설정
+                    try
+                    {
+                        var cp = System.Console.OutputEncoding.CodePage;
+                        System.Console.WriteLine($"[인코딩] 현재 콘솔 코드 페이지: {cp}");
+                    }
+                    catch { }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"인코딩 설정 중 오류: {ex.Message}");
+            }
+            
             // 콘솔 창 할당 (디버그용)
             try
             {
@@ -44,21 +70,52 @@ namespace SpatialCheckPro.GUI
                 System.Console.WriteLine();
             }
             catch { } // 이미 콘솔이 할당된 경우 무시
-            
-            string appLog = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app_startup.log");
+            var logRoot = GetWritableLogRoot();
+            string appLog = System.IO.Path.Combine(logRoot, "app_startup.log");
 
             try
             {
-                System.IO.File.AppendAllText(appLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] App OnStartup 시작\n");
+                System.IO.File.AppendAllText(appLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] App OnStartup 시작\n", Encoding.UTF8);
                 System.Console.WriteLine("[로그] 로그 파일 초기화 완료");
                 
-                // 콘솔 출력 인코딩을 UTF-8로 고정 (한글 깨짐 방지)
+                // 콘솔 출력 인코딩 설정 (Windows UTF-8 Beta 설정 대응)
                 try
                 {
+                    // UTF-8 인코딩 사용 (BOM 없음)
                     System.Console.OutputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
                     System.Console.InputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+                    
+                    // 환경 변수 설정 (PROJ/GDAL 경로 처리용)
+                    var appDir = AppDomain.CurrentDomain.BaseDirectory;
+                    var gdalSharePath = System.IO.Path.Combine(appDir, "gdal", "share");
+                    
+                    // 경로를 절대 경로로 변환하여 안전하게 처리
+                    if (System.IO.Directory.Exists(gdalSharePath))
+                    {
+                        try
+                        {
+                            var resolvedPath = ProjEnvironmentManager.ConfigureFromSharePath(gdalSharePath);
+                            System.Console.WriteLine($"[PROJ] 환경 변수 설정: {resolvedPath} (원본: {gdalSharePath})");
+                        }
+                        catch (Exception projEx)
+                        {
+                            var fallbackPath = System.IO.Path.GetFullPath(gdalSharePath);
+                            Environment.SetEnvironmentVariable("PROJ_LIB", fallbackPath, EnvironmentVariableTarget.Process);
+                            Environment.SetEnvironmentVariable("PROJ_DATA", fallbackPath, EnvironmentVariableTarget.Process);
+                            Environment.SetEnvironmentVariable("PROJ_SEARCH_PATH", fallbackPath, EnvironmentVariableTarget.Process);
+                            System.Console.WriteLine($"[경고] PROJ 경로 보정 중 오류가 발생하여 기본 경로를 사용합니다: {fallbackPath}");
+                            System.Console.WriteLine($"[경고] 상세: {projEx.Message}");
+                        }
+                    }
+                    else
+                    {
+                        System.Console.WriteLine($"[경고] PROJ 데이터 디렉터리를 찾을 수 없습니다: {gdalSharePath}");
+                    }
                 }
-                catch { }
+                catch (Exception encEx)
+                {
+                    System.Console.WriteLine($"[경고] 인코딩/환경 변수 설정 중 오류: {encEx.Message}");
+                }
 
                 System.IO.File.AppendAllText(appLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] ServiceCollection 생성\n");
                 var serviceCollection = new ServiceCollection();
@@ -126,7 +183,7 @@ namespace SpatialCheckPro.GUI
                 try
                 {
                     var logPath = System.IO.Path.Combine(
-                        AppDomain.CurrentDomain.BaseDirectory,
+                        logRoot,
                         "Logs",
                         $"startup_error_{DateTime.Now:yyyyMMdd_HHmmss}.log");
 
@@ -165,6 +222,7 @@ namespace SpatialCheckPro.GUI
             base.OnExit(e);
         }
 
+        [SupportedOSPlatform("windows7.0")]
         public T? GetService<T>() where T : class
         {
             return _serviceProvider?.GetService<T>();
@@ -177,12 +235,9 @@ namespace SpatialCheckPro.GUI
             try
             {
                 // 여러 로그 경로 시도 (권한 문제 대응)
-                var logPaths = new[]
-                {
-                    System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs", $"error_{DateTime.Now:yyyyMMdd}.log"),
-                    System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SpatialCheckPro", "Logs", $"error_{DateTime.Now:yyyyMMdd}.log"),
-                    System.IO.Path.Combine(System.IO.Path.GetTempPath(), "SpatialCheckPro", $"error_{DateTime.Now:yyyyMMdd}.log")
-                };
+                var logPaths = GetWritableLogCandidates()
+                    .Select(dir => System.IO.Path.Combine(dir, "Logs", $"error_{DateTime.Now:yyyyMMdd}.log"))
+                    .ToArray();
 
                 foreach (var candidatePath in logPaths)
                 {
@@ -237,6 +292,59 @@ namespace SpatialCheckPro.GUI
 
             MessageBox.Show(errorMessage, "오류", MessageBoxButton.OK, MessageBoxImage.Error);
             e.Handled = true;
+        }
+
+        private static string GetWritableLogRoot()
+        {
+            foreach (var dir in GetWritableLogCandidates())
+            {
+                if (string.IsNullOrWhiteSpace(dir))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var fullDir = System.IO.Path.GetFullPath(dir);
+                    System.IO.Directory.CreateDirectory(fullDir);
+                    var testFile = System.IO.Path.Combine(fullDir, $"write_test_{Guid.NewGuid():N}.tmp");
+                    System.IO.File.WriteAllText(testFile, "log");
+                    System.IO.File.Delete(testFile);
+                    return fullDir;
+                }
+                catch
+                {
+                    continue;
+                }
+            }
+
+            var fallback = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "SpatialCheckPro");
+            System.IO.Directory.CreateDirectory(fallback);
+            return fallback;
+        }
+
+        private static IEnumerable<string> GetWritableLogCandidates()
+        {
+            var localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            if (!string.IsNullOrWhiteSpace(localApp))
+            {
+                yield return System.IO.Path.Combine(localApp, "SpatialCheckPro");
+            }
+
+            var roamingApp = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            if (!string.IsNullOrWhiteSpace(roamingApp))
+            {
+                yield return System.IO.Path.Combine(roamingApp, "SpatialCheckPro");
+            }
+
+            var commonApp = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+            if (!string.IsNullOrWhiteSpace(commonApp))
+            {
+                yield return System.IO.Path.Combine(commonApp, "SpatialCheckPro");
+            }
+
+            yield return System.IO.Path.Combine(System.IO.Path.GetTempPath(), "SpatialCheckPro");
+            yield return System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
         }
     }
 }

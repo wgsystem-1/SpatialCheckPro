@@ -39,10 +39,10 @@ namespace SpatialCheckPro.Services
                     return _cachedSettings;
                 }
 
-                // 설정 파일이 존재하지 않으면 기본 설정 생성
+                // 설정 파일이 존재하지 않으면 기본 설정 생성 (정상적인 초기화 동작)
                 if (!SettingsFileExists())
                 {
-                    _logger.LogWarning("설정 파일이 존재하지 않습니다. 기본 설정을 생성합니다: {FilePath}", _settingsFilePath);
+                    _logger.LogInformation("설정 파일이 없어 기본 설정을 생성합니다: {FilePath}", _settingsFilePath);
                     CreateDefaultSettingsAsync().Wait();
                 }
 

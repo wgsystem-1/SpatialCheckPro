@@ -5,12 +5,14 @@ using System.Linq;
 using System.Windows;
 using Microsoft.Extensions.Logging;
 using SpatialCheckPro.Services;
+using System.Runtime.Versioning;
 
 namespace SpatialCheckPro.GUI.Views
 {
     /// <summary>
     /// 폴더 선택 시 검수 대상 미리보기 다이얼로그
     /// </summary>
+    [SupportedOSPlatform("windows7.0")]
     public partial class FolderSelectionPreviewDialog : Window
     {
         private readonly ILogger<FolderSelectionPreviewDialog>? _logger;

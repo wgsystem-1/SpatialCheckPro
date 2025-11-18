@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using Microsoft.Extensions.Logging;
+using System.Runtime.Versioning;
 
 namespace SpatialCheckPro.GUI.Views
 {
@@ -38,6 +39,7 @@ namespace SpatialCheckPro.GUI.Views
     /// <summary>
     /// 와이드 스크린 최적화 대시보드
     /// </summary>
+    [SupportedOSPlatform("windows7.0")]
     public partial class WideDashboardView : UserControl
     {
         private readonly ILogger<WideDashboardView>? _logger;

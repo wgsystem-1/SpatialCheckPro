@@ -6,21 +6,45 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <Nullable>disable</Nullable>
+    <!-- 소스 파일 인코딩: UTF-8 (BOM 없음) -->
+    <Charset>UTF-8</Charset>
     <NoWarn>CS8632;CS8602;CS8601;CS8604;CS8618;CS0618;CS1998</NoWarn>
     <!-- 지침서 준수: 빌드 경고 완전 제거 -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <WarningsAsErrors />
     <WarningsNotAsErrors />
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    
+    <!-- 어셈블리 메타데이터 생성 비활성화 (직접 AssemblyInfo.cs 사용) -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    
+    <!-- 어셈블리 메타데이터 -->
     <AssemblyTitle>국가기본도 DB 검수 시스템</AssemblyTitle>
-    <AssemblyDescription>데이터 품질 검수 도구</AssemblyDescription>
+    <AssemblyDescription>File Geodatabase 검수 전문 애플리케이션</AssemblyDescription>
+    <AssemblyCompany>(주)우리강산시스템</AssemblyCompany>
+    <AssemblyProduct>Spatial Check Pro</AssemblyProduct>
+    <AssemblyCopyright>Copyright © WGSYSTEM 2025</AssemblyCopyright>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <FileVersion>1.0.0.0</FileVersion>
+    
+    <!-- 애플리케이션 아이콘 설정 -->
+    <ApplicationIcon>Assets\Icons\app.ico</ApplicationIcon>
     <!-- 빌드 타임스탬프: 매 빌드 시 현재 시각을 문자열로 생성 -->
     <BuildTimestamp>$([System.DateTime]::Now.ToString("yyyy-MM-dd HH:mm:ss"))</BuildTimestamp>
     <!-- InformationalVersion에 빌드 시각 포함 (파일 속성 정보용) -->
     <AssemblyInformationalVersion>v1.0.0 | $(BuildTimestamp)</AssemblyInformationalVersion>
+    <SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
 
+    <!-- 배포 설정: Self-contained 배포를 위한 옵션 (주석 해제하여 사용) -->
+    <!-- <PublishSingleFile>true</PublishSingleFile> -->
+    <!-- <SelfContained>true</SelfContained> -->
+    <!-- <RuntimeIdentifier>win-x64</RuntimeIdentifier> -->
+    <!-- <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract> -->
+    <!-- <PublishTrimmed>false</PublishTrimmed> -->
+    
+    <!-- 성능 최적화 설정 -->
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <TieredCompilation>true</TieredCompilation>
   </PropertyGroup>
 
   <ItemGroup>
@@ -40,9 +64,6 @@
     <!-- 지오메트리 처리 -->
     <PackageReference Include="NetTopologySuite.IO.GeoJSON" Version="4.0.0" />
     <PackageReference Include="PdfSharp-MigraDoc" Version="6.2.1" />
-    
-    <!-- 속성 편집 UI -->
-    <PackageReference Include="Xceed.Wpf.Toolkit" Version="4.5.22477.12540" />
     
     <!-- PDF 생성 -->
     <PackageReference Include="iTextSharp.LGPLv2.Core" Version="3.4.21" />
@@ -93,12 +114,43 @@
     <Message Text="GDAL Native 파일 복사 완료" Importance="high" />
   </Target>
 
+  <!-- Publish 시에도 GDAL Native DLL 복사 -->
+  <Target Name="CopyGdalNativeFilesOnPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <GdalNativeFiles Include="$(NuGetPackageRoot)gdal.native\3.10.3\build\gdal\x64\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(GdalNativeFiles)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
+    <Message Text="GDAL Native 파일을 배포 디렉토리에 복사 완료" Importance="high" />
+  </Target>
+
   <!-- Config 파일 복사 설정 -->
   <ItemGroup>
     <None Include="..\SpatialCheckPro\Config\**\*.*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Link>Config\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </None>
+  </ItemGroup>
+
+  <!-- appsettings.json 파일 복사 설정 -->
+  <ItemGroup>
+    <None Include="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- 아이콘 및 이미지 파일 설정 -->
+  <ItemGroup>
+    <!-- 아이콘 파일은 Content로 설정 (XAML에서 pack URI로 접근 가능) -->
+    <Content Include="Assets\Icons\app.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <!-- 이미지 파일은 Resource로 설정 (XAML에서 사용) -->
+    <Resource Include="Assets\Images\logo.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\Images\company_logo.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
   </ItemGroup>
 
 </Project>

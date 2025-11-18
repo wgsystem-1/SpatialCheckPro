@@ -3,12 +3,14 @@ using System.Windows.Controls;
 using SpatialCheckPro.GUI.Constants;
 using SpatialCheckPro.GUI.ViewModels;
 using SpatialCheckPro.Models.Enums;
+using System.Runtime.Versioning;
 
 namespace SpatialCheckPro.GUI.Views
 {
     /// <summary>
     /// 단계 타임라인 샌드박스 뷰
     /// </summary>
+    [SupportedOSPlatform("windows7.0")]
     public partial class StageTimelineSandboxView : UserControl
     {
         public StageTimelineSandboxView()

@@ -12,12 +12,14 @@ using System.Globalization;
 using SpatialCheckPro.Services;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace SpatialCheckPro.GUI
 {
     /// <summary>
     /// 검수 설정 창 - 가이드 준수 버전
     /// </summary>
+    [SupportedOSPlatform("windows7.0")]
     public partial class ValidationSettingsWindow : Window
     {
         /// <summary>테이블 검수 설정 파일 경로</summary>

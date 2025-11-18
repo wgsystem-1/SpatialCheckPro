@@ -22,6 +22,7 @@ using iTextSharp.text;
 using iTextSharp.text.pdf;
 using MigraDoc.DocumentObjectModel;
 using MigraDoc.Rendering;
+using System.Runtime.Versioning;
 
 namespace SpatialCheckPro.GUI.Views
 {
@@ -113,6 +114,7 @@ namespace SpatialCheckPro.GUI.Views
     /// <summary>
     /// 검수 결과 화면
     /// </summary>
+    [SupportedOSPlatform("windows7.0")]
     public partial class ValidationResultView : UserControl
     {
         private List<ValidationResultItem> _allResults = new();
@@ -380,11 +382,11 @@ namespace SpatialCheckPro.GUI.Views
                 
                 if (totalDuration.TotalHours >= 1)
                 {
-                    TotalDurationText.Text = $"{(int)totalDuration.TotalHours}:{totalDuration.Minutes:D2}";
+                    TotalDurationText.Text = $"{(int)totalDuration.TotalHours}:{totalDuration.Minutes:D2} 분:초";
                 }
                 else
                 {
-                    TotalDurationText.Text = $"{(int)totalDuration.TotalMinutes}:{totalDuration.Seconds:D2}";
+                    TotalDurationText.Text = $"{(int)totalDuration.TotalMinutes}:{totalDuration.Seconds:D2} 분:초";
                 }
                 
                 // 성공률 계산

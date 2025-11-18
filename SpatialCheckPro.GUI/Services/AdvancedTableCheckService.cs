@@ -20,15 +20,18 @@ namespace SpatialCheckPro.GUI.Services
     {
         private readonly ILogger<AdvancedTableCheckService> _logger;
         private readonly GdalDataAnalysisService _gdalService;
+        private readonly IDataSourcePool _dataSourcePool;
         private readonly ParallelProcessingManager? _parallelProcessingManager;
         private readonly SpatialCheckPro.Models.Config.PerformanceSettings _performanceSettings;
 
         public AdvancedTableCheckService(ILogger<AdvancedTableCheckService> logger, GdalDataAnalysisService gdalService, 
+            IDataSourcePool dataSourcePool,
             ParallelProcessingManager? parallelProcessingManager = null, 
             SpatialCheckPro.Models.Config.PerformanceSettings? performanceSettings = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _gdalService = gdalService ?? throw new ArgumentNullException(nameof(gdalService));
+            _dataSourcePool = dataSourcePool ?? throw new ArgumentNullException(nameof(dataSourcePool));
             _parallelProcessingManager = parallelProcessingManager;
             _performanceSettings = performanceSettings ?? new SpatialCheckPro.Models.Config.PerformanceSettings();
         }
@@ -201,14 +204,26 @@ namespace SpatialCheckPro.GUI.Services
 
         /// <summary>
         /// 데이터 소스에서 모든 피처클래스 목록 가져오기
+        /// 최적화: 한 번만 데이터소스를 가져와서 모든 레이어 정보를 조회
         /// </summary>
         private async Task<List<FeatureClassInfo>> GetAllFeatureClassesAsync(string dataSourcePath, IValidationDataProvider dataProvider)
         {
             var featureClasses = new List<FeatureClassInfo>();
+            DataSource? dataSource = null;
+            
             try
             {
+                // 한 번만 데이터소스 가져오기 (최적화)
+                dataSource = _dataSourcePool.GetDataSource(dataSourcePath);
+                if (dataSource == null)
+                {
+                    _logger.LogError("DataSource를 가져올 수 없습니다: {Path}", dataSourcePath);
+                    return featureClasses;
+                }
+
                 var layerNames = await dataProvider.GetLayerNamesAsync();
 
+                // 동일한 데이터소스로 모든 레이어 정보 조회
                 foreach (var layerName in layerNames)
                 {
                     // ORG_ 백업 레이어만 제외
@@ -218,30 +233,100 @@ namespace SpatialCheckPro.GUI.Services
                         continue;
                     }
                     
-                    // 스키마와 피처 정보를 가져와야 하지만, IValidationDataProvider에 아직 해당 기능이 완벽하지 않으므로
-                    // 우선 이름만으로 FeatureClassInfo를 생성합니다. 상세 정보는 추후 추가 필요.
-                    // 빠른 경로: 레이어 정의 기반 메타(타입/카운트) 우선 조회
-                    var (gType, fCount) = await _gdalService.GetLayerInfoAsync(dataSourcePath, layerName);
-                    var schema = await dataProvider.GetSchemaAsync(layerName);
-
-                    var featureClass = new FeatureClassInfo
+                    Layer? layer = null;
+                    try
                     {
-                        Name = layerName,
-                        Exists = true,
-                        GeometryType = ConvertGeometryType(gType),
-                        FeatureCount = fCount,
-                        FieldCount = schema.Count
-                    };
+                        // 데이터소스를 재사용하여 레이어 정보 조회
+                        layer = FindLayerCaseInsensitive(dataSource, layerName);
+                        if (layer == null)
+                        {
+                            _logger.LogDebug("레이어를 찾을 수 없습니다: {LayerName}", layerName);
+                            continue;
+                        }
 
-                    featureClasses.Add(featureClass);
+                        // 레이어 정보 직접 조회 (데이터소스 재사용)
+                        var (gType, fCount) = GetLayerInfoFromLayer(layer);
+                        var schema = await dataProvider.GetSchemaAsync(layerName);
+
+                        var featureClass = new FeatureClassInfo
+                        {
+                            Name = layerName,
+                            Exists = true,
+                            GeometryType = ConvertGeometryType(gType),
+                            FeatureCount = fCount,
+                            FieldCount = schema.Count
+                        };
+
+                        featureClasses.Add(featureClass);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "레이어 정보 조회 중 오류: {LayerName}", layerName);
+                    }
+                    finally
+                    {
+                        layer?.Dispose();
+                    }
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "피처클래스 목록 조회 중 오류 발생");
             }
+            finally
+            {
+                // 데이터소스 반환
+                if (dataSource != null)
+                {
+                    _dataSourcePool.ReturnDataSource(dataSourcePath, dataSource);
+                }
+            }
 
             return featureClasses;
+        }
+
+        /// <summary>
+        /// 레이어에서 지오메트리 타입과 피처 수를 조회합니다
+        /// </summary>
+        private (wkbGeometryType GeometryType, long FeatureCount) GetLayerInfoFromLayer(Layer layer)
+        {
+            // 피처 수: OGR 내부 인덱스 기반으로 빠르게 조회
+            long count = layer.GetFeatureCount(1);
+
+            // 지오메트리 타입은 정의(레이어 정의)에서 확보, 불명확하면 첫 피처 확인
+            var defn = layer.GetLayerDefn();
+            var gtype = defn != null ? defn.GetGeomType() : wkbGeometryType.wkbUnknown;
+            if (gtype == wkbGeometryType.wkbUnknown && count > 0)
+            {
+                layer.ResetReading();
+                using var f = layer.GetNextFeature();
+                if (f != null)
+                {
+                    var g = f.GetGeometryRef();
+                    if (g != null)
+                    {
+                        gtype = g.GetGeometryType();
+                    }
+                }
+            }
+            
+            return (gtype, count);
+        }
+
+        /// <summary>
+        /// 대소문자 무시 레이어 찾기
+        /// </summary>
+        private Layer? FindLayerCaseInsensitive(DataSource dataSource, string layerName)
+        {
+            for (int i = 0; i < dataSource.GetLayerCount(); i++)
+            {
+                var layer = dataSource.GetLayerByIndex(i);
+                if (layer != null && layer.GetName().Equals(layerName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return layer;
+                }
+            }
+            return null;
         }
 
 

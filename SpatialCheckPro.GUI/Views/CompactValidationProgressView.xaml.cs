@@ -6,12 +6,14 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using SpatialCheckPro.GUI.Constants;
 using SpatialCheckPro.GUI.ViewModels;
+using System.Runtime.Versioning;
 
 namespace SpatialCheckPro.GUI.Views
 {
     /// <summary>
     /// 컴팩트한 검수 진행 화면
     /// </summary>
+    [SupportedOSPlatform("windows7.0")]
     public partial class CompactValidationProgressView : UserControl
     {
         public event EventHandler? ValidationStopRequested;
@@ -349,6 +351,22 @@ namespace SpatialCheckPro.GUI.Views
                 : stageName;
             
             DetailHeaderText.Text = $"{stageName} 상세 정보";
+        }
+
+        /// <summary>
+        /// 현재 검수 중인 파일 정보를 업데이트합니다 (배치 검수 시 사용)
+        /// </summary>
+        public void UpdateCurrentFile(int currentIndex, int totalFiles, string fileName)
+        {
+            if (totalFiles > 1)
+            {
+                CurrentFileText.Text = $"[{currentIndex}/{totalFiles}] {fileName}";
+                CurrentFileText.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                CurrentFileText.Visibility = Visibility.Collapsed;
+            }
         }
 
         public void UpdateStageProgress(int stageNumber, double percentage)

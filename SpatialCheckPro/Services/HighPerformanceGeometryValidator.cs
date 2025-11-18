@@ -24,6 +24,11 @@ namespace SpatialCheckPro.Services
         // Phase 2 Item #5: 공간 인덱스 캐싱 (중복 생성 방지)
         // 예상 효과: 인덱스 구축 시간 3-5초 절약, 메모리 효율 20% 향상
         private readonly ConcurrentDictionary<string, SpatialIndex> _spatialIndexCache = new();
+        
+        /// <summary>
+        /// 현재 검수 중인 파일 경로 (캐시 키에 포함하여 파일별 캐시 분리)
+        /// </summary>
+        private string? _currentFilePath;
 
         public HighPerformanceGeometryValidator(
             ILogger<HighPerformanceGeometryValidator> logger,
@@ -42,13 +47,36 @@ namespace SpatialCheckPro.Services
         }
 
         /// <summary>
+        /// 현재 검수 중인 파일 경로 설정 (캐시 키에 포함하여 파일별 캐시 분리)
+        /// </summary>
+        public void SetCurrentFilePath(string? filePath)
+        {
+            _currentFilePath = filePath;
+            _logger.LogDebug("현재 검수 파일 경로 설정: {FilePath}", filePath ?? "(null)");
+        }
+
+        /// <summary>
         /// 공간 인덱스 캐시에서 가져오거나 새로 생성
         /// Phase 2 Item #5: 공간 인덱스 재생성 최적화
+        /// 개선: 파일 경로를 캐시 키에 포함하여 파일별 캐시 분리
         /// </summary>
         private SpatialIndex GetOrBuildSpatialIndex(string layerName, Layer layer, double tolerance)
         {
-            // 캐시 키: layerName + tolerance 조합
-            var cacheKey = $"{layerName}_{tolerance:F6}";
+            // Layer 상태 초기화 보장 (이전 검수에서 변경된 상태 방지)
+            try
+            {
+                layer.ResetReading();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Layer.ResetReading() 호출 중 오류 발생 (계속 진행): {LayerName}", layerName);
+            }
+
+            // 캐시 키: 파일 경로 + layerName + tolerance 조합 (파일별 캐시 분리)
+            var filePathHash = _currentFilePath != null 
+                ? System.IO.Path.GetFullPath(_currentFilePath).GetHashCode().ToString("X8")
+                : "unknown";
+            var cacheKey = $"{filePathHash}_{layerName}_{tolerance:F6}";
 
             if (_spatialIndexCache.TryGetValue(cacheKey, out var cachedIndex))
             {
@@ -72,12 +100,25 @@ namespace SpatialCheckPro.Services
         /// <summary>
         /// 공간 인덱스 캐시 정리
         /// Phase 2 Item #5: 메모리 관리를 위한 캐시 클리어
+        /// 주의: 모든 캐시를 정리하므로 배치 검수 중에는 파일별 정리(RemoveSpatialIndexCacheForFile) 사용 권장
         /// </summary>
         public void ClearSpatialIndexCache()
         {
             var count = _spatialIndexCache.Count;
+            
+            // 모든 인덱스 객체 명시적 해제
+            foreach (var index in _spatialIndexCache.Values)
+            {
+                index?.Dispose();
+            }
+            
             _spatialIndexCache.Clear();
-            _logger.LogInformation("공간 인덱스 캐시 정리 완료: {Count}개 항목 제거", count);
+            _currentFilePath = null; // 현재 파일 경로도 초기화
+            
+            if (count > 0)
+            {
+                _logger.LogInformation("공간 인덱스 캐시 정리 완료: {Count}개 항목 제거", count);
+            }
         }
 
         /// <summary>
@@ -85,12 +126,43 @@ namespace SpatialCheckPro.Services
         /// </summary>
         public void RemoveSpatialIndexCache(string layerName)
         {
-            var keysToRemove = _spatialIndexCache.Keys.Where(k => k.StartsWith($"{layerName}_")).ToList();
+            var keysToRemove = _spatialIndexCache.Keys.Where(k => k.Contains($"_{layerName}_")).ToList();
             foreach (var key in keysToRemove)
             {
-                _spatialIndexCache.TryRemove(key, out _);
+                if (_spatialIndexCache.TryRemove(key, out var index))
+                {
+                    index?.Dispose();
+                }
             }
             _logger.LogDebug("레이어 공간 인덱스 캐시 제거: {LayerName}, {Count}개 항목", layerName, keysToRemove.Count);
+        }
+
+        /// <summary>
+        /// 특정 파일의 공간 인덱스 캐시 제거 (배치 검수 성능 최적화)
+        /// </summary>
+        public void RemoveSpatialIndexCacheForFile(string filePath)
+        {
+            if (string.IsNullOrEmpty(filePath))
+            {
+                return;
+            }
+
+            var filePathHash = System.IO.Path.GetFullPath(filePath).GetHashCode().ToString("X8");
+            var prefix = $"{filePathHash}_";
+            var keysToRemove = _spatialIndexCache.Keys.Where(k => k.StartsWith(prefix)).ToList();
+            
+            foreach (var key in keysToRemove)
+            {
+                if (_spatialIndexCache.TryRemove(key, out var index))
+                {
+                    index?.Dispose();
+                }
+            }
+            
+            if (keysToRemove.Count > 0)
+            {
+                _logger.LogInformation("파일별 공간 인덱스 캐시 제거: {FilePath}, {Count}개 항목", filePath, keysToRemove.Count);
+            }
         }
 
         /// <summary>

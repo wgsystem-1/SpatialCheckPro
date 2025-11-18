@@ -152,10 +152,21 @@ namespace SpatialCheckPro.Services
         {
             if (_currentRunId == null) return;
             
+            // 빈 시퀀스 처리: 검수가 실패하여 단계가 시작되지 않은 경우
+            DateTime startTime = DateTime.Now;
+            if (_currentRunStages != null && _currentRunStages.Count > 0)
+            {
+                var stagesWithStartTime = _currentRunStages.Values.Where(s => s != null).ToList();
+                if (stagesWithStartTime.Count > 0)
+                {
+                    startTime = stagesWithStartTime.Min(s => s.StartTime);
+                }
+            }
+            
             var runMetric = new ValidationRunMetric
             {
                 RunId = _currentRunId,
-                StartTime = _currentRunStages.Values.Min(s => s.StartTime),
+                StartTime = startTime,
                 EndTime = DateTime.Now,
                 FilePath = filePath,
                 FileSizeBytes = fileSizeBytes,
@@ -164,19 +175,25 @@ namespace SpatialCheckPro.Services
                 IsSuccessful = isSuccessful
             };
             
-            // 단계별 메트릭 변환
-            foreach (var stage in _currentRunStages.Values)
+            // 단계별 메트릭 변환 (null 체크 추가)
+            if (_currentRunStages != null)
             {
-                runMetric.StageMetrics[stage.StageNumber] = new StageMetric
+                foreach (var stage in _currentRunStages.Values)
                 {
-                    StageNumber = stage.StageNumber,
-                    StageName = stage.StageName,
-                    ElapsedSeconds = stage.ElapsedSeconds,
-                    ProcessedItems = stage.ProcessedItems,
-                    TotalItems = stage.TotalItems,
-                    ErrorCount = stage.ErrorCount,
-                    IsSuccessful = stage.IsSuccessful
-                };
+                    if (stage != null)
+                    {
+                        runMetric.StageMetrics[stage.StageNumber] = new StageMetric
+                        {
+                            StageNumber = stage.StageNumber,
+                            StageName = stage.StageName,
+                            ElapsedSeconds = stage.ElapsedSeconds,
+                            ProcessedItems = stage.ProcessedItems,
+                            TotalItems = stage.TotalItems,
+                            ErrorCount = stage.ErrorCount,
+                            IsSuccessful = stage.IsSuccessful
+                        };
+                    }
+                }
             }
             
             runMetric.TotalSeconds = (runMetric.EndTime - runMetric.StartTime).TotalSeconds;

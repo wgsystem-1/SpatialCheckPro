@@ -13,6 +13,7 @@ using SpatialCheckPro.Models;
 using SpatialCheckPro.Models.Enums;
 using SpatialCheckPro.GUI.Services;
 using SpatialCheckPro.Constants;
+using System.Runtime.Versioning;
 
 using SpatialCheckPro.Services;
 using WinForms = System.Windows.Forms;
@@ -25,6 +26,7 @@ namespace SpatialCheckPro.GUI
     /// <summary>
     /// 메인 윈도우 클래스
     /// </summary>
+    [SupportedOSPlatform("windows7.0")]
     public partial class MainWindow : Window
     {
         private readonly ILogger<MainWindow>? _logger;
@@ -212,6 +214,7 @@ namespace SpatialCheckPro.GUI
             try
             {
                 // ValidationSettingsView 찾기
+                // 주의: ValidationSettingsView는 필요할 때만 생성되므로 초기화 시점에는 null일 수 있음
                 _validationSettingsView = FindValidationSettingsView();
                 
                 if (_validationSettingsView != null)
@@ -220,10 +223,7 @@ namespace SpatialCheckPro.GUI
                     // _validationSettingsView.PerformanceSettingsChanged += OnPerformanceSettingsChanged;
                     _logger?.LogInformation("ValidationSettingsView 이벤트 구독 완료");
                 }
-                else
-                {
-                    _logger?.LogWarning("ValidationSettingsView를 찾을 수 없습니다");
-                }
+                // else: ValidationSettingsView는 필요할 때만 생성되므로 초기화 시점에 없어도 정상
             }
             catch (Exception ex)
             {
@@ -1239,9 +1239,19 @@ namespace SpatialCheckPro.GUI
                     // InvokeAsync로 변경하여 UI 스레드 블로킹 방지
                     _ = Dispatcher.InvokeAsync(() =>
                     {
+                        // 현재 파일의 진행률 계산 (0~100%)
+                        double currentFileProgress = args.OverallProgress;
+                        // 전체 배치 진행률 계산: (완료된 파일 수 * 100 + 현재 파일 진행률) / 전체 파일 수
                         var completed = Math.Max(0, index);
-                        double batchPct = ((completed * 100.0) + args.OverallProgress) / Math.Max(1, total);
-                        var status = $"[{Math.Max(1, index + 1)}/{total}] {args.StageName} - {args.StatusMessage}";
+                        double batchPct = ((completed * 100.0) + currentFileProgress) / Math.Max(1, total);
+                        
+                        // 현재 파일명 가져오기
+                        var currentFileName = index >= 0 && index < targets.Count 
+                            ? System.IO.Path.GetFileName(targets[index]) 
+                            : "";
+                        var status = !string.IsNullOrEmpty(currentFileName)
+                            ? $"[{index + 1}/{total}] {currentFileName} - {args.StageName} - {args.StatusMessage}"
+                            : $"[{Math.Max(1, index + 1)}/{total}] {args.StageName} - {args.StatusMessage}";
                         progressView.UpdateProgress(batchPct, status);
                         progressView.UpdateCurrentStage(args.StageName, args.CurrentStage);
 
@@ -1305,11 +1315,12 @@ namespace SpatialCheckPro.GUI
                     index = i;
 
                     var gdbPath = targets[i];
-                    // progressView.AddLogMessage($"[{i + 1}/{total}] 대상: {gdbPath}");
-
-                    // 파일별 단계 UI 초기화
+                    var fileName = System.IO.Path.GetFileName(gdbPath);
+                    
+                    // 현재 파일 정보를 진행 화면에 표시
                     Dispatcher.Invoke(() =>
                     {
+                        progressView.UpdateCurrentFile(i + 1, total, fileName);
                         _stageSummaryCollectionViewModel.Reset();
                     });
 
@@ -1328,6 +1339,44 @@ namespace SpatialCheckPro.GUI
                     totalErrors += vr.ErrorCount;
                     totalWarnings += vr.WarningCount;
                     if (vr.IsValid) successCount++; else failCount++;
+
+                    // 각 파일 검수 완료 후 파일별 캐시 정리 (성능 최적화: 메모리 누적 방지)
+                    // 검수 완료 확인 후 해당 파일의 캐시만 정리하여 다른 파일 검수에 영향 없도록 함
+                    try
+                    {
+                        // 검수 완료 확인 (Status가 Completed 또는 Failed인 경우)
+                        if (vr.Status == SpatialCheckPro.Models.Enums.ValidationStatus.Completed || 
+                            vr.Status == SpatialCheckPro.Models.Enums.ValidationStatus.Failed)
+                        {
+                            // 파일별 캐시 정리 (다른 파일의 캐시는 유지)
+                            _validationService?.ClearAllCachesForFile(gdbPath);
+                            _logger?.LogDebug("파일 검수 완료 후 파일별 캐시 정리: {FileName} (Status: {Status})", fileName, vr.Status);
+                        }
+                        else
+                        {
+                            _logger?.LogDebug("검수 미완료로 캐시 정리 건너뜀: {FileName} (Status: {Status})", fileName, vr.Status);
+                        }
+                    }
+                    catch (Exception cacheEx)
+                    {
+                        _logger?.LogWarning(cacheEx, "파일별 캐시 정리 중 오류 (검수는 계속 진행됩니다): {FileName}", fileName);
+                    }
+
+                    // 각 파일 검수 완료 후 DataSourcePool 정리 (메모리 최적화)
+                    try
+                    {
+                        var app = Application.Current as App;
+                        var dataSourcePool = app?.GetService<SpatialCheckPro.Services.IDataSourcePool>();
+                        if (dataSourcePool != null)
+                        {
+                            dataSourcePool.RemoveDataSource(gdbPath);
+                            _logger?.LogDebug("파일 검수 완료 후 데이터소스 정리: {FileName}", fileName);
+                        }
+                    }
+                    catch (Exception dsEx)
+                    {
+                        _logger?.LogWarning(dsEx, "데이터소스 정리 중 오류 (검수는 계속 진행됩니다): {FileName}", fileName);
+                    }
 
                     // 5단계 진행 표시가 사용자 환경에서 드물게 누락되는 경우가 있어 보정 처리
                     if (!sawStage5Start)
@@ -1403,6 +1452,59 @@ namespace SpatialCheckPro.GUI
             {
                 // 이벤트 구독 해제 보장
                 try { if (_validationService != null && batchProgressHandler != null) _validationService.ProgressUpdated -= batchProgressHandler; } catch { }
+                
+                // 배치 검수 완료 후 남아있는 파일별 캐시 정리 (안전장치: 각 파일 검수 완료 후 정리했지만, 예외 발생 시 대비)
+                try
+                {
+                    if (_validationService != null && targets != null)
+                    {
+                        foreach (var gdbPath in targets)
+                        {
+                            try
+                            {
+                                _validationService.ClearAllCachesForFile(gdbPath);
+                                _logger?.LogDebug("배치 검수 완료 후 남아있는 파일별 캐시 정리: {Path}", gdbPath);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger?.LogWarning(ex, "파일별 캐시 정리 중 오류: {Path}", gdbPath);
+                            }
+                        }
+                        _logger?.LogInformation("배치 검수 완료: {Count}개 파일의 캐시 최종 정리 완료", targets.Count);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogWarning(ex, "배치 검수 완료 후 캐시 정리 중 오류 발생");
+                }
+                
+                // 배치 검수 완료 후 남아있는 데이터소스 정리 (안전장치: 각 파일 검수 완료 후 정리했지만, 예외 발생 시 대비)
+                try
+                {
+                    var app = Application.Current as App;
+                    var dataSourcePool = app?.GetService<SpatialCheckPro.Services.IDataSourcePool>();
+                    if (dataSourcePool != null && targets != null)
+                    {
+                        foreach (var gdbPath in targets)
+                        {
+                            try
+                            {
+                                dataSourcePool.RemoveDataSource(gdbPath);
+                                _logger?.LogDebug("배치 검수 완료 후 남아있는 데이터소스 정리: {Path}", gdbPath);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger?.LogWarning(ex, "데이터소스 정리 중 오류: {Path}", gdbPath);
+                            }
+                        }
+                        _logger?.LogInformation("배치 검수 완료: {Count}개 파일의 데이터소스 최종 정리 완료", targets.Count);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogWarning(ex, "배치 검수 완료 후 데이터소스 정리 중 오류 발생");
+                }
+                
                 _isValidationRunning = false;
                 _validationCancellationTokenSource?.Dispose();
                 _validationCancellationTokenSource = null;

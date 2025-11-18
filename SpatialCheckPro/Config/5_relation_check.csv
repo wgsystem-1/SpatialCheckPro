@@ -24,9 +24,9 @@
 면형도로시설_호소_침범,Y,PolygonNotOverlap,tn_arrfc,면형도로시설,tn_lkmh,호소,,0,면형도로시설은 호소를 침범하면 안됨
 면형도로시설_실폭하천_침범,Y,PolygonNotOverlap,tn_arrfc,면형도로시설,tn_river_bt,실폭하천,,0,면형도로시설은 실폭하천을 침범하면 안됨
 등고선_연결높이일치,Y,ConnectedLinesSameAttribute,tn_ctrln,등고선,tn_ctrln,등고선,ctrln_hgt,1,연결된 등고선끼리 높이값이 같아야 함
-도로중심선_속성불일치,Y,CenterlineAttributeMismatch,tn_rodway_ctln,도로중심선,tn_rodway_ctln,도로중심선,road_no|feat_nm|road_se,1,연결된 도로중심선끼리 도로번호/명칭/구분이 일치해야 함
-철도중심선_속성불일치,Y,CenterlineAttributeMismatch,tn_rlroad_ctln,철도중심선,tn_rlroad_ctln,철도중심선,feat_nm|rlrwtyp_se,1,연결된 철도중심선끼리 선로명칭/선로유형이 일치해야 함
-하천중심선_속성불일치,Y,CenterlineAttributeMismatch,tn_river_ctln,하천중심선,tn_river_ctln,하천중심선,rvr_no|feat_nm|rvr_se,1,연결된 하천중심선끼리 하천번호/명칭/구분이 일치해야 함
+도로중심선_속성불일치,Y,CenterlineAttributeMismatch,tn_rodway_ctln,도로중심선,tn_rodway_ctln,도로중심선,road_no|feat_nm|road_se;intersection_threshold=3;angle_threshold=30,1,연결된 도로중심선끼리 도로번호/명칭/구분이 일치해야 함
+철도중심선_속성불일치,Y,CenterlineAttributeMismatch,tn_rlroad_ctln,철도중심선,tn_rlroad_ctln,철도중심선,feat_nm|rlrwtyp_se;intersection_threshold=3;angle_threshold=30,1,연결된 철도중심선끼리 선로명칭/선로유형이 일치해야 함
+하천중심선_속성불일치,Y,CenterlineAttributeMismatch,tn_river_ctln,하천중심선,tn_river_ctln,하천중심선,rvr_no|feat_nm|rvr_se;intersection_threshold=3;angle_threshold=30,1,연결된 하천중심선끼리 하천번호/명칭/구분이 일치해야 함
 등고선_교차검사,Y,ContourIntersection,tn_ctrln,등고선,tn_ctrln,등고선,,,다른 등고선과 교차 발생 검사
 등고선_꺽임검사,Y,ContourSharpBend,tn_ctrln,등고선,tn_ctrln,등고선,,90,등고선이 90도 미만으로 꺽임 검사
 도로중심선_꺽임검사,Y,RoadSharpBend,tn_rodway_ctln,도로중심선,tn_rodway_ctln,도로중심선,,6,도로중심선이 6도 이하로 꺽임 검사

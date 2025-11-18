@@ -3,12 +3,14 @@ using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Extensions.Logging;
 using SpatialCheckPro.Services;
+using System.Runtime.Versioning;
 
 namespace SpatialCheckPro.GUI.Views
 {
     /// <summary>
     /// 환영 화면
     /// </summary>
+    [SupportedOSPlatform("windows7.0")]
     public partial class WelcomeView : UserControl
     {
         private readonly ILogger<WelcomeView>? _logger;

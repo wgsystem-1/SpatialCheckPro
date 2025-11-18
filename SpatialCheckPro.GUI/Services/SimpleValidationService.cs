@@ -2434,5 +2434,69 @@ namespace SpatialCheckPro.GUI.Services
 
             return sizeThresholdExceeded;
         }
+
+        /// <summary>
+        /// 모든 프로세서의 캐시를 정리합니다 (배치 검수 성능 최적화)
+        /// 각 파일 검수 완료 후 호출하여 메모리 누적을 방지합니다.
+        /// 주의: 전체 캐시를 정리하므로 배치 검수 중에는 파일별 정리(ClearAllCachesForFile) 사용 권장
+        /// </summary>
+        public void ClearAllCaches()
+        {
+            try
+            {
+                // RelationCheckProcessor의 Union 캐시 정리
+                if (_relationProcessor is RelationCheckProcessor relationProcessor)
+                {
+                    relationProcessor.ClearUnionCache();
+                    _logger.LogDebug("RelationCheckProcessor Union 캐시 정리 완료");
+                }
+
+                // GeometryCheckProcessor의 공간 인덱스 캐시 정리 (HighPerformanceGeometryValidator 포함)
+                _geometryCheckProcessor.ClearSpatialIndexCache();
+                _logger.LogDebug("GeometryCheckProcessor 공간 인덱스 캐시 정리 완료");
+
+                _logger.LogInformation("모든 프로세서 캐시 정리 완료");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "캐시 정리 중 오류 발생 (검수는 계속 진행됩니다)");
+            }
+        }
+
+        /// <summary>
+        /// 특정 파일의 프로세서 캐시를 정리합니다 (배치 검수 성능 최적화)
+        /// 각 파일 검수 완료 후 호출하여 해당 파일의 캐시만 정리합니다.
+        /// 이렇게 하면 다른 파일의 캐시는 유지되어 검수 결과에 영향을 주지 않습니다.
+        /// </summary>
+        public void ClearAllCachesForFile(string filePath)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(filePath))
+                {
+                    _logger.LogWarning("파일 경로가 비어있어 캐시 정리를 건너뜁니다");
+                    return;
+                }
+
+                // RelationCheckProcessor의 Union 캐시는 파일별로 분리되지 않으므로 전체 정리
+                // (Union 캐시는 레이어별로 관리되므로 파일별 정리가 어려움)
+                // 하지만 배치 검수에서는 각 파일 검수 완료 후 정리하는 것이 안전
+                if (_relationProcessor is RelationCheckProcessor relationProcessor)
+                {
+                    relationProcessor.ClearUnionCache();
+                    _logger.LogDebug("RelationCheckProcessor Union 캐시 정리 완료 (파일: {FilePath})", filePath);
+                }
+
+                // GeometryCheckProcessor의 파일별 공간 인덱스 캐시 정리
+                _geometryCheckProcessor.ClearSpatialIndexCacheForFile(filePath);
+                _logger.LogDebug("GeometryCheckProcessor 파일별 공간 인덱스 캐시 정리 완료: {FilePath}", filePath);
+
+                _logger.LogInformation("파일별 프로세서 캐시 정리 완료: {FilePath}", filePath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "파일별 캐시 정리 중 오류 발생 (검수는 계속 진행됩니다): {FilePath}", filePath);
+            }
+        }
     }
 }

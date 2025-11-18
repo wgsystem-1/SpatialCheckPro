@@ -6,18 +6,33 @@
     <Nullable>disable</Nullable>
     <NoWarn>CS8632;CS1998</NoWarn>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- 소스 파일 인코딩: UTF-8 (BOM 없음) -->
+    <Charset>UTF-8</Charset>
     <!-- 라이브러리로 변경: WPF 관련 설정 제거 -->
     <!-- 지침서 준수: 빌드 경고 완전 제거 -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <WarningsAsErrors />
     <WarningsNotAsErrors />
     
+    <!-- 어셈블리 메타데이터 생성 비활성화 (직접 AssemblyInfo.cs 사용) -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    
+    <!-- 어셈블리 메타데이터 -->
+    <AssemblyTitle>Spatial Check Pro Core Library</AssemblyTitle>
+    <AssemblyDescription>File Geodatabase 검수 전문 라이브러리</AssemblyDescription>
+    <AssemblyCompany>(주)우리강산시스템</AssemblyCompany>
+    <AssemblyProduct>Spatial Check Pro</AssemblyProduct>
+    <AssemblyCopyright>Copyright © WGSYSTEM 2025</AssemblyCopyright>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <AssemblyInformationalVersion>1.0.0</AssemblyInformationalVersion>
+    
     <!-- NuGet 패키지 메타데이터 -->
     <PackageId>SpatialCheckPro</PackageId>
     <PackageVersion>1.0.0</PackageVersion>
     <Title>Spatial Check Pro</Title>
-    <Authors>GeoSpatial Development Team</Authors>
-    <Description>File Geodatabase 공간데이터 검수를 위한 전문 라이브러리입니다. 테이블, 스키마, 지오메트리, 관계 검수 기능을 제공합니다.</Description>
+    <Authors>(주)우리강산시스템템)</Authors>
+    <Description>File Geodatabase 검수 전문 라이브러리</Description>
     <PackageTags>gis;geodatabase;validation;spatial;gdal;netstandard</PackageTags>
     <PackageProjectUrl>https://github.com/your-org/spatial-check-pro</PackageProjectUrl>
     <RepositoryUrl>https://github.com/your-org/spatial-check-pro</RepositoryUrl>

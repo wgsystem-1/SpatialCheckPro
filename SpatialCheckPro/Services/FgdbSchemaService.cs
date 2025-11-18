@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using OSGeo.GDAL;
@@ -18,6 +19,7 @@ namespace SpatialCheckPro.Services
         private readonly ILogger<FgdbSchemaService> _logger;
         private const string QC_ERRORS_DATASET = "QC_ERRORS";
         private const string QC_ERRORS_POINT = "QC_Errors_Point";
+        
         private const string QC_ERRORS_LINE = "QC_Errors_Line";
         private const string QC_ERRORS_POLYGON = "QC_Errors_Polygon";
         private const string QC_ERRORS_NOGEOM = "QC_Errors_NoGeom";
@@ -119,6 +121,8 @@ namespace SpatialCheckPro.Services
                 var projLibPath = System.IO.Path.Combine(appDir, "gdal", "share");
                 if (System.IO.Directory.Exists(projLibPath))
                 {
+                    var resolvedProjPath = ProjEnvironmentManager.ConfigureFromSharePath(projLibPath, _logger);
+
                     // 시스템 PATH에서 PostgreSQL 경로 제거
                     var currentPath = Environment.GetEnvironmentVariable("PATH") ?? "";
                     var paths = currentPath.Split(';', StringSplitOptions.RemoveEmptyEntries);
@@ -130,22 +134,18 @@ namespace SpatialCheckPro.Services
                     
                     // PROJ 라이브러리 경로를 PATH 최우선순위로 설정
                     var cleanPath = string.Join(";", filteredPaths);
-                    var newPath = projLibPath + ";" + appDir + ";" + cleanPath;
+                    var newPath = resolvedProjPath + ";" + appDir + ";" + cleanPath;
                     Environment.SetEnvironmentVariable("PATH", newPath);
                     
-                    Environment.SetEnvironmentVariable("PROJ_LIB", projLibPath);
-                    Environment.SetEnvironmentVariable("PROJ_DATA", projLibPath);
-                    Environment.SetEnvironmentVariable("PROJ_SEARCH_PATH", projLibPath);
-                    Environment.SetEnvironmentVariable("PROJ_NETWORK", "OFF");
                     Environment.SetEnvironmentVariable("PROJ_DEBUG", "0");
-                    Environment.SetEnvironmentVariable("PROJ_USER_WRITABLE_DIRECTORY", projLibPath);
-                    Environment.SetEnvironmentVariable("PROJ_CACHE_DIR", projLibPath);
+                    Environment.SetEnvironmentVariable("PROJ_USER_WRITABLE_DIRECTORY", resolvedProjPath);
+                    Environment.SetEnvironmentVariable("PROJ_CACHE_DIR", resolvedProjPath);
                     
-                    // GDAL에도 설정
-                    Gdal.SetConfigOption("PROJ_LIB", projLibPath);
-                    Gdal.SetConfigOption("PROJ_DATA", projLibPath);
-                    
-                    _logger.LogDebug("PROJ 환경 설정 완료: {Path}", projLibPath);
+                    _logger.LogInformation("PROJ 환경 설정 완료: {Resolved}", resolvedProjPath);
+                }
+                else
+                {
+                    _logger.LogError("PROJ 데이터 디렉터리를 찾을 수 없습니다: {Path}", projLibPath);
                 }
 
                 // 데이터소스 열기 또는 생성
@@ -288,8 +288,43 @@ namespace SpatialCheckPro.Services
         private SpatialReference CreateDefaultSpatialRef()
         {
             _logger.LogInformation("기본 좌표계(EPSG:5179)를 사용합니다.");
+            
+            // PROJ 환경 변수 확인 및 재설정
+            var appDir = AppDomain.CurrentDomain.BaseDirectory;
+            var projLibPath = System.IO.Path.Combine(appDir, "gdal", "share");
+            var projDbPath = System.IO.Path.Combine(projLibPath, "proj.db");
+            
+            if (System.IO.Directory.Exists(projLibPath))
+            {
+                if (System.IO.File.Exists(projDbPath))
+                {
+                    _logger.LogDebug("PROJ 데이터베이스 파일 발견: {Path}", projDbPath);
+                }
+                else
+                {
+                    _logger.LogWarning("PROJ 데이터베이스 파일을 찾을 수 없습니다: {Path}", projDbPath);
+                }
+                
+                // 한글 경로 안전 처리 및 환경 변수 설정
+                string projLibPathForProj = ProjEnvironmentManager.ConfigureFromSharePath(projLibPath, _logger);
+                _logger.LogDebug("PROJ 환경 변수 설정: PROJ_DATA={Path} (원본: {Original})", projLibPathForProj, projLibPath);
+            }
+            else
+            {
+                _logger.LogError("PROJ 라이브러리 경로를 찾을 수 없습니다: {Path}", projLibPath);
+            }
+            
             var spatialRef = new SpatialReference(null);
-            spatialRef.ImportFromEPSG(5179);
+            try
+            {
+                spatialRef.ImportFromEPSG(5179);
+                _logger.LogDebug("EPSG:5179 좌표계 생성 성공");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "EPSG:5179 좌표계 생성 실패. PROJ 데이터베이스 경로를 확인하세요.");
+                throw;
+            }
             return spatialRef;
         }
 
@@ -521,6 +556,8 @@ namespace SpatialCheckPro.Services
                 var projLibPath = System.IO.Path.Combine(appDir, "gdal", "share");
                 if (System.IO.Directory.Exists(projLibPath))
                 {
+                    var resolvedProjPath = ProjEnvironmentManager.ConfigureFromSharePath(projLibPath, _logger);
+
                     // 시스템 PATH에서 PostgreSQL 경로 제거
                     var currentPath = Environment.GetEnvironmentVariable("PATH") ?? "";
                     var paths = currentPath.Split(';', StringSplitOptions.RemoveEmptyEntries);
@@ -532,22 +569,18 @@ namespace SpatialCheckPro.Services
                     
                     // PROJ 라이브러리 경로를 PATH 최우선순위로 설정
                     var cleanPath = string.Join(";", filteredPaths);
-                    var newPath = projLibPath + ";" + appDir + ";" + cleanPath;
+                    var newPath = resolvedProjPath + ";" + appDir + ";" + cleanPath;
                     Environment.SetEnvironmentVariable("PATH", newPath);
                     
-                    Environment.SetEnvironmentVariable("PROJ_LIB", projLibPath);
-                    Environment.SetEnvironmentVariable("PROJ_DATA", projLibPath);
-                    Environment.SetEnvironmentVariable("PROJ_SEARCH_PATH", projLibPath);
-                    Environment.SetEnvironmentVariable("PROJ_NETWORK", "OFF");
                     Environment.SetEnvironmentVariable("PROJ_DEBUG", "0");
-                    Environment.SetEnvironmentVariable("PROJ_USER_WRITABLE_DIRECTORY", projLibPath);
-                    Environment.SetEnvironmentVariable("PROJ_CACHE_DIR", projLibPath);
+                    Environment.SetEnvironmentVariable("PROJ_USER_WRITABLE_DIRECTORY", resolvedProjPath);
+                    Environment.SetEnvironmentVariable("PROJ_CACHE_DIR", resolvedProjPath);
                     
-                    // GDAL에도 설정
-                    Gdal.SetConfigOption("PROJ_LIB", projLibPath);
-                    Gdal.SetConfigOption("PROJ_DATA", projLibPath);
-                    
-                    _logger.LogDebug("PROJ 환경 설정 완료: {Path}", projLibPath);
+                    _logger.LogDebug("PROJ 환경 설정 완료: {Path}", resolvedProjPath);
+                }
+                else
+                {
+                    _logger.LogError("ValidateSchemaAsync: PROJ 데이터 경로를 찾을 수 없습니다 - {Path}", projLibPath);
                 }
 
                 var dataSource = driver.Open(gdbPath, 0); // 읽기 모드

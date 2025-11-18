@@ -58,6 +58,29 @@ namespace SpatialCheckPro.Processors
         {
             _spatialIndexCache.Clear();
             _logger.LogDebug("공간 인덱스 캐시 정리 완료");
+            
+            // HighPerformanceGeometryValidator의 캐시도 함께 정리
+            if (_highPerfValidator != null)
+            {
+                _highPerfValidator.ClearSpatialIndexCache();
+            }
+        }
+
+        /// <summary>
+        /// 특정 파일의 공간 인덱스 캐시 정리 (배치 검수 성능 최적화)
+        /// </summary>
+        public void ClearSpatialIndexCacheForFile(string filePath)
+        {
+            // GeometryCheckProcessor의 _spatialIndexCache는 현재 사용되지 않으므로 정리만 수행
+            // 실제 캐시는 HighPerformanceGeometryValidator에 있음
+            _spatialIndexCache.Clear();
+            _logger.LogDebug("공간 인덱스 캐시 정리 완료 (파일별)");
+            
+            // HighPerformanceGeometryValidator의 파일별 캐시 정리 (핵심)
+            if (_highPerfValidator != null)
+            {
+                _highPerfValidator.RemoveSpatialIndexCacheForFile(filePath);
+            }
         }
 
         /// <summary>
@@ -82,6 +105,12 @@ namespace SpatialCheckPro.Processors
                 _logger.LogInformation("지오메트리 검수 시작 (단일 순회 최적화): {TableId} ({TableName}), 스트리밍 모드: {StreamingEnabled}",
                     config.TableId, config.TableName, streamingOutputPath != null);
                 var startTime = DateTime.Now;
+
+                // HighPerformanceGeometryValidator에 현재 파일 경로 설정 (캐시 키에 포함)
+                if (_highPerfValidator != null)
+                {
+                    _highPerfValidator.SetCurrentFilePath(filePath);
+                }
 
                 using var ds = Ogr.Open(filePath, 0);
                 if (ds == null)
@@ -244,6 +273,12 @@ namespace SpatialCheckPro.Processors
             {
                 // 스트리밍 리소스 정리
                 errorWriter?.Dispose();
+                
+                // 현재 파일 경로 초기화 (다음 검수를 위해)
+                if (_highPerfValidator != null)
+                {
+                    _highPerfValidator.SetCurrentFilePath(null);
+                }
             }
         }
 

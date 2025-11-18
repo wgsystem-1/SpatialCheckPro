@@ -81,10 +81,10 @@ tn_alpt,표고점,POINT,EPSG:5179
 
 ## 2. schema_check.csv
 
-### 개요
+### 개요1
 2단계 스키마 검수에서 사용되는 설정 파일입니다. 각 테이블의 필드(컬럼) 구조와 제약조건을 정의합니다.
 
-### 파일 구조
+### 파일 구조1
 
 | 컬럼명 | 필수 | 설명 | 유효값 |
 |--------|------|------|--------|
@@ -99,7 +99,7 @@ tn_alpt,표고점,POINT,EPSG:5179
 | `RefTable` | | 참조 테이블명 (FK인 경우) | 참조할 테이블의 `TableId` |
 | `RefColumn` | | 참조 컬럼명 (FK인 경우) | 참조할 테이블의 `FieldName` |
 
-### 작성 방법
+### 작성 방법1
 
 ```csv
 TableId,FieldName,FieldAlias,DataType,Length,UK,FK,NN,RefTable,RefColumn
@@ -111,7 +111,7 @@ tn_buld,alpt_hgt,표고점높이,NUMERIC,"7,2",,,Y,,
 tn_buld,rfrnc_nfid,참조NFID,String,17,,FK,Y,tn_fclty_zone_bndry,nf_id
 ```
 
-### 유효값 설명
+### 유효값 설명1
 
 #### DataType
 
@@ -143,7 +143,7 @@ tn_buld,rfrnc_nfid,참조NFID,String,17,,FK,Y,tn_fclty_zone_bndry,nf_id
 - **Y**: NULL 값 허용 안 함 (필수 필드)
 - **공백**: NULL 값 허용
 
-### 검수 동작
+### 검수 동작1
 
 - 필드 존재 여부 확인
 - 데이터 타입 일치 여부 확인
@@ -152,7 +152,7 @@ tn_buld,rfrnc_nfid,참조NFID,String,17,,FK,Y,tn_fclty_zone_bndry,nf_id
 - Unique Key 중복값 검사
 - Foreign Key 참조 무결성 검사
 
-### 주의사항
+### 주의사항1
 
 - FK 설정 시 `RefTable`과 `RefColumn`을 반드시 지정해야 합니다
 - `RefTable`은 `1_table_check.csv`에 정의된 `TableId`와 일치해야 합니다
@@ -162,11 +162,11 @@ tn_buld,rfrnc_nfid,참조NFID,String,17,,FK,Y,tn_fclty_zone_bndry,nf_id
 
 ## 3. geometry_check.csv
 
-### 개요
+### 개요2
 
 3단계 지오메트리 검수에서 사용되는 설정 파일입니다. 각 테이블에 대해 수행할 지오메트리 검사 항목을 정의합니다.
 
-### 파일 구조
+### 파일 구조2
 
 | 컬럼명 | 필수 | 설명 | 유효값 |
 |--------|------|------|--------|
@@ -186,7 +186,7 @@ tn_buld,rfrnc_nfid,참조NFID,String,17,,FK,Y,tn_fclty_zone_bndry,nf_id
 | `언더슛` | ✅ | 언더슛 검사 | `Y` 또는 `N` |
 | `오버슛` | ✅ | 오버슛 검사 | `Y` 또는 `N` |
 
-### 작성 방법
+### 작성 방법2
 
 ```csv
 TableId,TableName,GeometryType,객체중복,객체간겹침,자체꼬임,슬리버,짧은객체,작은면적객체,홀 폴리곤 오류,최소정점개수,스파이크,자기중첩,언더슛,오버슛
@@ -229,7 +229,7 @@ tn_alpt,표고점,POINT,Y,N,N,N,N,N,N,Y,N,N,N,N
 - 대부분의 검사 항목을 `Y`로 설정 가능
 - `짧은객체`, `언더슛`, `오버슛`은 일반적으로 `N`
 
-### 주의사항
+### 주의사항2
 
 - 실제 GDB에 존재하지 않는 테이블을 정의하면 검수에서 자동으로 스킵됩니다
 - 각 검사 항목의 기준값은 `geometry_criteria.csv`에서 설정됩니다
@@ -239,11 +239,11 @@ tn_alpt,표고점,POINT,Y,N,N,N,N,N,N,Y,N,N,N,N
 
 ## 4. attribute_check.csv
 
-### 개요
+### 개요3
 
 4단계 속성 검수에서 사용되는 설정 파일입니다. 필드값의 유효성을 검사하는 규칙을 정의합니다.
 
-### 파일 구조
+### 파일 구조3
 
 | 컬럼명 | 필수 | 설명 | 유효값 |
 |--------|------|------|--------|
@@ -257,7 +257,7 @@ tn_alpt,표고점,POINT,Y,N,N,N,N,N,N,Y,N,N,N,N
 | `Severity` | | 오류 심각도 | `INFO`, `MINOR`, `MAJOR`, `CRIT` (기본: `MAJOR`) |
 | `Note` | | 비고/설명 | 규칙 설명 |
 
-### 작성 방법
+### 작성 방법3
 
 ```csv
 RuleId,Enabled,TableId,TableName,FieldName,CheckType,Parameters,Severity,Note
@@ -375,7 +375,8 @@ CTRLN_HGT_MUL5,Y,tn_ctrln,등고선,ctrln_hgt,MultipleOf,5,MAJOR,등고선높이
 - **MAJOR**: 주요 오류 (기본값)
 - **CRIT**: 치명적 오류
 
-### 주의사항
+### 주의사항3
+
 - `CodeList` 타입의 경우 `Parameters`에 지정된 코드셋 ID가 `codelist.csv`에 존재해야 합니다
 - `IfCodeThen*` 타입의 경우 `Parameters` 형식을 정확히 따라야 합니다 (세미콜론 구분)
 - `TableId`가 `*`인 경우 모든 테이블에 적용되므로 주의가 필요합니다
@@ -384,11 +385,11 @@ CTRLN_HGT_MUL5,Y,tn_ctrln,등고선,ctrln_hgt,MultipleOf,5,MAJOR,등고선높이
 
 ## 5. relation_check.csv
 
-### 개요
+### 개요4
 
 5단계 공간 관계 검수에서 사용되는 설정 파일입니다. 테이블 간 공간적 관계를 검사하는 규칙을 정의합니다.
 
-### 파일 구조
+### 파일 구조4
 
 | 컬럼명 | 필수 | 설명 | 유효값 |
 |--------|------|------|--------|
@@ -403,7 +404,7 @@ CTRLN_HGT_MUL5,Y,tn_ctrln,등고선,ctrln_hgt,MultipleOf,5,MAJOR,등고선높이
 | `Tolerance` | | 허용 오차 (미터) | 숫자 (예: `0.001`, `1.0`) 또는 공백 (기본값 사용) |
 | `Note` | | 비고/설명 | 규칙 설명 |
 
-### 작성 방법
+### 작성 방법4
 
 ```csv
 RuleId,Enabled,CaseType,MainTableId,MainTableName,RelatedTableId,RelatedTableName,FieldFilter,Tolerance,Note
@@ -428,6 +429,13 @@ RuleId,Enabled,CaseType,MainTableId,MainTableName,RelatedTableId,RelatedTableNam
 
 ### FieldFilter 형식
 
+`FieldFilter`는 두 가지 용도로 사용됩니다:
+
+1. **필드 필터링**: SQL WHERE 절과 유사한 형식으로 특정 조건의 피처만 검사
+2. **검수 파라미터 설정**: 세미콜론(`;`)으로 구분하여 검수 규칙별 파라미터 지정
+
+#### 필드 필터링 형식
+
 SQL WHERE 절과 유사한 형식으로 작성합니다.
 
 **지원 연산자:**
@@ -442,19 +450,63 @@ SQL WHERE 절과 유사한 형식으로 작성합니다.
 - `road_se IN (RDS001|RDS002|RDS003)`: `road_se` 필드가 RDS001, RDS002, RDS003 중 하나
 - `pg_rdfc_se IN (PRC002|PRC003|PRC004|PRC005)`: `pg_rdfc_se` 필드가 지정된 코드 중 하나
 
+#### 검수 파라미터 설정 형식
+
+특정 검수 규칙에만 적용되는 파라미터를 설정할 수 있습니다.
+
+**형식**: `필드필터;파라미터명1=값1;파라미터명2=값2`
+
+**지원 파라미터:**
+
+##### 중심선 속성불일치 (CenterlineAttributeMismatch)
+
+- `intersection_threshold`: 교차로 감지 임계값 (연결된 선분 개수, 기본값: 3)
+- `angle_threshold`: 각도 임계값 (도, 기본값: 30.0)
+
+**예시:**
+
+```csv
+FieldFilter=road_no|feat_nm|road_se;intersection_threshold=5;angle_threshold=45
+```
+
+- 필드 필터: `road_no`, `feat_nm`, `road_se` 필드 비교
+- 교차로 임계값: 5개 (기본값 3 대신)
+- 각도 임계값: 45도 (기본값 30.0 대신)
+
+##### 표고점 위치간격 검사 (PointSpacingCheck)
+
+- `flatland`: 평탄지 기본 간격 (미터, 기본값: 200.0)
+- `road_sidewalk`: 인도 기본 간격 (미터, 기본값: 20.0)
+- `road_carriageway`: 차도 기본 간격 (미터, 기본값: 30.0)
+
+**예시:**
+
+```csv
+FieldFilter=scale=5K;flatland=150;road_sidewalk=15;road_carriageway=25
+```
+
+- 축척 필터: `scale=5K`
+- 평탄지 간격: 150m (기본값 200.0 대신)
+- 인도 간격: 15m (기본값 20.0 대신)
+- 차도 간격: 25m (기본값 30.0 대신)
+
 ### Tolerance 설정
 
 - **비어있음**: `geometry_criteria.csv`의 기본값 사용
 - **숫자 지정**: 해당 규칙에만 적용되는 커스텀 허용 오차
 
-**CaseType별 기본값:**
+**CaseType별 기본값 (geometry_criteria.csv):**
 
-- `LineWithinPolygon`: `선면포함관계허용오차` (기본: 0.001m)
-- `PolygonNotWithinPolygon`: `면면포함관계허용오차` (기본: 0.001m)
+- `LineWithinPolygon`: `선면포함관계허용오차` (기본: 0.01m)
+- `PolygonNotWithinPolygon`: `면면포함관계허용오차` (기본: 0.01m)
 - `LineConnectivity`: `선연결성탐색거리` (기본: 1.0m)
-- `PolygonMissingLine`: `선면포함관계허용오차` (기본: 0.001m)
+- `PolygonMissingLine`: `선면포함관계허용오차` (기본: 0.01m)
+- `PolygonBoundaryMatch`: `선면포함관계허용오차` (기본: 0.01m)
+- `ContourSharpBend`: `등고선꺽임기본값` (기본: 90.0도)
+- `RoadSharpBend`: `도로중심선꺽임기본값` (기본: 6.0도)
+- `LineEndpointWithinPolygon`: `선형끝점기본값` (기본: 0.3m)
 
-### 주의사항
+### 주의사항4
 
 - `MainTableId`와 `RelatedTableId`는 모두 `1_table_check.csv`에 정의되어 있어야 합니다
 - `CaseType`에 따라 적용 가능한 지오메트리 타입이 다릅니다
@@ -464,28 +516,35 @@ SQL WHERE 절과 유사한 형식으로 작성합니다.
 
 ## 6. geometry_criteria.csv
 
-### 개요
+### 개요5
+
 지오메트리 검수와 공간 관계 검수에서 사용되는 기준값을 정의하는 파일입니다. 모든 지오메트리 검수와 관계 검수의 허용 오차 및 임계값을 중앙에서 관리합니다.
 
-### 파일 구조
+**중요**: 이 파일의 값은 **기본값(fallback)**으로 사용되며, `5_relation_check.csv`의 `Tolerance` 또는 `FieldFilter` 파라미터가 우선 적용됩니다.
+
+### 파일 구조5
 
 | 컬럼명 | 필수 | 설명 | 유효값 |
 |--------|------|------|--------|
 | `항목명` | ✅ | 기준값 항목명 | 시스템에서 사용하는 고정된 항목명 |
 | `값` | ✅ | 기준값 | 숫자 (정수 또는 실수) |
-| `단위` | ✅ | 단위 | `미터`, `제곱미터`, `도`, `무차원` |
+| `단위` | ✅ | 단위 | `미터`, `제곱미터`, `도`, `무차원`, `개` |
 | `설명` | ✅ | 항목 설명 | 한글 설명 |
 
-### 작성 방법
+### 작성 방법5
 
 ```csv
 항목명,값,단위,설명
 겹침허용면적,0.01,제곱미터,폴리곤 겹침 허용 면적
 최소선길이,0.01,미터,짧은 선 객체 판정 기준
 최소폴리곤면적,1.0,제곱미터,작은 면적 객체 판정 기준
+중심선교차로임계값,3,개,중심선 속성불일치 검사 시 교차로 감지 임계값 (연결된 선분 개수)
+중심선각도임계값,30.0,도,중심선 속성불일치 검사 시 각도 임계값
 ```
 
 ### 항목명별 상세 설명
+
+#### 지오메트리 검수 기준값
 
 | 항목명 | 기본값 | 단위 | 용도 | 영향 범위 |
 |--------|--------|------|------|-----------|
@@ -501,10 +560,81 @@ SQL WHERE 절과 유사한 형식으로 작성합니다.
 | **링폐합오차** | 1e-8 | 미터 | 폴리곤 링 폐합 허용 오차 | 지오메트리 검수 (기본 검사) |
 | **네트워크탐색거리** | 0.1 | 미터 | 언더슛/오버슛 탐색 반경 | 지오메트리 검수 (언더슛, 오버슛) |
 | **중복검사허용오차** | 0.001 | 미터 | 중복 지오메트리 판정 거리 | 지오메트리 검수 (객체중복) |
+| **스파이크모두저장** | 1 | - | 0=최솟값 1개만 저장, 1=모든 스파이크 저장 | 지오메트리 검수 (스파이크) |
+
+#### 공간 관계 검수 기준값
+
+| 항목명 | 기본값 | 단위 | 용도 | 영향 범위 |
+|--------|--------|------|------|-----------|
 | **선면포함관계허용오차** | 0.01 | 미터 | 선이 면에 포함되는지 검사 시 허용 오차 | 관계 검수 (LineWithinPolygon) |
 | **면면포함관계허용오차** | 0.01 | 미터 | 면이 면에 포함되는지 검사 시 허용 오차 | 관계 검수 (PolygonNotWithinPolygon) |
 | **선연결성탐색거리** | 1.0 | 미터 | 선 연결성 검사 시 탐색 거리 | 관계 검수 (LineConnectivity) |
-| **스파이크모두저장** | 1 | - | 0=최솟값 1개만 저장, 1=모든 스파이크 저장 | 지오메트리 검수 (스파이크) |
+| **면면포함관계1%임계값** | 0.01 | 무차원 | 면-면 포함 관계 검사 시 면적 차이 1% 임계값 | 관계 검수 (PolygonWithinPolygon) |
+| **선면포함관계1%임계값** | 0.01 | 무차원 | 선-면 포함 관계 검사 시 길이 차이 1% 임계값 | 관계 검수 (PolygonContainsLine) |
+
+#### 중심선 속성불일치 검수 기준값
+
+| 항목명 | 기본값 | 단위 | 용도 | 영향 범위 |
+|--------|--------|------|------|-----------|
+| **중심선교차로임계값** | 3 | 개 | 중심선 속성불일치 검사 시 교차로 감지 임계값 (연결된 선분 개수) | 관계 검수 (CenterlineAttributeMismatch) |
+| **중심선각도임계값** | 30.0 | 도 | 중심선 속성불일치 검사 시 각도 임계값 | 관계 검수 (CenterlineAttributeMismatch) |
+
+**참고**: `5_relation_check.csv`의 `FieldFilter`에서 `intersection_threshold`와 `angle_threshold` 파라미터를 지정하면 해당 값이 우선 적용됩니다.
+
+#### 표고점 위치간격 검수 기준값
+
+| 항목명 | 기본값 | 단위 | 용도 | 영향 범위 |
+|--------|--------|------|------|-----------|
+| **표고점평탄지간격** | 200.0 | 미터 | 표고점 위치간격 검사 시 평탄지 기본 간격 | 관계 검수 (PointSpacingCheck) |
+| **표고점인도간격** | 20.0 | 미터 | 표고점 위치간격 검사 시 인도 기본 간격 | 관계 검수 (PointSpacingCheck) |
+| **표고점차도간격** | 30.0 | 미터 | 표고점 위치간격 검사 시 차도 기본 간격 | 관계 검수 (PointSpacingCheck) |
+
+**참고**: `5_relation_check.csv`의 `FieldFilter`에서 `flatland`, `road_sidewalk`, `road_carriageway` 파라미터를 지정하면 해당 값이 우선 적용됩니다.
+
+#### 꺽임 검수 기준값
+
+| 항목명 | 기본값 | 단위 | 용도 | 영향 범위 |
+|--------|--------|------|------|-----------|
+| **등고선꺽임기본값** | 90.0 | 도 | 등고선 꺽임 검사 시 기본 각도 임계값 | 관계 검수 (ContourSharpBend) |
+| **도로중심선꺽임기본값** | 6.0 | 도 | 도로중심선 꺽임 검사 시 기본 각도 임계값 | 관계 검수 (RoadSharpBend) |
+
+**참고**: `5_relation_check.csv`의 `Tolerance` 컬럼에 값을 지정하면 해당 값이 우선 적용됩니다.
+
+#### 선형 끝점 검수 기준값
+
+| 항목명 | 기본값 | 단위 | 용도 | 영향 범위 |
+|--------|--------|------|------|-----------|
+| **선형끝점기본값** | 0.3 | 미터 | 선형 끝점 초과미달 검사 시 기본 허용오차 | 관계 검수 (LineEndpointWithinPolygon) |
+
+**참고**: `5_relation_check.csv`의 `Tolerance` 컬럼에 값을 지정하면 해당 값이 우선 적용됩니다.
+
+### 설정 파일 우선순위
+
+검수 규칙의 기준값은 다음 우선순위로 적용됩니다:
+
+1. **최우선**: `5_relation_check.csv`의 `Tolerance` 컬럼 또는 `FieldFilter` 파라미터
+2. **차순위**: `geometry_criteria.csv`의 해당 항목값
+3. **최종 fallback**: 코드에 하드코딩된 기본값
+
+**예시 1: 도로면형_경계선불일치 (G44)**
+
+```csv
+# 5_relation_check.csv
+도로면형_경계선불일치,Y,PolygonBoundaryMatch,...,Tolerance=0.1,...
+```
+
+- `Tolerance=0.1`이 지정되면 → **0.1 사용**
+- `Tolerance`가 비어있으면 → `geometry_criteria.csv`의 `선면포함관계허용오차` (기본: 0.01) 사용
+
+**예시 2: 중심선_속성불일치**
+
+```csv
+# 5_relation_check.csv
+도로중심선_속성불일치,Y,CenterlineAttributeMismatch,...,FieldFilter=road_no|feat_nm|road_se;intersection_threshold=5;angle_threshold=45,...
+```
+
+- `FieldFilter`에 `intersection_threshold=5;angle_threshold=45`가 지정되면 → **5, 45 사용**
+- `FieldFilter`에 파라미터가 없으면 → `geometry_criteria.csv`의 `중심선교차로임계값=3`, `중심선각도임계값=30.0` 사용
 
 ### 기준값 수정 방법
 
@@ -520,6 +650,7 @@ SQL WHERE 절과 유사한 형식으로 작성합니다.
 - 과도하게 큰 값이나 작은 값(0 이하)은 검수 결과에 영향을 줄 수 있습니다
 - 변경 후에는 테스트 데이터로 검증하는 것을 권장합니다
 - `스파이크모두저장`은 0 또는 1만 유효합니다
+- **이 파일의 값은 기본값(fallback)이며, `5_relation_check.csv`의 설정이 우선 적용됩니다**
 
 ---
 

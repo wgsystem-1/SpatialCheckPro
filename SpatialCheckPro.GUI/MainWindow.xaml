@@ -6,6 +6,7 @@
         MinHeight="720" MinWidth="1280"
         WindowStartupLocation="CenterScreen"
         Background="White"
+        Icon="pack://application:,,,/Assets/Icons/app.ico"
         Closing="MainWindow_Closing">
 
     <Window.Resources>
@@ -45,13 +46,19 @@
         <Border Grid.Row="0" Background="#F0F0F0" BorderBrush="#E0E0E0" BorderThickness="0,0,0,1" Grid.ColumnSpan="3">
             <Grid>
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- 타이틀 -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" 
-                           VerticalAlignment="Center" Margin="16,0">
+                <StackPanel Grid.Column="1" Orientation="Horizontal" 
+                           VerticalAlignment="Center">
+                    <!-- 애플리케이션 로고 (타이틀 텍스트 앞에 표시) -->
+                    <Image Source="{StaticResource AppLogo}" 
+                           Width="24" Height="24" 
+                           Margin="0,0,8,0"
+                           VerticalAlignment="Center"/>
                     <TextBlock Text="국가기본도 DB 검수 프로그램" 
                               VerticalAlignment="Center" 
                               FontWeight="SemiBold" 
@@ -66,6 +73,14 @@
                                   FontWeight="SemiBold"/>
                     </Border>
                 </StackPanel>
+                
+                <!-- 회사 로고 (오른쪽에 표시) -->
+                <Image Grid.Column="2" 
+                       Source="{StaticResource CompanyLogo}" 
+                       Height="32" 
+                       Margin="0,0,16,0"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Right"/>
             </Grid>
         </Border>
         <Border Grid.Column="0" Background="{StaticResource SidebarColor}" BorderBrush="#1A2633" BorderThickness="0,0,1,0" Grid.Row="1" Grid.ColumnSpan="2">

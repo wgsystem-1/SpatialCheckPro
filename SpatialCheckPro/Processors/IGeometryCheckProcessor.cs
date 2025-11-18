@@ -55,6 +55,14 @@ namespace SpatialCheckPro.Processors
         /// <returns>검수 결과</returns>
         Task<ValidationResult> CheckSliverPolygonsAsync(string filePath, GeometryCheckConfig config, CancellationToken cancellationToken = default);
 
+        /// <summary>
+        /// 공간 인덱스 캐시를 정리합니다 (배치 검수 성능 최적화)
+        /// </summary>
+        void ClearSpatialIndexCache();
 
+        /// <summary>
+        /// 특정 파일의 공간 인덱스 캐시를 정리합니다 (배치 검수 성능 최적화)
+        /// </summary>
+        void ClearSpatialIndexCacheForFile(string filePath);
     }
 }

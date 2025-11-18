@@ -4,11 +4,17 @@
              DispatcherUnhandledException="Application_DispatcherUnhandledException">
     <Application.Resources>
         <ResourceDictionary>
+            <!-- 아이콘 및 로고 리소스 정의 -->
+            <!-- 주의: .ico 파일은 BitmapImage로 직접 로드할 수 없으므로 리소스로 정의하지 않음 -->
+            <!-- Window의 Icon 속성은 직접 경로를 사용: Icon="pack://application:,,,/Assets/Icons/logo.ico" -->
+            <BitmapImage x:Key="AppLogo" UriSource="pack://application:,,,/Assets/Images/logo.png"/>
+            <BitmapImage x:Key="CompanyLogo" UriSource="pack://application:,,,/Assets/Images/company_logo.png"/>
+            
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="Styles/ModernStyles.xaml"/>
-                <ResourceDictionary Source="Styles/StageResources.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/Styles/ModernStyles.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/Styles/StageResources.xaml"/>
                 <!-- 대시보드 테마 리소스 병합 -->
-                <ResourceDictionary Source="Styles/Theme.Dashboard.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/Styles/Theme.Dashboard.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

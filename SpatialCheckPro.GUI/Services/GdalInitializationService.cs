@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using SpatialCheckPro.Services;
 
 namespace SpatialCheckPro.GUI.Services
 {
@@ -226,6 +227,9 @@ namespace SpatialCheckPro.GUI.Services
                 projLibPath = Path.Combine(appDir, "gdal", "share");
             }
 
+            var resolvedProjPath = ProjEnvironmentManager.ConfigureFromSharePath(projLibPath, _logger);
+            projLibPath = resolvedProjPath;
+
             // 시스템 PATH에서 PostgreSQL 및 기타 PROJ 경로 제거
             var currentPath = Environment.GetEnvironmentVariable("PATH") ?? "";
             var paths = currentPath.Split(';', StringSplitOptions.RemoveEmptyEntries);
@@ -243,20 +247,14 @@ namespace SpatialCheckPro.GUI.Services
             var newPath = projLibPath + ";" + cleanPath;
             Environment.SetEnvironmentVariable("PATH", newPath);
             
-            // PROJ 환경 변수 설정
-            Environment.SetEnvironmentVariable("PROJ_LIB", projLibPath);
-            Environment.SetEnvironmentVariable("PROJ_DATA", projLibPath);
-            Environment.SetEnvironmentVariable("PROJ_SEARCH_PATH", projLibPath);
+            // PROJ 환경 변수 추가 설정
             Environment.SetEnvironmentVariable("PROJ_NETWORK", "OFF");
             Environment.SetEnvironmentVariable("PROJ_DEBUG", "3"); // 디버그 레벨 증가
             Environment.SetEnvironmentVariable("PROJ_USER_WRITABLE_DIRECTORY", projLibPath);
             Environment.SetEnvironmentVariable("PROJ_CACHE_DIR", projLibPath);
             
-            // GDAL이 올바른 PROJ를 사용하도록 설정
-            Gdal.SetConfigOption("PROJ_LIB", projLibPath);
-            Gdal.SetConfigOption("PROJ_DATA", projLibPath);
+            // GDAL이 올바른 PROJ를 사용하도록 추가 설정
             Gdal.SetConfigOption("PROJ_SEARCH_PATHS", projLibPath);
-            
             // 추가 PROJ 설정 - 강제로 우리 경로만 사용하도록
             Gdal.SetConfigOption("PROJ_SKIP_READ_USER_WRITABLE_DIRECTORY", "YES");
             Gdal.SetConfigOption("PROJ_IGNORE_USER_WRITABLE_DIRECTORY", "YES");

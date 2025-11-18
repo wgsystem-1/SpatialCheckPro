@@ -1,0 +1,9 @@
+Apache License 2.0 Notice
+-------------------------
+This product bundles the following components under the Apache License 2.0:
+
+- Serilog (https://github.com/serilog/serilog)
+- Grpc.Net.Client / Grpc.Tools (https://github.com/grpc/grpc-dotnet)
+- Google.Protobuf (BSD-3-Clause이지만 gRPC 패키지와 함께 공지)
+
+You must include this notice in any redistribution of Spatial Check Pro together with the Apache-licensed binaries.

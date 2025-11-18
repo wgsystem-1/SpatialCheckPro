@@ -4,12 +4,14 @@ using System.Linq;
 using System.Windows;
 using Microsoft.Extensions.Logging;
 using SpatialCheckPro.Services;
+using System.Runtime.Versioning;
 
 namespace SpatialCheckPro.GUI.Views
 {
     /// <summary>
     /// 예측 정확도 분석 창
     /// </summary>
+    [SupportedOSPlatform("windows7.0")]
     public partial class PredictionAccuracyView : Window
     {
         private readonly ILogger<PredictionAccuracyView>? _logger;

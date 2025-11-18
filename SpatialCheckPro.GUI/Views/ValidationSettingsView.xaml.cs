@@ -15,12 +15,14 @@ using SpatialCheckPro.Services;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 
 namespace SpatialCheckPro.GUI.Views
 {
     /// <summary>
     /// 설정 사용자 컨트롤 호스트
     /// </summary>
+    [SupportedOSPlatform("windows7.0")]
     public partial class ValidationSettingsView : UserControl
     {
         // 시스템 리소스 설정

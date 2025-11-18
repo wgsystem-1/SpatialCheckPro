@@ -11,12 +11,14 @@ using Microsoft.Win32;
 using SpatialCheckPro.Models;
 using SpatialCheckPro.Services;
 using Microsoft.Extensions.Logging;
+using System.Runtime.Versioning;
 
 namespace SpatialCheckPro.GUI.Views
 {
     /// <summary>
     /// 보고서 생성 및 관리 화면
     /// </summary>
+    [SupportedOSPlatform("windows7.0")]
     public partial class ReportView : UserControl
     {
         private SpatialCheckPro.Models.ValidationResult? _currentValidationResult;

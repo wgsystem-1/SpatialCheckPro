@@ -100,7 +100,7 @@
                     <StackPanel>
                         <TextBlock Text="검수 시간" Style="{StaticResource KpiLabel}" HorizontalAlignment="Center"/>
                         <TextBlock x:Name="ProcessingTimeText" Text="0:00" Style="{StaticResource KpiValue}" Foreground="#3B82F6"/>
-                        <TextBlock Text="⏱️" Style="{StaticResource KpiIcon}"/>
+                        <TextBlock Text="분:초" FontSize="11" Foreground="#6B7280" HorizontalAlignment="Center" Margin="0,2,0,0"/>
                     </StackPanel>
                 </Border>
                 

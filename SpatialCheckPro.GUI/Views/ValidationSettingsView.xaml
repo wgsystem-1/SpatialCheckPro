@@ -229,19 +229,6 @@
                 </TabControl>
             </GroupBox>
 
-            <!-- 코드리스트 설정 -->
-            <GroupBox Header="코드리스트 설정" Margin="0,20,0,0" Padding="10">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBox x:Name="CodelistPathTextBox" Grid.Column="1" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                    <Button Content="코드리스트 파일 선택" Grid.Column="2" Click="BrowseCodelist_Click" Width="140" Height="30"/>
-                </Grid>
-            </GroupBox>
-
             <!-- 파일 경로 묶음 -->
             <GroupBox Header="설정 파일 경로" Padding="15">
                 <StackPanel>
@@ -291,7 +278,15 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBox x:Name="GeometryCriteriaPathTextBox" Grid.Column="0" IsReadOnly="True" Margin="0,0,10,0" Padding="8" BorderBrush="LightGray" />
-                        <Button Grid.Column="1" Content="지오메트리 기준 선택" Padding="15,8" Background="Orange" Foreground="White" BorderThickness="0" Click="BrowseGeometryCriteria_Click" FontFamily="HYGothic-Extra" />
+                        <Button Grid.Column="1" Content="지오메트리 기준 선택" Padding="15,8" Background="LightSlateGray" Foreground="White" BorderThickness="0" Click="BrowseGeometryCriteria_Click" FontFamily="HYGothic-Extra" />
+                    </Grid>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="CodelistPathTextBox" Grid.Column="0" IsReadOnly="True" Margin="0,0,10,0" Padding="8" BorderBrush="LightGray"/>
+                        <Button Grid.Column="1" Content="코드리스트 파일 선택" Padding="15,8" Background="DimGray" Foreground="White" BorderThickness="0" Click="BrowseCodelist_Click" FontFamily="HYGothic-Extra"/>
                     </Grid>
                 </StackPanel>
             </GroupBox>

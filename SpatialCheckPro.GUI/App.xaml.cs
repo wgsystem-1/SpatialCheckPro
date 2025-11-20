@@ -30,6 +30,8 @@ namespace SpatialCheckPro.GUI
         static extern bool AllocConsole();
 
         private ServiceProvider? _serviceProvider;
+        private static string? _logRootCache;
+        private static string? _startupDebugLogPath;
         
         public ServiceProvider? ServiceProvider => _serviceProvider;
 
@@ -72,6 +74,7 @@ namespace SpatialCheckPro.GUI
             catch { } // 이미 콘솔이 할당된 경우 무시
             var logRoot = GetWritableLogRoot();
             string appLog = System.IO.Path.Combine(logRoot, "app_startup.log");
+            InitializeStartupDebugLog();
 
             try
             {
@@ -179,25 +182,29 @@ namespace SpatialCheckPro.GUI
             }
             catch (Exception ex)
             {
-                // 시작 단계 예외를 로그 파일에 기록
+                // 시작 단계 예외를 로그 파일에 기록 (안전한 경로 보장)
                 try
                 {
-                    var logPath = System.IO.Path.Combine(
-                        logRoot,
-                        "Logs",
-                        $"startup_error_{DateTime.Now:yyyyMMdd_HHmmss}.log");
+                    // 예외 발생 시에도 안전한 로그 경로 재확보
+                    var safeLogRoot = GetWritableLogRoot();
+                    var logDir = System.IO.Path.Combine(safeLogRoot, "Logs");
+                    
+                    // 보호 디렉터리 체크
+                    if (!IsProtectedSystemDirectory(logDir))
+                    {
+                        System.IO.Directory.CreateDirectory(logDir);
+                        var logPath = System.IO.Path.Combine(logDir, $"startup_error_{DateTime.Now:yyyyMMdd_HHmmss}.log");
 
-                    System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(logPath) ?? "Logs");
+                        var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 시작 단계 예외 발생\n" +
+                                        $"메시지: {ex.Message}\n" +
+                                        $"타입: {ex.GetType().FullName}\n" +
+                                        $"스택 트레이스:\n{ex.StackTrace}\n" +
+                                        $"내부 예외: {ex.InnerException?.Message}\n" +
+                                        $"내부 예외 스택:\n{ex.InnerException?.StackTrace}\n" +
+                                        $"{new string('=', 80)}\n\n";
 
-                    var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 시작 단계 예외 발생\n" +
-                                    $"메시지: {ex.Message}\n" +
-                                    $"타입: {ex.GetType().FullName}\n" +
-                                    $"스택 트레이스:\n{ex.StackTrace}\n" +
-                                    $"내부 예외: {ex.InnerException?.Message}\n" +
-                                    $"내부 예외 스택:\n{ex.InnerException?.StackTrace}\n" +
-                                    $"{new string('=', 80)}\n\n";
-
-                    System.IO.File.WriteAllText(logPath, logMessage, System.Text.Encoding.UTF8);
+                        System.IO.File.WriteAllText(logPath, logMessage, System.Text.Encoding.UTF8);
+                    }
                 }
                 catch { }
 
@@ -294,8 +301,25 @@ namespace SpatialCheckPro.GUI
             e.Handled = true;
         }
 
-        private static string GetWritableLogRoot()
+        internal static string GetWritableLogRoot()
         {
+            if (!string.IsNullOrWhiteSpace(_logRootCache))
+            {
+                try
+                {
+                    var cachedPath = System.IO.Path.GetFullPath(_logRootCache);
+                    if (!IsProtectedSystemDirectory(cachedPath))
+                    {
+                        System.IO.Directory.CreateDirectory(cachedPath);
+                        return cachedPath;
+                    }
+                }
+                catch
+                {
+                    _logRootCache = null;
+                }
+            }
+
             foreach (var dir in GetWritableLogCandidates())
             {
                 if (string.IsNullOrWhiteSpace(dir))
@@ -306,10 +330,15 @@ namespace SpatialCheckPro.GUI
                 try
                 {
                     var fullDir = System.IO.Path.GetFullPath(dir);
+                    if (IsProtectedSystemDirectory(fullDir))
+                    {
+                        continue;
+                    }
                     System.IO.Directory.CreateDirectory(fullDir);
                     var testFile = System.IO.Path.Combine(fullDir, $"write_test_{Guid.NewGuid():N}.tmp");
                     System.IO.File.WriteAllText(testFile, "log");
                     System.IO.File.Delete(testFile);
+                    _logRootCache = fullDir;
                     return fullDir;
                 }
                 catch
@@ -320,6 +349,7 @@ namespace SpatialCheckPro.GUI
 
             var fallback = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "SpatialCheckPro");
             System.IO.Directory.CreateDirectory(fallback);
+            _logRootCache = fallback;
             return fallback;
         }
 
@@ -345,6 +375,61 @@ namespace SpatialCheckPro.GUI
 
             yield return System.IO.Path.Combine(System.IO.Path.GetTempPath(), "SpatialCheckPro");
             yield return System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
+        }
+
+        internal static string StartupDebugLogPath
+        {
+            get
+            {
+                InitializeStartupDebugLog();
+                return _startupDebugLogPath ?? throw new InvalidOperationException("Startup debug 로그 경로 초기화 실패");
+            }
+        }
+
+        private static void InitializeStartupDebugLog()
+        {
+            if (!string.IsNullOrWhiteSpace(_startupDebugLogPath))
+            {
+                return;
+            }
+
+            var logRoot = GetWritableLogRoot();
+            var logDir = System.IO.Path.Combine(logRoot, "Logs");
+            System.IO.Directory.CreateDirectory(logDir);
+            _startupDebugLogPath = System.IO.Path.Combine(logDir, $"startup_debug_{DateTime.Now:yyyyMMdd_HHmmss}.log");
+            var header = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 스타트업 세션 시작{Environment.NewLine}{new string('-', 80)}{Environment.NewLine}";
+            System.IO.File.WriteAllText(_startupDebugLogPath, header, System.Text.Encoding.UTF8);
+        }
+
+        internal static bool IsProtectedSystemDirectory(string path)
+        {
+            try
+            {
+                var fullPath = System.IO.Path.GetFullPath(path).TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
+                var protectedRoots = new[]
+                {
+                    Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                    Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                    Environment.GetFolderPath(Environment.SpecialFolder.Windows)
+                }
+                .Where(p => !string.IsNullOrWhiteSpace(p))
+                .Select(p => System.IO.Path.GetFullPath(p).TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar))
+                .ToArray();
+
+                foreach (var root in protectedRoots)
+                {
+                    if (fullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch
+            {
+                return false;
+            }
+
+            return false;
         }
     }
 }

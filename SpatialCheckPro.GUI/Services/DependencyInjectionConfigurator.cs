@@ -53,6 +53,7 @@ namespace SpatialCheckPro.GUI.Services
         /// <summary>
         /// 기본 서비스들 등록 (로깅, 기본 설정 등)
         /// </summary>
+        [SupportedOSPlatform("windows7.0")]
         private static void ConfigureBasicServices(IServiceCollection services)
         {
             // 로깅 서비스 등록

@@ -80,7 +80,7 @@ namespace SpatialCheckPro.GUI
             StageSummaryCollectionViewModel stageSummaryCollectionViewModel,
             AlertAggregationService alertAggregationService)
         {
-            string debugLog = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "startup_debug.log");
+            string debugLog = App.StartupDebugLogPath;
             File.AppendAllText(debugLog, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] MainWindow 생성자 시작\n");
 
             InitializeComponent();

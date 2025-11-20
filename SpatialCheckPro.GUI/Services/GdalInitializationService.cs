@@ -6,7 +6,9 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using SpatialCheckPro.Services;
+using SpatialCheckPro.GUI;
 
 namespace SpatialCheckPro.GUI.Services
 {
@@ -29,6 +31,7 @@ namespace SpatialCheckPro.GUI.Services
     /// <summary>
     /// GDAL 라이브러리 초기화 서비스 구현
     /// </summary>
+    [SupportedOSPlatform("windows7.0")]
     public class GdalInitializationService : IGdalInitializationService
     {
         private readonly ILogger<GdalInitializationService> _logger;
@@ -136,7 +139,13 @@ namespace SpatialCheckPro.GUI.Services
 
                         // GDAL 디버그 정보 활성화
                         Gdal.SetConfigOption("CPL_DEBUG", "ON");
-                        Gdal.SetConfigOption("CPL_LOG", Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "gdal_debug.log"));
+                        var gdalLogRoot = App.GetWritableLogRoot();
+                        var gdalLogDir = Path.Combine(gdalLogRoot, "Logs");
+                        Directory.CreateDirectory(gdalLogDir);
+                        var gdalLogPath = Path.Combine(gdalLogDir, "gdal_debug.log");
+                        Environment.SetEnvironmentVariable("CPL_LOG", gdalLogPath);
+                        Gdal.SetConfigOption("CPL_LOG", gdalLogPath);
+                        _logger.LogInformation("GDAL 디버그 로그 경로: {Path}", gdalLogPath);
 
                         _isInitialized = true;
                         _logger.LogInformation("GDAL 초기화 완료");

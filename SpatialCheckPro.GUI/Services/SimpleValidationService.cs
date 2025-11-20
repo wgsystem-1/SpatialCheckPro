@@ -795,7 +795,25 @@ namespace SpatialCheckPro.GUI.Services
                             using var layer = ds.GetLayerByIndex(i);
                             if (layer != null)
                             {
-                                totalFeatures += layer.GetFeatureCount(1);
+                                long layerCount = -1;
+
+                                try
+                                {
+                                    layerCount = layer.GetFeatureCount(0); // 가능한 경우 빠른 경로 사용
+                                }
+                                catch (Exception fastCountEx)
+                                {
+                                    _logger.LogDebug(fastCountEx, "레이어 빠른 카운트 시도 실패, 강제 카운트로 폴백: {Layer}", layer.GetName());
+                                }
+
+                                if (layerCount < 0)
+                                {
+                                    // 빠른 카운트가 불가능하면 최소한의 강제 카운트를 수행하되,
+                                    // 임계값을 초과하는 즉시 중단하여 전체 스캔 시간을 줄인다.
+                                    layerCount = layer.GetFeatureCount(1);
+                                }
+
+                                totalFeatures += Math.Max(0, layerCount);
                                 if (totalFeatures >= _performanceSettings.HighPerformanceModeFeatureThreshold)
                                 {
                                     _logger.LogInformation("자동 HP 판단: 피처 수 임계 초과({Count}개)", totalFeatures);

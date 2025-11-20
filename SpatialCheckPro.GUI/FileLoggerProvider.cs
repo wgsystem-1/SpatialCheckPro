@@ -4,12 +4,14 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Runtime.Versioning;
 
 namespace SpatialCheckPro.GUI
 {
     /// <summary>
     /// 검수별 파일 로거 프로바이더 (개선: 검수 파일별 개별 로그)
     /// </summary>
+    [SupportedOSPlatform("windows7.0")]
     public class FileLoggerProvider : ILoggerProvider
     {
         private static string? _currentLogFilePath;
@@ -20,8 +22,8 @@ namespace SpatialCheckPro.GUI
         /// </summary>
         public FileLoggerProvider()
         {
-            var appDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            var logsDirectory = Path.Combine(appDirectory, "Logs");
+            var logRoot = App.GetWritableLogRoot();
+            var logsDirectory = Path.Combine(logRoot, "Logs");
             
             // Logs 디렉토리 생성
             if (!Directory.Exists(logsDirectory))
@@ -65,8 +67,8 @@ namespace SpatialCheckPro.GUI
             {
                 try
                 {
-                    var appDirectory = AppDomain.CurrentDomain.BaseDirectory;
-                    var logsDirectory = Path.Combine(appDirectory, "Logs");
+                    var logRoot = App.GetWritableLogRoot();
+                    var logsDirectory = Path.Combine(logRoot, "Logs");
                     
                     // Logs 디렉토리 생성
                     if (!Directory.Exists(logsDirectory))
@@ -97,8 +99,8 @@ namespace SpatialCheckPro.GUI
                 {
                     Console.WriteLine($"[로그 오류] 로그 파일 경로 설정 실패: {ex.Message}");
                     // 실패 시 기본 로그 파일 사용
-                    var appDirectory = AppDomain.CurrentDomain.BaseDirectory;
-                    var logsDirectory = Path.Combine(appDirectory, "Logs");
+                    var logRoot = App.GetWritableLogRoot();
+                    var logsDirectory = Path.Combine(logRoot, "Logs");
                     var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                     _currentLogFilePath = Path.Combine(logsDirectory, $"validation_{timestamp}.log");
                 }
